@@ -1,0 +1,9 @@
+app/(onboarding)/health-info.tsx(100,17): error TS2304: Cannot find name 'FONTS'.
+app/(onboarding)/profile-setup.tsx(85,17): error TS2304: Cannot find name 'FONTS'.
+utils/icons.ts(12,17): error TS2352: Conversion of type 'typeof import("/Users/nnedu/Documents/nutripaddi/node_modules/lucide-react-native/dist/lucide-react-native")' to type 'Record<string, ComponentType<LucideProps>>' may be a mistake because neither type sufficiently overlaps with the other. If this was intentional, convert the expression to 'unknown' first.
+  Property 'Icon' is incompatible with index signature.
+    Type 'ForwardRefExoticComponent<IconComponentProps & RefAttributes<SVGSVGElement>>' is not comparable to type 'ComponentType<LucideProps>'.
+      Type 'ForwardRefExoticComponent<IconComponentProps & RefAttributes<SVGSVGElement>>' is not comparable to type 'FunctionComponent<LucideProps>'.
+        Types of parameters 'props' and 'props' are incompatible.
+          Type 'LucideProps' is not comparable to type 'IconComponentProps & RefAttributes<SVGSVGElement>'.
+            Property 'iconNode' is missing in type 'LucideProps' but required in type 'IconComponentProps'.
