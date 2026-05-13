@@ -1,50 +1,78 @@
-# Welcome to your Expo app 👋
+# NutriPadi
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+NutriPadi is a premium, AI-powered Nigerian food analysis and tracking mobile application. Designed with a modern, high-contrast "Uber-like" aesthetic, NutriPadi helps users scan meals, analyze nutritional value, log their dietary intake, and maintain a healthy lifestyle tailored to Nigerian cuisine.
 
-## Get started
+## 🚀 Tech Stack
 
-1. Install dependencies
+- **Framework:** [React Native](https://reactnative.dev/) & [Expo](https://expo.dev/) (SDK 54)
+- **Language:** TypeScript
+- **Routing:** [Expo Router](https://docs.expo.dev/router/introduction/) (File-based routing)
+- **Icons:** [Lucide React Native](https://lucide.dev/guide/packages/lucide-react-native)
+- **Typography:** [Expo Google Fonts (Plus Jakarta Sans)](https://github.com/expo/google-fonts)
+- **State Management & Storage:** React hooks & [Async Storage](https://react-native-async-storage.github.io/async-storage/)
+- **Animations:** [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) & [Gesture Handler](https://docs.swmansion.com/react-native-gesture-handler/)
+- **Hardware Integration:** Expo Camera & Image Picker
+
+## 📸 Core Features
+
+- **AI Food Scanner:** Use the camera to scan and identify Nigerian dishes, retrieving accurate nutritional insights.
+- **Meal Logging:** Easily log breakfasts, lunches, dinners, and snacks.
+- **Nutrition History:** Track caloric intake and macros over time with an intuitive dashboard.
+- **Onboarding & Authentication:** Seamless and sleek sign-up and login flows.
+- **Personalized Profile:** Manage dietary preferences, goals, and user settings.
+- **Offline Storage:** Secure and fast local data persistence using Async Storage.
+
+## 🛠️ Getting Started
+
+Follow these steps to set up the project locally.
+
+### Prerequisites
+
+- Node.js (v18 or higher recommended)
+- npm, yarn, or pnpm
+- Expo Go app on your physical device OR an iOS/Android emulator installed.
+
+### Installation
+
+1. Clone the repository and navigate to the project directory:
+
+   ```bash
+   cd nutripaddi
+   ```
+
+2. Install dependencies:
 
    ```bash
    npm install
    ```
 
-2. Start the app
-
+3. Start the development server:
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+### Running on a Device/Emulator
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+- **Physical Device:** Download the **Expo Go** app from the App Store (iOS) or Google Play (Android) and scan the QR code displayed in your terminal.
+- **iOS Simulator:** Press `i` in the terminal to launch on the iOS simulator (requires Xcode).
+- **Android Emulator:** Press `a` in the terminal to launch on the Android emulator (requires Android Studio).
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+## 📂 Project Structure
 
-## Get a fresh project
+- `app/` - Contains all screens and routing logic using Expo Router.
+  - `(tabs)/` - Bottom tab navigation screens (Dashboard, Scan, History, Profile).
+  - `(auth)/` - Authentication flows (Login, Sign up).
+  - `(onboarding)/` - Initial app onboarding screens.
+- `components/` - Reusable UI components (Buttons, Cards, Inputs, Modals).
+- `constants/` - Theme colors, standard dimensions, and configuration.
+- `data/` - Mock data for testing and offline development.
+- `utils/` - Helper functions and AI integration logic.
+- `assets/` - Static files like images and fonts.
 
-When you're ready, run:
+## 🤝 Contributing
 
-```bash
-npm run reset-project
-```
+Contributions are welcome! Please follow standard code formatting practices, utilize the established color palette and typography (Plus Jakarta Sans), and ensure that all new icons use `lucide-react-native`.
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 📄 License
 
-## Learn more
-
-To learn more about developing your project with Expo, look at the following resources:
-
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+This project is proprietary and confidential. Unauthorized copying of this file, via any medium, is strictly prohibited.
