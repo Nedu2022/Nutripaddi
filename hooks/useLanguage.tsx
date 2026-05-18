@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, ReactNode } from "react";
+import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import type { SupportedLanguage } from "@/localization";
 import { getTranslations } from "@/localization";
@@ -26,12 +26,18 @@ export function LanguageProvider({ children }: { children: ReactNode }) {
     AsyncStorage.setItem(LANG_STORAGE_KEY, lang).catch(() => {});
   };
 
-  // Load saved language on first render
-  useState(() => {
+  useEffect(() => {
     AsyncStorage.getItem(LANG_STORAGE_KEY).then((saved) => {
-      if (saved) setLang(saved as SupportedLanguage);
+      if (
+        saved === "english" ||
+        saved === "yoruba" ||
+        saved === "hausa" ||
+        saved === "igbo"
+      ) {
+        setLang(saved);
+      }
     }).catch(() => {});
-  });
+  }, []);
 
   const t = getTranslations(language);
 

@@ -13,11 +13,11 @@ import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { SupportedLanguage } from "@/localization";
 
-const LANGUAGES: { id: SupportedLanguage; name: string; subtitle: string; flag: string }[] = [
-  { id: "english", name: "English", subtitle: "Continue in English", flag: "🇬🇧" },
-  { id: "yoruba", name: "Yorùbá", subtitle: "Tẹsiwaju ni Yoruba", flag: "🇳🇬" },
-  { id: "hausa", name: "Hausa", subtitle: "Ci gaba da Hausa", flag: "🇳🇬" },
-  { id: "igbo", name: "Igbo", subtitle: "Gaa n'ihu n'asụsụ Igbo", flag: "🇳🇬" },
+const LANGUAGES: { id: SupportedLanguage; name: string; subtitle: string; marker: string }[] = [
+  { id: "english", name: "English", subtitle: "Continue in English", marker: "EN" },
+  { id: "yoruba", name: "Yorùbá", subtitle: "Tẹsiwaju ni Yoruba", marker: "YO" },
+  { id: "hausa", name: "Hausa", subtitle: "Ci gaba da Hausa", marker: "HA" },
+  { id: "igbo", name: "Igbo", subtitle: "Gaa n'ihu n'asụsụ Igbo", marker: "IG" },
 ];
 
 export default function LanguageSelectScreen() {
@@ -50,7 +50,7 @@ export default function LanguageSelectScreen() {
             >
               <View style={styles.langLeft}>
                 <View style={[styles.flagCircle, isSelected && styles.flagCircleSelected]}>
-                  <Text style={styles.flag}>{lang.flag}</Text>
+                  <Text style={styles.flag}>{lang.marker}</Text>
                 </View>
                 <View>
                   <Text style={[styles.langName, isSelected && styles.langNameSelected]}>{lang.name}</Text>
@@ -91,7 +91,7 @@ const styles = StyleSheet.create({
     backgroundColor: COLORS.softOrange, alignItems: "center", justifyContent: "center",
   },
   flagCircleSelected: { backgroundColor: COLORS.white },
-  flag: { fontSize: 22 },
+  flag: { color: COLORS.text, fontSize: 13, fontFamily: FONTS.extraBold },
   langName: { color: COLORS.text, fontSize: 17, fontFamily: FONTS.bold },
   langNameSelected: { color: COLORS.primaryDark },
   langSub: { color: COLORS.textMuted, fontSize: 13, fontFamily: FONTS.regular, marginTop: 2 },

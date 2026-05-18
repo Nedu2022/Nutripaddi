@@ -10,7 +10,6 @@ import {
 import { Send, Sparkles, MessageCircle } from "lucide-react-native";
 import Animated, { FadeInUp, FadeInDown } from "react-native-reanimated";
 
-import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import {

@@ -1,0 +1,199 @@
+import { useMemo, useState } from "react";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { CheckCircle2, MessageSquareText, Sparkles } from "lucide-react-native";
+
+import AppHeader from "@/components/AppHeader";
+import CustomButton from "@/components/CustomButton";
+import ScreenWrapper from "@/components/ScreenWrapper";
+import { COLORS } from "@/constants/colors";
+import { FONTS } from "@/constants/fonts";
+import {
+  FEEDBACK_OPTIONS,
+  STUDY_FEEDBACK_QUESTIONS,
+} from "@/data/research";
+
+export default function StudyFeedbackScreen() {
+  const [ratings, setRatings] = useState<Record<string, string>>({});
+  const [submitted, setSubmitted] = useState(false);
+
+  const isComplete = useMemo(
+    () =>
+      STUDY_FEEDBACK_QUESTIONS.every((question) => Boolean(ratings[question.id])),
+    [ratings]
+  );
+
+  return (
+    <ScreenWrapper scroll>
+      <AppHeader
+        showBack
+        title="Study Feedback"
+        subtitle="Help evaluate usefulness and ease of use"
+      />
+
+      <View style={styles.introCard}>
+        <View style={styles.introIcon}>
+          <MessageSquareText color={COLORS.primary} size={22} />
+        </View>
+        <View style={styles.introCopy}>
+          <Text style={styles.introTitle}>Technology Acceptance Model</Text>
+          <Text style={styles.introText}>
+            Your response helps evaluate whether NutriPadi feels useful, clear,
+            fast, and easy to use.
+          </Text>
+        </View>
+      </View>
+
+      {STUDY_FEEDBACK_QUESTIONS.map((question, index) => (
+        <View key={question.id} style={styles.questionCard}>
+          <Text style={styles.questionNumber}>Question {index + 1}</Text>
+          <Text style={styles.questionText}>{question.text}</Text>
+          <View style={styles.optionStack}>
+            {FEEDBACK_OPTIONS.map((option) => {
+              const selected = ratings[question.id] === option;
+              return (
+                <Pressable
+                  key={option}
+                  onPress={() => {
+                    setSubmitted(false);
+                    setRatings((current) => ({
+                      ...current,
+                      [question.id]: option,
+                    }));
+                  }}
+                  style={[
+                    styles.optionRow,
+                    selected && styles.optionRowSelected,
+                  ]}
+                >
+                  <Text
+                    style={[
+                      styles.optionText,
+                      selected && styles.optionTextSelected,
+                    ]}
+                  >
+                    {option}
+                  </Text>
+                  {selected && <CheckCircle2 color={COLORS.primary} size={17} />}
+                </Pressable>
+              );
+            })}
+          </View>
+        </View>
+      ))}
+
+      {submitted && (
+        <View style={styles.successCard}>
+          <Sparkles color={COLORS.success} size={18} />
+          <Text style={styles.successText}>
+            Thank you. Your feedback has been recorded locally for the study
+            prototype.
+          </Text>
+        </View>
+      )}
+
+      <CustomButton
+        disabled={!isComplete}
+        onPress={() => setSubmitted(true)}
+        title="Submit Feedback"
+      />
+      <View style={{ height: 24 }} />
+    </ScreenWrapper>
+  );
+}
+
+const styles = StyleSheet.create({
+  introCard: {
+    flexDirection: "row",
+    gap: 12,
+    backgroundColor: COLORS.softGreen,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+  },
+  introIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 14,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  introCopy: {
+    flex: 1,
+  },
+  introTitle: {
+    color: COLORS.primaryDark,
+    fontSize: 15,
+    fontFamily: FONTS.bold,
+  },
+  introText: {
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    lineHeight: 20,
+    marginTop: 4,
+  },
+  questionCard: {
+    backgroundColor: COLORS.white,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    padding: 16,
+    marginBottom: 14,
+  },
+  questionNumber: {
+    color: COLORS.primary,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+    marginBottom: 6,
+  },
+  questionText: {
+    color: COLORS.text,
+    fontSize: 16,
+    fontFamily: FONTS.bold,
+    lineHeight: 22,
+    marginBottom: 12,
+  },
+  optionStack: {
+    gap: 8,
+  },
+  optionRow: {
+    minHeight: 46,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  optionRowSelected: {
+    backgroundColor: COLORS.softGreen,
+    borderColor: COLORS.primary,
+  },
+  optionText: {
+    flex: 1,
+    color: COLORS.textMuted,
+    fontSize: 13,
+    fontFamily: FONTS.semiBold,
+  },
+  optionTextSelected: {
+    color: COLORS.primaryDark,
+  },
+  successCard: {
+    flexDirection: "row",
+    gap: 10,
+    backgroundColor: COLORS.softGreen,
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 14,
+  },
+  successText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    lineHeight: 19,
+  },
+});

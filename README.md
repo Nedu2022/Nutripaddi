@@ -1,6 +1,6 @@
 # NutriPadi
 
-NutriPadi is a premium, AI-powered Nigerian food analysis and tracking mobile application. Designed with a modern, high-contrast "Uber-like" aesthetic, NutriPadi helps users scan meals, analyze nutritional value, log their dietary intake, and maintain a healthy lifestyle tailored to Nigerian cuisine.
+NutriPadi is a premium, AI-powered African food analysis and tracking mobile application. Designed with a modern, high-contrast "Uber-like" aesthetic, NutriPadi helps users scan meals, analyze nutritional value, log their dietary intake, and maintain a healthy lifestyle tailored to African cuisine.
 
 ## 🚀 Tech Stack
 
@@ -15,7 +15,7 @@ NutriPadi is a premium, AI-powered Nigerian food analysis and tracking mobile ap
 
 ## 📸 Core Features
 
-- **AI Food Scanner:** Use the camera to scan and identify Nigerian dishes, retrieving accurate nutritional insights.
+- **AI Food Scanner:** Use the camera to scan and identify African dishes, retrieving accurate nutritional insights.
 - **Meal Logging:** Easily log breakfasts, lunches, dinners, and snacks.
 - **Nutrition History:** Track caloric intake and macros over time with an intuitive dashboard.
 - **Onboarding & Authentication:** Seamless and sleek sign-up and login flows.

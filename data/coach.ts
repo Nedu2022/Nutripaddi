@@ -1,14 +1,14 @@
 import type { ChatMessage, QuickQuestion, MealSuggestion } from "@/types";
 
 export const QUICK_QUESTIONS: QuickQuestion[] = [
-  { id: "q1", text: "Is this meal good for weight loss?" },
-  { id: "q2", text: "How can I reduce carbs in Nigerian food?" },
+  { id: "q1", text: "Is this meal balanced?" },
+  { id: "q2", text: "How can I reduce carbs?" },
   { id: "q3", text: "What can I eat with Egusi soup?" },
   { id: "q4", text: "Is Jollof rice healthy?" },
   { id: "q5", text: "Suggest a light Nigerian dinner" },
   { id: "q6", text: "What should I eat after a heavy lunch?" },
-  { id: "q7", text: "What is a good breakfast for weight management?" },
-  { id: "q8", text: "How many calories are in swallow?" },
+  { id: "q7", text: "What is a good breakfast to keep a healthy weight?" },
+  { id: "q8", text: "How much energy (calories) is in swallow?" },
 ];
 
 /**
@@ -16,22 +16,22 @@ export const QUICK_QUESTIONS: QuickQuestion[] = [
  * In production, these would come from a real AI model.
  */
 export const AI_RESPONSES: Record<string, string> = {
-  q1: "It depends on the meal! Generally, meals lower in carbs and higher in protein, like pepper soup with fish or beans with vegetables, are better for weight loss. Portion size also matters a lot.",
-  q2: "Great question! You can reduce carbs by using smaller portions of swallow, eating more soup with vegetables, choosing beans over rice, or trying cauliflower-based alternatives. Portion control is the simplest first step.",
-  q3: "Egusi soup goes well with any swallow like eba, pounded yam, or amala. For a lighter option, try it with boiled plantain or eat more of the soup with less swallow.",
-  q4: "Jollof rice can be part of a healthy diet, but portion size matters. You can balance it with grilled chicken, boiled egg, vegetables, or salad. A medium plate is usually enough for one meal.",
-  q5: "For a light Nigerian dinner, try pepper soup with fish, boiled yam with egg sauce, moi moi with pap, or a simple vegetable salad with grilled chicken. These are lower in calories and easier to digest at night.",
-  q6: "After a heavy lunch, keep dinner very light. Try a bowl of pepper soup, some fresh fruits, or a small portion of moi moi. Drinking water throughout the afternoon also helps.",
-  q7: "For weight management, try akara with pap (smaller portion), boiled egg with bread, oatmeal with fruits, or moi moi. These give you energy without too many calories.",
-  q8: "A medium portion of swallow like pounded yam has about 350-410 calories, eba has about 360 calories, and amala has about 350 calories. Remember, most of those calories come from carbohydrates.",
+  q1: "A balanced African meal usually has energy food, protein, and vegetables. If your plate is mostly rice, swallow, yam, or plantain, add egg, fish, beans, chicken, one piece of meat, or more vegetable soup.",
+  q2: "Start with the easiest change: try small swallow, half plate of rice, or a normal plate instead of an extra plate. Then add soup, vegetables, beans, egg, fish, or chicken so the meal still satisfies you.",
+  q3: "Egusi soup goes well with eba, pounded yam, amala, semo, or fufu. For a lighter option, take 1 normal wrap of swallow and enjoy more soup with vegetables, fish, or meat.",
+  q4: "Jollof rice can fit into healthy eating. A normal plate is fine for many people. Balance it with grilled chicken, fish, egg, moi moi, vegetables, or salad.",
+  q5: "Try pepper soup with fish, moi moi with a little pap, boiled plantain with egg sauce, beans with vegetables, or okra soup with a small swallow.",
+  q6: "After a heavy lunch, keep dinner light. Try a small bowl of pepper soup, fruit, water first, or 1 wrap of moi moi. You do not need another heavy plate at night.",
+  q7: "To keep a healthy weight, try 3 pieces of akara with a little pap, one boiled egg with bread, one wrap of moi moi, or beans with vegetables. The amount still matters.",
+  q8: "One normal wrap of swallow like pounded yam, eba, amala, or semo gives plenty energy because most of it is carbs. If you are watching your weight, small swallow is a good start.",
   default:
-    "That is a great question! As your AI Nutritionist, I recommend focusing on balanced meals with plenty of vegetables, moderate portions of carbohydrates, and good protein sources like fish, eggs, beans, or chicken. Would you like me to suggest a specific meal?",
+    "That is a good question. My simple advice is: keep the rice, yam, plantain, or swallow amount reasonable, add vegetables, and include egg, fish, beans, moi moi, chicken, or meat. If you have a medical condition, please speak with a qualified health professional.",
 };
 
 export const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "welcome",
-    text: "Hello! I am your AI Nutritionist. Ask me anything about Nigerian food and nutrition. I am here to help you eat smarter! 🍽️",
+    text: "Hello, I am your African AI Nutritionist. Ask me about wraps of swallow, plates of rice, bowls of soup, and simple ways to balance local food.",
     isUser: false,
     timestamp: "Just now",
   },
@@ -43,7 +43,7 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
     name: "Beans and Boiled Egg",
     description:
       "High protein, budget-friendly. Great for breakfast or lunch.",
-    category: "Protein-Rich Nigerian Meals",
+    category: "Protein-Rich African Meals",
     iconName: "Egg",
   },
   {
@@ -57,7 +57,7 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
     id: "s3",
     name: "Rice with Vegetables and Grilled Chicken",
     description:
-      "Balanced meal with protein, carbs, and vitamins from vegetables.",
+      "A normal plate of rice with protein and vegetables for better balance.",
     category: "Balanced Lunch Ideas",
     iconName: "ChefHat",
   },
@@ -65,8 +65,8 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
     id: "s4",
     name: "Small Swallow with Vegetable Soup",
     description:
-      "Controlled portion of swallow with plenty of vegetable-rich soup.",
-    category: "Lower-Carb Swallow Alternatives",
+      "Try 1 small wrap of swallow with plenty vegetable-rich soup.",
+    category: "Lighter Swallow Options",
     iconName: "Leaf",
   },
   {
@@ -79,7 +79,7 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
   {
     id: "s6",
     name: "Pepper Soup with Fish",
-    description: "Very low carb, high protein. Perfect for a light dinner.",
+    description: "Light bowl of soup with fish. Good when dinner should not be heavy.",
     category: "Light Dinner Ideas",
     iconName: "Flame",
   },
@@ -102,15 +102,15 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
     id: "s9",
     name: "Grilled Fish with Salad",
     description:
-      "Low calorie, high protein. Great for weight management goals.",
-    category: "Protein-Rich Nigerian Meals",
+      "Low in calories, high in protein. Great for keeping a healthy weight.",
+    category: "Protein-Rich African Meals",
     iconName: "Beef",
   },
   {
     id: "s10",
     name: "Beans and Plantain",
     description:
-      "Classic Nigerian combo. Great protein and energy for the day.",
+      "Classic African combo. Great protein and energy for the day.",
     category: "Student-Friendly Healthy Meals",
     iconName: "Bean",
   },
@@ -119,8 +119,8 @@ export const MEAL_SUGGESTIONS: MealSuggestion[] = [
 export const SUGGESTION_CATEGORIES = [
   "All",
   "Light Dinner Ideas",
-  "Protein-Rich Nigerian Meals",
-  "Lower-Carb Swallow Alternatives",
+  "Protein-Rich African Meals",
+  "Lighter Swallow Options",
   "Balanced Lunch Ideas",
   "Student-Friendly Healthy Meals",
 ] as const;

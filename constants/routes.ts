@@ -37,4 +37,7 @@ export const ROUTES = {
   settings: route("/(tabs)/settings"),
   smartSuggestions: route("/(tabs)/smart-suggestions"),
   nutritionLessons: route("/(tabs)/nutrition-lessons"),
+  studyFeedback: route("/(tabs)/study-feedback"),
+  researchSummary: route("/(tabs)/research-summary"),
+  datasetContribution: route("/(tabs)/dataset-contribution"),
 } as const;

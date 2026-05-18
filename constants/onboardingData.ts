@@ -10,23 +10,30 @@ export type OnboardingItem = {
 export const onboardingData: OnboardingItem[] = [
   {
     id: "nutritionist",
-    title: "Meet Your AI Nutritionist",
+    title: "Your African AI Nutritionist",
     description:
-      "NutriPadi helps you understand Nigerian meals using smart food analysis.",
+      "NutriPadi helps you understand local meals like amala, egusi, jollof rice, beans, and plantain.",
     image: require("@/assets/images/onboarding_human_1.png"),
   },
   {
     id: "scan",
-    title: "Scan, Learn, Improve",
+    title: "Scan Your Meal",
     description:
-      "Take a photo of your meal and get simple nutrition insights instantly.",
+      "Take a clear photo. The app checks the food name, how much is there, and key nutrition values.",
     image: require("@/assets/images/onboarding_human_2.png"),
   },
   {
-    id: "guidance",
-    title: "Eat Better With Guidance",
+    id: "nutrition",
+    title: "See What Is Inside",
     description:
-      "Get friendly tips based on your meals, goals, and eating habits.",
+      "Get simple calories, carbs, protein, fat, and AI advice based on African food references.",
     image: require("@/assets/images/onboarding_human_3.png"),
+  },
+  {
+    id: "guidance",
+    title: "Eat Better, Keep Your Culture",
+    description:
+      "Choose English, Yoruba, Hausa, or Igbo preference and get guidance that respects African food habits.",
+    image: require("@/assets/images/onboarding_human_1.png"),
   },
 ];

@@ -43,6 +43,7 @@ export default function TabsLayout() {
         name="scan"
         options={{
           title: "Scan Meal",
+          tabBarStyle: { display: "none" },
           tabBarIcon: ({ color }) => <ScanLine color={color} size={22} />,
         }}
       />
@@ -116,6 +117,24 @@ export default function TabsLayout() {
       />
       <Tabs.Screen
         name="nutrition-lessons"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="study-feedback"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="research-summary"
+        options={{
+          href: null,
+        }}
+      />
+      <Tabs.Screen
+        name="dataset-contribution"
         options={{
           href: null,
         }}

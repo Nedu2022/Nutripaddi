@@ -1,13 +1,14 @@
 export const COLORS = {
   // Primary palette
-  primary: "#06C167", // Uber Eats green
+  primary: "#008000",
   secondary: "#000000", // Stark black
+  freshOrange: "#FF5F15",
 
   // Backgrounds
-  background: "#FFFFFF", // Pure white background
+  background: "#FFFFFF",
   card: "#FFFFFF",
-  softGreen: "#E8F9F0",
-  softOrange: "#F6F6F6", // Using as a soft grey instead
+  softGreen: "#D6EED6",
+  softOrange: "#F6F6F6",
 
   // Text
   text: "#000000",
@@ -15,8 +16,8 @@ export const COLORS = {
   textLight: "#A6A6A6",
 
   // Semantic
-  success: "#06C167",
-  warning: "#FFC043",
+  success: "#008000",
+  warning: "#FF5F15",
   error: "#E23636",
 
   // UI
@@ -26,17 +27,20 @@ export const COLORS = {
 
   // Extended
   white: "#FFFFFF",
-  primaryDark: "#048848",
+  primaryDark: "#006400",
   secondaryDark: "#000000",
-  softYellow: "#FFF6E5",
+  softYellow: "#FFF0E8",
   softRed: "#FCECEC",
+  softCream: "#FFFFFF",
+  charcoal: "#000000",
+  softGray: "#F6F6F6",
 
   // Backward-compatible aliases
-  primaryGreen: "#06C167",
-  primaryOrange: "#FFC043",
+  primaryGreen: "#008000",
+  primaryOrange: "#FF5F15",
   darkText: "#000000",
   mutedText: "#545454",
-  darkGreen: "#048848",
+  darkGreen: "#006400",
 } as const;
 
 export type ColorName = keyof typeof COLORS;

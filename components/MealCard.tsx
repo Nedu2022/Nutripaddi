@@ -2,6 +2,10 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
+import {
+  getFoodById,
+  getLocalMealDescription,
+} from "@/data/foodComposition";
 import { getLucideIcon } from "@/utils/icons";
 import type { LoggedMeal } from "@/types";
 
@@ -12,6 +16,12 @@ type MealCardProps = {
 
 export default function MealCard({ meal, onPress }: MealCardProps) {
   const Icon = getLucideIcon(meal.iconName);
+  const food = getFoodById(meal.foodId);
+  const localMealName = getLocalMealDescription(
+    food,
+    meal.portionSize ?? "Medium"
+  );
+  const displayName = meal.foodName === food.name ? localMealName : meal.foodName;
 
   return (
     <Pressable
@@ -23,7 +33,7 @@ export default function MealCard({ meal, onPress }: MealCardProps) {
       </View>
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>
-          {meal.foodName}
+          {displayName}
         </Text>
         <Text style={styles.time}>
           {meal.mealType} • {meal.timeLogged}

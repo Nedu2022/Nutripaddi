@@ -70,7 +70,7 @@ export default function SmartSuggestionsScreen() {
       <View style={styles.tipCard}>
         <Sparkles color={COLORS.primary} size={16} />
         <Text style={styles.tipText}>
-          These are simple meal ideas. Adjust portions based on your goals.
+          These are simple meal ideas. Pick the amount that fits your goal.
         </Text>
       </View>
 

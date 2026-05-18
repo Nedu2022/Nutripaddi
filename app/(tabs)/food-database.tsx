@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
-import { Search } from "lucide-react-native";
+import { Database, Search, WifiOff } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
@@ -8,13 +8,14 @@ import FoodCard from "@/components/FoodCard";
 import CategoryChip from "@/components/CategoryChip";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { NIGERIAN_FOODS, FOOD_CATEGORIES } from "@/data/foods";
+import { AFRICAN_FOODS, FOOD_CATEGORIES } from "@/data/foods";
+import { NUTRITION_SOURCE } from "@/data/foodComposition";
 
 export default function FoodDatabaseScreen() {
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredFoods = NIGERIAN_FOODS.filter((food) => {
+  const filteredFoods = AFRICAN_FOODS.filter((food) => {
     const matchesSearch = food.name
       .toLowerCase()
       .includes(search.toLowerCase());
@@ -27,15 +28,30 @@ export default function FoodDatabaseScreen() {
     <ScreenWrapper scroll>
       <AppHeader
         showBack
-        title="Food Database"
-        subtitle={`${NIGERIAN_FOODS.length} Nigerian foods`}
+        title="African Food Library"
+        subtitle={`${AFRICAN_FOODS.length} local foods with nutrition checks`}
       />
+
+      <View style={styles.referenceCard}>
+        <View style={styles.referenceIcon}>
+          <Database color={COLORS.primary} size={18} />
+        </View>
+        <View style={styles.referenceCopy}>
+          <Text style={styles.referenceTitle}>Local food nutrition logic</Text>
+          <Text style={styles.referenceText}>
+            Recognised food + how much you ate maps to nutrition values. Source: {NUTRITION_SOURCE}.
+          </Text>
+        </View>
+        <View style={styles.offlineBadge}>
+          <WifiOff color={COLORS.primary} size={13} />
+        </View>
+      </View>
 
       {/* Search */}
       <View style={styles.searchContainer}>
         <Search color={COLORS.textLight} size={20} />
         <TextInput
-          placeholder="Search foods..."
+          placeholder="Search amala, egusi, jollof..."
           placeholderTextColor={COLORS.textLight}
           style={styles.searchInput}
           value={search}
@@ -70,9 +86,9 @@ export default function FoodDatabaseScreen() {
       ) : (
         <View style={styles.emptyState}>
           <Search color={COLORS.textLight} size={40} />
-          <Text style={styles.emptyTitle}>No foods found</Text>
+          <Text style={styles.emptyTitle}>We could not find this food</Text>
           <Text style={styles.emptyText}>
-            Try a different search term or category
+            Try another name or browse the local food categories.
           </Text>
         </View>
       )}
@@ -83,6 +99,46 @@ export default function FoodDatabaseScreen() {
 }
 
 const styles = StyleSheet.create({
+  referenceCard: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    backgroundColor: COLORS.softGreen,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 16,
+  },
+  referenceIcon: {
+    width: 38,
+    height: 38,
+    borderRadius: 12,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  referenceCopy: {
+    flex: 1,
+  },
+  referenceTitle: {
+    color: COLORS.primaryDark,
+    fontSize: 14,
+    fontFamily: FONTS.bold,
+  },
+  referenceText: {
+    color: COLORS.text,
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    lineHeight: 18,
+    marginTop: 3,
+  },
+  offlineBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: COLORS.white,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   searchContainer: {
     flexDirection: "row",
     alignItems: "center",

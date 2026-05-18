@@ -74,7 +74,7 @@ const styles = StyleSheet.create({
   progressFill: {
     height: "100%",
     borderRadius: 2,
-    backgroundColor: COLORS.secondary, // Black for progress like Uber
+    backgroundColor: COLORS.secondary,
   },
   title: {
     color: COLORS.text,

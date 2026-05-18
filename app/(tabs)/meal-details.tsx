@@ -5,20 +5,32 @@ import {
   Wheat,
   Clock,
   Heart,
+  Pencil,
+  ShieldCheck,
+  Trash2,
 } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
+import CustomButton from "@/components/CustomButton";
 import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { DUMMY_MEALS } from "@/data/meals";
-import { NIGERIAN_FOODS } from "@/data/foods";
+import { AFRICAN_FOODS } from "@/data/foods";
+import {
+  getLocalMealDescription,
+  getNutritionEstimate,
+} from "@/data/foodComposition";
 import { getLucideIcon } from "@/utils/icons";
 
 // Show details of the first logged meal
 const MEAL = DUMMY_MEALS[0];
-const FOOD = NIGERIAN_FOODS.find((f) => f.id === MEAL.foodId);
+const FOOD = AFRICAN_FOODS.find((f) => f.id === MEAL.foodId);
+const ESTIMATE = getNutritionEstimate(MEAL.foodId, MEAL.portionSize ?? "Medium");
+const LOCAL_MEAL = FOOD
+  ? getLocalMealDescription(FOOD, MEAL.portionSize ?? "Medium")
+  : MEAL.foodName;
 
 export default function MealDetailsScreen() {
   const Icon = getLucideIcon(MEAL.iconName);
@@ -32,7 +44,7 @@ export default function MealDetailsScreen() {
         <View style={styles.mealIconWrap}>
           <Icon color={COLORS.secondary} size={32} />
         </View>
-        <Text style={styles.mealName}>{MEAL.foodName}</Text>
+        <Text style={styles.mealName}>{LOCAL_MEAL}</Text>
         <View style={styles.metaRow}>
           <View style={styles.metaBadge}>
             <Text style={styles.metaText}>{MEAL.mealType}</Text>
@@ -106,11 +118,37 @@ export default function MealDetailsScreen() {
             <Heart color={COLORS.primary} size={20} />
             <View style={{ flex: 1 }}>
               <Text style={styles.healthTitle}>Health note</Text>
-              <Text style={styles.healthText}>{FOOD.healthNote}</Text>
+          <Text style={styles.healthText}>{FOOD.healthNote}</Text>
             </View>
+          </View>
+
+          <View style={styles.sourceCard}>
+            <ShieldCheck color={COLORS.warning} size={18} />
+            <Text style={styles.sourceText}>
+              Nutrition values are estimates based on local African food
+              composition references and how much food was logged. Source:
+              {" "}{ESTIMATE.source}.
+            </Text>
           </View>
         </>
       )}
+
+      <View style={styles.actionRow}>
+        <CustomButton
+          icon={<Pencil color={COLORS.text} size={17} />}
+          onPress={() => undefined}
+          title="Edit Meal"
+          variant="outline"
+          style={styles.halfButton}
+        />
+        <CustomButton
+          icon={<Trash2 color={COLORS.white} size={17} />}
+          onPress={() => undefined}
+          title="Delete Meal"
+          variant="danger"
+          style={styles.halfButton}
+        />
+      </View>
 
       <View style={{ height: 24 }} />
     </ScreenWrapper>
@@ -236,6 +274,7 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     padding: 16,
     gap: 12,
+    marginBottom: 12,
   },
   healthTitle: {
     color: COLORS.primary,
@@ -248,5 +287,28 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     lineHeight: 22,
     marginTop: 4,
+  },
+  sourceCard: {
+    flexDirection: "row",
+    backgroundColor: COLORS.softYellow,
+    borderRadius: 16,
+    padding: 14,
+    gap: 10,
+    marginBottom: 16,
+  },
+  sourceText: {
+    flex: 1,
+    color: COLORS.text,
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    lineHeight: 18,
+  },
+  actionRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  halfButton: {
+    flex: 1,
+    width: undefined,
   },
 });

@@ -2,7 +2,8 @@ import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   User, Settings, ChevronRight, Award, Heart, Shield,
-  Activity, Scale, Ruler, Calendar, LogOut, Globe,
+  Activity, Scale, Ruler, Calendar, LogOut, Globe, Database,
+  MessageSquareText, BarChart3, SlidersHorizontal, Utensils,
 } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
@@ -20,6 +21,8 @@ const PROFILE_DATA = {
   weight: 60,
   height: 165,
   healthAwareness: "General wellness",
+  eatingLifestyle: "Control how much I eat",
+  aiTone: "Gentle",
   mealsLogged: 42,
   daysStreak: 7,
 };
@@ -84,8 +87,17 @@ export default function ProfileTab() {
         <MenuItem icon={<Scale color={COLORS.textMuted} size={20} />} label={t.weight} value={`${PROFILE_DATA.weight} kg`} />
         <MenuItem icon={<Ruler color={COLORS.textMuted} size={20} />} label={t.height} value={`${PROFILE_DATA.height} cm`} />
         <MenuItem icon={<Heart color={COLORS.textMuted} size={20} />} label={t.nutritionGoal} value={PROFILE_DATA.goal} />
+        <MenuItem icon={<Utensils color={COLORS.textMuted} size={20} />} label={t.eatingLifestyle} value={PROFILE_DATA.eatingLifestyle} />
         <MenuItem icon={<Shield color={COLORS.textMuted} size={20} />} label={t.healthAwareness} value={PROFILE_DATA.healthAwareness} />
         <MenuItem icon={<Globe color={COLORS.textMuted} size={20} />} label={t.language} value={langDisplay[language]} />
+        <MenuItem icon={<SlidersHorizontal color={COLORS.textMuted} size={20} />} label={t.aiAdviceTone} value={PROFILE_DATA.aiTone} />
+      </View>
+
+      <View style={styles.sectionCard}>
+        <Text style={styles.sectionTitle}>Research tools</Text>
+        <MenuItem icon={<MessageSquareText color={COLORS.textMuted} size={20} />} label="Study feedback" onPress={() => router.push(ROUTES.studyFeedback)} />
+        <MenuItem icon={<BarChart3 color={COLORS.textMuted} size={20} />} label="Research summary" onPress={() => router.push(ROUTES.researchSummary)} />
+        <MenuItem icon={<Database color={COLORS.textMuted} size={20} />} label="Dataset contribution" onPress={() => router.push(ROUTES.datasetContribution)} />
       </View>
 
       <View style={styles.sectionCard}>

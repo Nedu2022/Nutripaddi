@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 
-type ButtonVariant = "primary" | "secondary" | "outline" | "ghost";
+type ButtonVariant = "primary" | "secondary" | "outline" | "ghost" | "danger";
 
 type CustomButtonProps = {
   title: string;
@@ -54,6 +54,7 @@ export default function CustomButton({
               styles.text,
               (isOutline || isGhost) && styles.outlineText,
               variant === "secondary" && styles.secondaryText,
+              variant === "danger" && styles.dangerText,
             ]}
           >
             {title}
@@ -74,10 +75,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primary: {
-    backgroundColor: COLORS.secondary, // Use black for standard primary buttons
+    backgroundColor: COLORS.secondary,
   },
   secondary: {
-    backgroundColor: COLORS.primary, // Use green for secondary/call-to-action highlights
+    backgroundColor: COLORS.primary,
   },
   outline: {
     backgroundColor: "transparent",
@@ -86,6 +87,9 @@ const styles = StyleSheet.create({
   },
   ghost: {
     backgroundColor: "transparent",
+  },
+  danger: {
+    backgroundColor: COLORS.error,
   },
   disabled: {
     opacity: 0.5,
@@ -114,6 +118,9 @@ const styles = StyleSheet.create({
     color: COLORS.text,
   },
   secondaryText: {
+    color: COLORS.white,
+  },
+  dangerText: {
     color: COLORS.white,
   },
 });

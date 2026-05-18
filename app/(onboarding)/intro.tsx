@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CustomButton from "@/components/CustomButton";
 import OnboardingSlide from "@/components/OnboardingSlide";
@@ -16,7 +15,6 @@ export default function IntroScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentSlide = onboardingData[currentIndex];
   const isLastSlide = currentIndex === onboardingData.length - 1;
-  const insets = useSafeAreaInsets();
 
   const handleNext = () => {
     if (isLastSlide) {

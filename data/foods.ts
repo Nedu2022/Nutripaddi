@@ -1,4 +1,4 @@
-import type { NigerianFood } from "@/types";
+import type { AfricanFood } from "@/types";
 
 export const FOOD_CATEGORIES = [
   "All",
@@ -14,7 +14,7 @@ export const FOOD_CATEGORIES = [
   "Others",
 ] as const;
 
-export const NIGERIAN_FOODS: NigerianFood[] = [
+export const AFRICAN_FOODS: AfricanFood[] = [
   {
     id: "1",
     name: "Pounded Yam",
@@ -25,14 +25,14 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 95,
     protein: 5,
     fat: 1,
-    servingSize: "Medium portion",
+    localAmountLabel: "1 normal wrap",
     ingredients: ["White yam", "Water"],
     healthNote:
-      "High in carbohydrates. Pair with protein-rich soups for a balanced meal.",
+      "High in carbs. Pair with protein-rich soups for a balanced meal.",
     iconName: "Circle",
     bestFor: "Energy",
-    watchOutFor: "Very high in carbohydrates",
-    aiTip: "Pair with a protein-rich soup and keep the portion moderate.",
+    watchOutFor: "Very high in carbs",
+    aiTip: "Pair with protein-rich soup and keep it around 1 normal wrap.",
   },
   {
     id: "2",
@@ -44,14 +44,14 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 82,
     protein: 4,
     fat: 1,
-    servingSize: "Medium portion",
+    localAmountLabel: "1 normal wrap",
     ingredients: ["Yam flour", "Water"],
     healthNote:
-      "Rich in carbohydrates. The darker varieties have more fiber content.",
+      "Rich in carbs. The darker varieties have more fiber content.",
     iconName: "CircleDot",
     bestFor: "Energy",
-    watchOutFor: "High carbohydrate portion",
-    aiTip: "Pair with vegetable-rich soup and moderate portion size.",
+    watchOutFor: "Big swallow can add plenty carbs",
+    aiTip: "Pair with vegetable-rich soup and keep it around 1 normal wrap.",
   },
   {
     id: "3",
@@ -63,10 +63,10 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 88,
     protein: 2,
     fat: 1,
-    servingSize: "Medium portion",
+    localAmountLabel: "1 normal wrap",
     ingredients: ["Garri (cassava flakes)", "Hot water"],
     healthNote:
-      "Very high in starch. Control portion sizes if watching calorie intake.",
+      "Very high in starch. Try small swallow if you are watching your weight.",
     iconName: "Sun",
     bestFor: "Quick energy, budget-friendly",
     watchOutFor: "Very high in starch, low in protein",
@@ -78,19 +78,19 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     name: "Fufu",
     category: "Swallows",
     description:
-      "A fermented cassava swallow with a slightly sour taste. Common across many Nigerian communities.",
+      "A fermented cassava swallow with a slightly sour taste. Common across many African communities.",
     calories: 330,
     carbs: 80,
     protein: 2,
     fat: 1,
-    servingSize: "Medium portion",
+    localAmountLabel: "1 normal wrap",
     ingredients: ["Fermented cassava", "Water"],
     healthNote:
-      "Fermented foods can support gut health. Moderate portions recommended.",
+      "Fermented foods can support gut health. Keep the wrap moderate.",
     iconName: "CircleDashed",
     bestFor: "Energy, gut health from fermentation",
-    watchOutFor: "High carbohydrate content",
-    aiTip: "The fermentation adds some benefits. Keep portions moderate.",
+    watchOutFor: "High carb content",
+    aiTip: "The fermentation adds some benefits. Keep the wrap moderate.",
   },
   {
     id: "5",
@@ -102,7 +102,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 12,
     protein: 22,
     fat: 24,
-    servingSize: "One serving bowl",
+    localAmountLabel: "Medium bowl",
     ingredients: [
       "Melon seeds",
       "Spinach",
@@ -128,7 +128,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 10,
     protein: 18,
     fat: 20,
-    servingSize: "One serving bowl",
+    localAmountLabel: "Medium bowl",
     ingredients: [
       "Ogbono seeds",
       "Palm oil",
@@ -137,7 +137,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       "Crayfish",
     ],
     healthNote:
-      "Rich in fiber from the ogbono seeds. Good for digestive health.",
+      "Rich in fiber from the ogbono seeds. Good for your stomach and digestion.",
     iconName: "CookingPot",
     bestFor: "Fiber, digestion",
     watchOutFor: "Oil content can add up",
@@ -153,7 +153,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 8,
     protein: 20,
     fat: 18,
-    servingSize: "One serving bowl",
+    localAmountLabel: "Medium bowl",
     ingredients: [
       "Spinach",
       "Bell peppers",
@@ -168,19 +168,19 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     bestFor: "Vitamins, iron",
     watchOutFor: "Oil usage",
     aiTip:
-      "One of the healthiest Nigerian soups. Use more vegetables than oil.",
+      "One of the healthiest African soups. Use more vegetables than oil.",
   },
   {
     id: "8",
     name: "Jollof Rice",
     category: "Rice Meals",
     description:
-      "Nigeria's famous one-pot rice dish cooked in a rich tomato and pepper base with spices.",
+      "Africa's famous one-pot rice dish cooked in a rich tomato and pepper base with spices.",
     calories: 480,
     carbs: 72,
     protein: 14,
     fat: 16,
-    servingSize: "Medium plate",
+    localAmountLabel: "1 normal plate",
     ingredients: [
       "Rice",
       "Tomatoes",
@@ -194,21 +194,21 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
       "A complete meal with carbs and some protein. Add more vegetables for balance.",
     iconName: "UtensilsCrossed",
     bestFor: "Balanced energy",
-    watchOutFor: "Portion size, oil content",
+    watchOutFor: "Full plate and oil content",
     aiTip:
-      "Jollof rice can be healthy if the portion is right. Add vegetables or salad on the side.",
+      "Jollof rice can fit healthy eating if the plate is reasonable. Add vegetables or salad on the side.",
   },
   {
     id: "9",
     name: "Fried Rice",
     category: "Rice Meals",
     description:
-      "Nigerian-style fried rice with mixed vegetables, liver, and seasoning. A party favorite.",
+      "African-style fried rice with mixed vegetables, liver, and seasoning. A party favorite.",
     calories: 520,
     carbs: 68,
     protein: 16,
     fat: 22,
-    servingSize: "Medium plate",
+    localAmountLabel: "1 normal plate",
     ingredients: [
       "Rice",
       "Mixed vegetables",
@@ -223,7 +223,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     bestFor: "Vegetables, variety",
     watchOutFor: "Oil and calorie content",
     aiTip:
-      "The vegetables are a plus, but the oil adds extra calories. Watch your portion.",
+      "The vegetables are a plus, but the oil adds extra calories. Keep the plate reasonable.",
   },
   {
     id: "10",
@@ -235,7 +235,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 70,
     protein: 12,
     fat: 14,
-    servingSize: "Medium plate",
+    localAmountLabel: "1 normal plate",
     ingredients: [
       "White rice",
       "Tomatoes",
@@ -260,7 +260,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 55,
     protein: 24,
     fat: 10,
-    servingSize: "Medium bowl",
+    localAmountLabel: "Normal plate",
     ingredients: ["Beans", "Palm oil", "Onions", "Peppers", "Salt"],
     healthNote:
       "Excellent source of plant protein and fiber. Great for sustained energy.",
@@ -268,7 +268,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     bestFor: "Protein, fiber, sustained energy",
     watchOutFor: "Can cause bloating if eaten too much",
     aiTip:
-      "One of the best Nigerian protein sources. Pair with plantain or bread for a complete meal.",
+      "One of the best African protein sources. Pair with plantain or bread for a complete meal.",
   },
   {
     id: "12",
@@ -280,13 +280,13 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 78,
     protein: 10,
     fat: 12,
-    servingSize: "Medium bowl",
+    localAmountLabel: "Normal plate",
     ingredients: ["Yam", "Palm oil", "Peppers", "Vegetables", "Fish/Meat"],
     healthNote:
       "Good energy food. The vegetables add important vitamins and minerals.",
     iconName: "Carrot",
     bestFor: "Energy, vitamins from vegetables",
-    watchOutFor: "High in carbohydrates",
+    watchOutFor: "High in carbs",
     aiTip: "The vegetables make this better than plain boiled yam. Add more greens.",
   },
   {
@@ -299,7 +299,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 6,
     protein: 28,
     fat: 10,
-    servingSize: "One bowl",
+    localAmountLabel: "Medium bowl",
     ingredients: [
       "Meat/Fish",
       "Pepper soup spice",
@@ -324,10 +324,10 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 28,
     protein: 16,
     fat: 8,
-    servingSize: "2 wraps",
+    localAmountLabel: "1 wrap",
     ingredients: ["Beans", "Peppers", "Onions", "Eggs", "Oil", "Seasoning"],
     healthNote:
-      "Great protein source. Lower in calories compared to many Nigerian mains.",
+      "Great protein source. Lower in calories compared to many African mains.",
     iconName: "Egg",
     bestFor: "Protein, moderate calories",
     watchOutFor: "Can contain a lot of oil",
@@ -344,7 +344,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 4,
     protein: 32,
     fat: 22,
-    servingSize: "3 sticks",
+    localAmountLabel: "3 sticks",
     ingredients: ["Beef", "Suya spice (yaji)", "Onions", "Tomatoes", "Oil"],
     healthNote:
       "High in protein but also high in fat from the grilling. Enjoy in moderation.",
@@ -363,7 +363,7 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     carbs: 32,
     protein: 14,
     fat: 14,
-    servingSize: "5 pieces",
+    localAmountLabel: "5 pieces",
     ingredients: ["Beans", "Peppers", "Onions", "Oil", "Salt"],
     healthNote:
       "Good protein from beans but deep-fried. Pair with pap for a classic breakfast.",
@@ -371,5 +371,105 @@ export const NIGERIAN_FOODS: NigerianFood[] = [
     bestFor: "Breakfast protein",
     watchOutFor: "Deep-fried, extra oil calories",
     aiTip: "Classic breakfast choice. The deep frying adds extra calories. Enjoy with pap.",
+  },
+  {
+    id: "17",
+    name: "Semo",
+    category: "Swallows",
+    description:
+      "A smooth swallow made from semolina flour, commonly eaten with soups across Nigerian homes.",
+    calories: 370,
+    carbs: 84,
+    protein: 8,
+    fat: 1,
+    fibre: 3,
+    localAmountLabel: "1 normal wrap",
+    ingredients: ["Semolina flour", "Water"],
+    healthNote:
+      "Mostly an energy food. Keep the wrap moderate and pair it with vegetable-rich soup.",
+    iconName: "Circle",
+    bestFor: "Energy",
+    watchOutFor: "Big swallow can add plenty carbs",
+    aiTip: "Try a smaller wrap of semo and more soup when managing weight.",
+  },
+  {
+    id: "18",
+    name: "Tuwo Shinkafa",
+    category: "Swallows",
+    description:
+      "A soft Northern Nigerian swallow made from cooked rice, often served with miyan kuka, taushe, or okra soup.",
+    calories: 390,
+    carbs: 86,
+    protein: 7,
+    fat: 2,
+    fibre: 2,
+    localAmountLabel: "1 normal wrap",
+    ingredients: ["Rice", "Water"],
+    healthNote:
+      "This has plenty carbohydrates. Balance it with soups that contain vegetables and protein.",
+    iconName: "CircleDashed",
+    bestFor: "Filling energy",
+    watchOutFor: "Low fibre if eaten without vegetables",
+    aiTip: "Pair tuwo with protein-rich soup and avoid making the wrap too big.",
+  },
+  {
+    id: "19",
+    name: "Afang Soup",
+    category: "Soups",
+    description:
+      "A vegetable-rich soup from Southern Nigeria made with afang leaves, waterleaf, palm oil, and assorted proteins.",
+    calories: 300,
+    carbs: 10,
+    protein: 24,
+    fat: 20,
+    fibre: 7,
+    localAmountLabel: "Medium bowl",
+    ingredients: ["Afang leaves", "Waterleaf", "Palm oil", "Fish", "Meat", "Crayfish"],
+    healthNote:
+      "Rich in vegetables and protein. Oil quantity can change the calorie estimate.",
+    iconName: "Leaf",
+    bestFor: "Vegetables and protein",
+    watchOutFor: "Palm oil quantity",
+    aiTip: "Afang is a strong choice. Use more vegetables and moderate palm oil.",
+  },
+  {
+    id: "20",
+    name: "Okra Soup",
+    category: "Soups",
+    description:
+      "A draw soup made with okra, vegetables, fish or meat, and local seasonings.",
+    calories: 240,
+    carbs: 12,
+    protein: 18,
+    fat: 14,
+    fibre: 6,
+    localAmountLabel: "Medium bowl",
+    ingredients: ["Okra", "Leafy vegetables", "Fish", "Meat", "Crayfish", "Palm oil"],
+    healthNote:
+      "Okra provides fibre and can make a meal feel filling without too many extra calories.",
+    iconName: "Soup",
+    bestFor: "Fibre and vegetables",
+    watchOutFor: "Oil and meat quantity",
+    aiTip: "Good fibre-friendly soup. Balance it with 1 normal wrap of swallow.",
+  },
+  {
+    id: "21",
+    name: "Plantain and Egg",
+    category: "Protein-rich Meals",
+    description:
+      "Boiled or fried plantain served with egg sauce, tomatoes, onions, and peppers.",
+    calories: 430,
+    carbs: 58,
+    protein: 18,
+    fat: 16,
+    fibre: 5,
+    localAmountLabel: "Normal plate",
+    ingredients: ["Plantain", "Eggs", "Tomatoes", "Peppers", "Onions", "Oil"],
+    healthNote:
+      "A familiar balanced meal when the plantain is not too much and the egg sauce has vegetables.",
+    iconName: "Egg",
+    bestFor: "Breakfast or light dinner",
+    watchOutFor: "Fried plantain can raise calories",
+    aiTip: "Boiled plantain keeps it lighter. Add more vegetables to the egg sauce.",
   },
 ];

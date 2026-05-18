@@ -16,11 +16,11 @@ import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 
 const STEPS = [
-  "Reading your food image...",
-  "Identifying Nigerian dish...",
-  "Estimating portion size...",
-  "Checking nutrition balance...",
-  "Preparing your AI nutrition advice...",
+  "Reading your food image",
+  "Identifying African dishes",
+  "Estimating portion",
+  "Checking local nutrition values",
+  "Preparing your result",
 ];
 
 export default function AnalyzingScreen() {
@@ -59,7 +59,10 @@ export default function AnalyzingScreen() {
         <ScanLine color={COLORS.white} size={42} strokeWidth={1.5} />
       </Animated.View>
 
-      <Text style={styles.title}>Your AI Nutritionist is thinking...</Text>
+      <Text style={styles.title}>Analyzing your meal...</Text>
+      <Text style={styles.subtitle}>
+        This is an estimate. You can change the food or pick the closest amount on the next screen.
+      </Text>
 
       {/* Progress bar */}
       <View style={styles.progressBg}>
@@ -111,6 +114,14 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontFamily: FONTS.extraBold,
     textAlign: "center",
+  },
+  subtitle: {
+    color: COLORS.textMuted,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    lineHeight: 19,
+    textAlign: "center",
+    marginTop: 10,
   },
   progressBg: {
     width: "100%",

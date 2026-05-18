@@ -12,7 +12,9 @@ export type FoodCategory =
   | "Stews"
   | "Others";
 
-export type NigerianFood = {
+export type PortionSize = "Small" | "Medium" | "Large" | "Extra";
+
+export type AfricanFood = {
   id: string;
   name: string;
   category: FoodCategory;
@@ -21,13 +23,15 @@ export type NigerianFood = {
   carbs: number;
   protein: number;
   fat: number;
-  servingSize: string;
+  fibre?: number;
+  localAmountLabel: string;
   ingredients: string[];
   healthNote: string;
   iconName: string;
   bestFor?: string;
   watchOutFor?: string;
   aiTip?: string;
+  source?: string;
 };
 
 export type MealType = "Breakfast" | "Lunch" | "Dinner" | "Snack";
@@ -41,9 +45,46 @@ export type LoggedMeal = {
   carbs: number;
   protein: number;
   fat: number;
+  fibre?: number;
+  portionSize?: PortionSize;
+  confidence?: number;
+  source?: string;
   timeLogged: string;
   iconName: string;
   aiObservation?: string;
+};
+
+export type FoodCompositionRecord = {
+  foodId: string;
+  foodName: string;
+  category: FoodCategory;
+  portionSize: PortionSize;
+  calories: number;
+  carbs: number;
+  protein: number;
+  fat: number;
+  fibre: number;
+  source: string;
+};
+
+export type RecognitionResult = {
+  foodId: string;
+  foodName: string;
+  confidence: number;
+  portionSize: PortionSize;
+  explanation: string;
+  similarFoodIds: string[];
+};
+
+export type ResearchMetric = {
+  label: string;
+  value: string;
+  note: string;
+};
+
+export type FeedbackQuestion = {
+  id: string;
+  text: string;
 };
 
 export type NutritionTip = {
@@ -59,7 +100,7 @@ export type NutritionGoal =
   | "Track calories"
   | "Manage weight"
   | "Reduce excess carbs"
-  | "Understand Nigerian meals"
+  | "Understand African meals"
   | "Build better food habits";
 
 export type EatingLifestyle =
@@ -67,8 +108,8 @@ export type EatingLifestyle =
   | "I eat rice often"
   | "I eat late at night"
   | "I snack a lot"
-  | "I want portion control"
-  | "I want healthier Nigerian meals";
+  | "I want to control how much I eat"
+  | "I want healthier African meals";
 
 export type HealthAwareness =
   | "General wellness"
