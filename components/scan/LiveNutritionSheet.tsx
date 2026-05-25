@@ -1,5 +1,7 @@
 import { useMemo, useRef, useState } from "react";
 import {
+  Image,
+  PanResponder,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -10,13 +12,15 @@ import {
 import {
   CheckCircle2,
   ChevronUp,
+  Leaf,
+  MapPin,
   Pencil,
   RotateCcw,
   Save,
-  Sparkles,
+  ScanLine,
   X,
 } from "lucide-react-native";
-import { PanResponder } from "react-native";
+import { BlurView } from "expo-blur";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -26,7 +30,33 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import type { DetectedMealPortion, DetectedMealSummary, ScanState } from "@/src/types/detection";
+import type { DetectedMealSummary, ScanState } from "@/src/types/detection";
+import type { FreshnessTone } from "@/src/types/freshness";
+
+const LOGO_MARK = require("@/assets/images/logo-mark.png");
+
+// Glassmorphism color tokens
+const G = {
+  bg: "rgba(8, 8, 12, 0.75)",
+  border: "rgba(255, 255, 255, 0.13)",
+  handle: "rgba(255, 255, 255, 0.28)",
+  cardBg: "rgba(255, 255, 255, 0.07)",
+  cardBorder: "rgba(255, 255, 255, 0.10)",
+  divider: "rgba(255, 255, 255, 0.09)",
+  text: "#FFFFFF",
+  textMuted: "rgba(255, 255, 255, 0.62)",
+  textLight: "rgba(255, 255, 255, 0.38)",
+  accent: COLORS.primary,
+  accentDark: COLORS.primaryDark,
+  accentBg: "rgba(0, 128, 0, 0.14)",
+  accentBorder: "rgba(0, 128, 0, 0.22)",
+  warnBg: "rgba(255, 175, 0, 0.13)",
+  warnText: "#FFBB33",
+  warnBorder: "rgba(255, 175, 0, 0.2)",
+  pillBg: "rgba(255, 255, 255, 0.09)",
+  chipBg: "rgba(255, 255, 255, 0.08)",
+  actionBorder: "rgba(255, 255, 255, 0.16)",
+};
 
 export type SheetSnap = "hidden" | "collapsed" | "half" | "full";
 
@@ -35,7 +65,6 @@ type Props = {
   scanState: ScanState;
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
-  onPortionChange: (portion: DetectedMealPortion) => void;
   onFoodCorrection: (label: string) => void;
   onSave: () => void;
   onClear: () => void;
@@ -51,14 +80,68 @@ const SWALLOW_OPTIONS = [
   "Not listed",
 ];
 
-const PORTION_OPTIONS: { value: DetectedMealPortion; label: string }[] = [
-  { value: "small",  label: "Small" },
-  { value: "normal", label: "Normal" },
-  { value: "large",  label: "Large" },
-];
-
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), hi);
+}
+
+function getFreshnessColor(tone: FreshnessTone) {
+  if (tone === "good") return G.accent;
+  if (tone === "caution") return "#FFBB33";
+  return "#FF5555";
+}
+
+function getFoodOriginCopy(summary: DetectedMealSummary) {
+  const swallow = summary.detectedItems.find((item) => item.type === "swallow");
+  const soup = summary.detectedItems.find((item) => item.type === "soup");
+  const protein = summary.detectedItems.find((item) => item.type === "protein");
+  const rice = summary.detectedItems.find((item) => item.type === "rice");
+  const beans = summary.detectedItems.find((item) => item.type === "beans");
+  const yam = summary.detectedItems.find((item) => item.type === "yam");
+  const plantain = summary.detectedItems.find((item) => item.type === "plantain");
+
+  if (swallow && soup) {
+    return {
+      title: "West African swallow meal",
+      description: `${swallow.label} is a starchy swallow served with ${soup.label}${
+        protein ? ` and ${protein.label}` : ""
+      }. This meal pattern is common across Nigerian and West African food cultures.`,
+      pattern: `Swallow + soup${protein ? " + protein" : ""}`,
+    };
+  }
+
+  if (rice) {
+    return {
+      title: "Rice-based meal",
+      description: `${rice.label} is recognised as the main staple${
+        protein ? ` with ${protein.label} as protein` : ""
+      }. NutriPadi maps it as a familiar cooked rice plate.`,
+      pattern: `Rice${protein ? " + protein" : ""}`,
+    };
+  }
+
+  if (beans) {
+    return {
+      title: "Legume-based meal",
+      description: `${beans.label} is recognised as the base of the meal. It contributes plant protein, fibre, and slow-release carbohydrates.`,
+      pattern: `Beans${protein ? " + protein" : ""}`,
+    };
+  }
+
+  if (yam || plantain) {
+    const staple = yam ?? plantain;
+    return {
+      title: "Starchy staple meal",
+      description: `${staple?.label} is recognised as the main staple in this plate. The estimate is based on the visible food group and serving context.`,
+      pattern: staple?.label ?? "Staple food",
+    };
+  }
+
+  return {
+    title: "Mixed local meal",
+    description:
+      "NutriPadi matched the visible foods against local meal patterns and food groups before estimating nutrition.",
+    pattern: "Mixed plate",
+  };
 }
 
 export default function LiveNutritionSheet({
@@ -66,7 +149,6 @@ export default function LiveNutritionSheet({
   scanState,
   snap,
   onSnapChange,
-  onPortionChange,
   onFoodCorrection,
   onSave,
   onClear,
@@ -76,7 +158,6 @@ export default function LiveNutritionSheet({
   const insets = useSafeAreaInsets();
   const [correcting, setCorrecting] = useState(false);
 
-  // snap point Y values (distance from top of screen to top of sheet)
   const FULL_Y      = insets.top + 54;
   const HALF_Y      = height * 0.44;
   const COLLAPSED_Y = height - 152;
@@ -92,7 +173,6 @@ export default function LiveNutritionSheet({
   const translateY = useSharedValue(HIDDEN_Y);
   const startY = useRef(HIDDEN_Y);
 
-  // Drive animation when snap prop changes
   const targetY = snapToY[snap];
   translateY.value = withTiming(targetY, { duration: 420 });
 
@@ -140,8 +220,14 @@ export default function LiveNutritionSheet({
   if (scanState === "saved") {
     return (
       <Animated.View
-        style={[styles.sheet, { height: height - COLLAPSED_Y + 20, paddingBottom: insets.bottom + 16 }, sheetStyle]}
+        style={[
+          styles.sheet,
+          { height: height - COLLAPSED_Y + 20, paddingBottom: insets.bottom + 16 },
+          sheetStyle,
+        ]}
       >
+        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <View style={styles.tintOverlay} />
         <View {...panResponder.panHandlers} style={styles.dragArea}>
           <View style={styles.handle} />
         </View>
@@ -157,7 +243,7 @@ export default function LiveNutritionSheet({
             <Text style={styles.savedTime}>Saved at {savedMealTime}</Text>
           )}
           <Pressable onPress={onClear} style={styles.scanAnotherButton}>
-            <RotateCcw color={COLORS.primary} size={16} />
+            <RotateCcw color={G.accent} size={16} />
             <Text style={styles.scanAnotherText}>Scan another meal</Text>
           </Pressable>
         </View>
@@ -168,6 +254,8 @@ export default function LiveNutritionSheet({
   if (!summary) return null;
 
   const sheetH = height - FULL_Y;
+  const origin = getFoodOriginCopy(summary);
+  const freshnessColor = getFreshnessColor(summary.freshness.tone);
 
   return (
     <Animated.View
@@ -177,10 +265,14 @@ export default function LiveNutritionSheet({
         sheetStyle,
       ]}
     >
+      {/* Frosted glass backdrop */}
+      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      <View style={styles.tintOverlay} />
+
       {/* Drag handle */}
       <View {...panResponder.panHandlers} style={styles.dragArea}>
         <View style={styles.handle} />
-        <ChevronUp color={COLORS.textLight} size={15} />
+        <ChevronUp color={G.textLight} size={15} />
       </View>
 
       <ScrollView
@@ -189,10 +281,10 @@ export default function LiveNutritionSheet({
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ── HEADER ───────────────────────────────────────────────────── */}
+        {/* ── HEADER ────────────────────────────────────────────────────── */}
         <View style={styles.headerRow}>
           <View style={styles.headerIcon}>
-            <Sparkles color={COLORS.primary} size={18} />
+            <ScanLine color={G.accent} size={18} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.eyebrow}>
@@ -203,11 +295,11 @@ export default function LiveNutritionSheet({
             </Text>
           </View>
           <Pressable onPress={onClear} style={styles.clearButton}>
-            <X color={COLORS.textMuted} size={16} />
+            <X color={G.textMuted} size={16} />
           </Pressable>
         </View>
 
-        {/* Confidence + quick save */}
+        {/* Confidence + serving */}
         <View style={styles.confidenceRow}>
           <View
             style={[
@@ -216,7 +308,7 @@ export default function LiveNutritionSheet({
             ]}
           >
             <CheckCircle2
-              color={isLowConfidence ? "#A56000" : COLORS.primary}
+              color={isLowConfidence ? G.warnText : G.accent}
               size={13}
             />
             <Text
@@ -229,15 +321,17 @@ export default function LiveNutritionSheet({
               {summary.confidence}%
             </Text>
           </View>
-          <Pressable onPress={onSave} style={styles.quickSaveButton}>
-            <Save color={COLORS.white} size={13} />
-            <Text style={styles.quickSaveText}>Save meal</Text>
-          </Pressable>
+          <View style={styles.servingPill}>
+            <Text style={styles.servingLabel}>Serving</Text>
+            <Text style={styles.servingValue} numberOfLines={1}>
+              {summary.localPortionLabel}
+            </Text>
+          </View>
         </View>
 
         <View style={styles.divider} />
 
-        {/* ── LOW CONFIDENCE FOOD SELECTION ───────────────────────────── */}
+        {/* ── LOW CONFIDENCE FOOD SELECTION ─────────────────────────────── */}
         {isLowConfidence && (
           <View style={styles.lowConfCard}>
             <Text style={styles.lowConfTitle}>
@@ -272,7 +366,7 @@ export default function LiveNutritionSheet({
           </View>
         )}
 
-        {/* ── DETECTED ITEMS ───────────────────────────────────────────── */}
+        {/* ── DETECTED ITEMS ────────────────────────────────────────────── */}
         {!isLowConfidence && (
           <>
             <Text style={styles.sectionLabel}>What we see</Text>
@@ -287,39 +381,99 @@ export default function LiveNutritionSheet({
           </>
         )}
 
-        {/* ── PORTION SELECTOR ─────────────────────────────────────────── */}
-        <View style={styles.portionHeader}>
-          <Text style={styles.sectionLabel}>Portion size</Text>
-          <Text style={styles.portionLocalLabel}>{summary.localPortionLabel}</Text>
+        {/* ── FOOD ORIGIN ───────────────────────────────────────────────── */}
+        <Text style={styles.sectionLabel}>Food origin</Text>
+        <View style={styles.originCard}>
+          <View style={styles.originIntro}>
+            <View style={styles.originIcon}>
+              <MapPin color={G.accent} size={16} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.originTitle}>{origin.title}</Text>
+              <Text style={styles.originDescription}>{origin.description}</Text>
+            </View>
+          </View>
+          <View style={styles.originMetaRow}>
+            <View style={styles.originMetaCell}>
+              <Text style={styles.originMetaLabel}>Meal pattern</Text>
+              <Text style={styles.originMetaValue}>{origin.pattern}</Text>
+            </View>
+            <View style={styles.originMetaDivider} />
+            <View style={styles.originMetaCell}>
+              <Text style={styles.originMetaLabel}>Detected amount</Text>
+              <Text style={styles.originMetaValue} numberOfLines={1}>
+                {summary.localPortionLabel}
+              </Text>
+            </View>
+          </View>
         </View>
-        <View style={styles.portionRow}>
-          {PORTION_OPTIONS.map(({ value, label }) => {
-            const active = summary.portion === value;
-            return (
-              <Pressable
-                key={value}
-                onPress={() => onPortionChange(value)}
-                style={[styles.portionOption, active && styles.portionOptionActive]}
-              >
-                <Text
-                  style={[
-                    styles.portionOptionText,
-                    active && styles.portionOptionTextActive,
-                  ]}
-                >
-                  {label}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-        <Text style={styles.portionHint}>
-          {"Does this look correct? Change it if it doesn't."}
-        </Text>
 
         <View style={styles.divider} />
 
-        {/* ── NUTRITION GRID ───────────────────────────────────────────── */}
+        {/* ── FRESHNESS SCORE ───────────────────────────────────────────── */}
+        <Text style={styles.sectionLabel}>Freshness score</Text>
+        <View style={styles.freshnessCard}>
+          <View style={styles.freshnessTop}>
+            <View
+              style={[
+                styles.freshnessIcon,
+                { backgroundColor: `${freshnessColor}1E` },
+              ]}
+            >
+              <Leaf color={freshnessColor} size={17} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.freshnessTitle}>
+                {summary.freshness.label}
+              </Text>
+              <Text style={styles.freshnessSummary}>
+                {summary.freshness.summary}
+              </Text>
+            </View>
+            <Text style={[styles.freshnessScore, { color: freshnessColor }]}>
+              {summary.freshness.score}
+              <Text style={styles.freshnessScoreUnit}>/100</Text>
+            </Text>
+          </View>
+          <View style={styles.freshnessTrack}>
+            <View
+              style={[
+                styles.freshnessFill,
+                {
+                  width: `${summary.freshness.score}%`,
+                  backgroundColor: freshnessColor,
+                },
+              ]}
+            />
+          </View>
+          {snap === "full" && (
+            <>
+              <View style={styles.freshnessSignalWrap}>
+                {summary.freshness.signals.map((signal) => (
+                  <View key={signal} style={styles.freshnessSignal}>
+                    <View
+                      style={[
+                        styles.freshnessDot,
+                        { backgroundColor: freshnessColor },
+                      ]}
+                    />
+                    <Text style={styles.freshnessSignalText}>{signal}</Text>
+                  </View>
+                ))}
+              </View>
+              <Text style={styles.freshnessTip}>
+                {summary.freshness.storageTip}
+              </Text>
+              <Text style={styles.freshnessDisclaimer}>
+                {summary.freshness.disclaimer}
+              </Text>
+            </>
+          )}
+        </View>
+
+        <View style={styles.divider} />
+
+        {/* ── NUTRITION GRID ────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Estimated nutrition</Text>
         {nutrition && (
           <View style={styles.nutritionGrid}>
@@ -335,10 +489,10 @@ export default function LiveNutritionSheet({
 
         <View style={styles.divider} />
 
-        {/* ── AI ADVICE ────────────────────────────────────────────────── */}
+        {/* ── NUTRIPADI ADVICE ──────────────────────────────────────────── */}
         <View style={styles.adviceCard}>
           <View style={styles.adviceIconWrap}>
-            <Sparkles color={COLORS.primary} size={15} />
+            <Image resizeMode="contain" source={LOGO_MARK} style={styles.adviceLogo} />
           </View>
           <View style={{ flex: 1 }}>
             <Text style={styles.adviceTitle}>NutriPadi says</Text>
@@ -346,7 +500,7 @@ export default function LiveNutritionSheet({
           </View>
         </View>
 
-        {/* ── CORRECTION (FULL STATE) ──────────────────────────────────── */}
+        {/* ── CORRECTION (FULL STATE) ───────────────────────────────────── */}
         {snap === "full" && !isLowConfidence && (
           <>
             <View style={styles.divider} />
@@ -373,14 +527,14 @@ export default function LiveNutritionSheet({
                 onPress={() => setCorrecting(true)}
                 style={styles.editFoodRow}
               >
-                <Pencil color={COLORS.textMuted} size={15} />
+                <Pencil color={G.textMuted} size={15} />
                 <Text style={styles.editFoodText}>Not correct? Change the food</Text>
               </Pressable>
             )}
           </>
         )}
 
-        {/* ── FIBRE (FULL STATE) ───────────────────────────────────────── */}
+        {/* ── FIBRE (FULL STATE) ────────────────────────────────────────── */}
         {snap === "full" && nutrition && (
           <View style={styles.fibreRow}>
             <Text style={styles.fibreLabel}>Dietary fibre</Text>
@@ -393,7 +547,7 @@ export default function LiveNutritionSheet({
         )}
       </ScrollView>
 
-      {/* ── ACTION BUTTONS ───────────────────────────────────────────────── */}
+      {/* ── ACTION BUTTONS ────────────────────────────────────────────────── */}
       <View style={styles.actions}>
         <Pressable onPress={onSave} style={styles.saveButton}>
           <Save color={COLORS.white} size={18} />
@@ -407,7 +561,7 @@ export default function LiveNutritionSheet({
             }}
             style={styles.editButton}
           >
-            <Pencil color={COLORS.text} size={16} />
+            <Pencil color={G.textMuted} size={16} />
             <Text style={styles.editButtonText}>Not correct? Edit</Text>
           </Pressable>
         )}
@@ -444,15 +598,22 @@ const nutStyles = StyleSheet.create({
   cell: {
     flex: 1,
     alignItems: "center",
-    paddingVertical: 12,
-    borderRadius: 12,
-    backgroundColor: COLORS.inputBg,
+    paddingVertical: 13,
+    borderRadius: 14,
+    backgroundColor: G.cardBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
   },
   cellHighlight: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: G.accent,
+    borderColor: G.accent,
+    shadowColor: G.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 14,
+    shadowOffset: { width: 0, height: 4 },
   },
   value: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 17,
     fontFamily: FONTS.extraBold,
   },
@@ -464,14 +625,14 @@ const nutStyles = StyleSheet.create({
     fontFamily: FONTS.medium,
   },
   label: {
-    color: COLORS.textMuted,
+    color: G.textLight,
     fontSize: 11,
     fontFamily: FONTS.semiBold,
     marginTop: 3,
     textTransform: "uppercase",
   },
   labelHighlight: {
-    color: "rgba(255,255,255,0.75)",
+    color: "rgba(0,0,0,0.6)",
   },
 });
 
@@ -481,14 +642,22 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: G.border,
+    overflow: "hidden",
     shadowColor: "#000",
-    shadowOpacity: 0.22,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: -8 },
-    elevation: 20,
+    shadowOpacity: 0.55,
+    shadowRadius: 36,
+    shadowOffset: { width: 0, height: -10 },
+    elevation: 24,
+  },
+  tintOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: G.bg,
   },
   dragArea: {
     height: 36,
@@ -500,7 +669,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 4,
     borderRadius: 999,
-    backgroundColor: COLORS.border,
+    backgroundColor: G.handle,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -515,21 +684,23 @@ const styles = StyleSheet.create({
   headerIcon: {
     width: 40,
     height: 40,
-    borderRadius: 12,
-    backgroundColor: COLORS.softGreen,
+    borderRadius: 13,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: G.accentBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   eyebrow: {
-    color: COLORS.primary,
+    color: G.accent,
     fontSize: 11,
     fontFamily: FONTS.bold,
     textTransform: "uppercase",
-    letterSpacing: 0.4,
+    letterSpacing: 0.5,
     marginBottom: 3,
   },
   mealName: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 17,
     fontFamily: FONTS.extraBold,
     lineHeight: 23,
@@ -538,13 +709,16 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: G.pillBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
     alignItems: "center",
     justifyContent: "center",
   },
   confidenceRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     gap: 10,
     marginBottom: 14,
   },
@@ -553,48 +727,63 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: COLORS.softGreen,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: G.accentBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   confidencePillLow: {
-    backgroundColor: "#FFF3DC",
+    backgroundColor: G.warnBg,
+    borderColor: G.warnBorder,
   },
   confidenceText: {
-    color: COLORS.primaryDark,
+    color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.bold,
   },
   confidenceTextLow: {
-    color: "#A56000",
+    color: G.warnText,
   },
-  quickSaveButton: {
+  servingPill: {
+    flex: 1,
+    minWidth: 132,
     flexDirection: "row",
     alignItems: "center",
-    gap: 6,
-    backgroundColor: COLORS.secondary,
+    justifyContent: "space-between",
+    gap: 8,
+    backgroundColor: G.pillBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
     borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
-  quickSaveText: {
-    color: COLORS.white,
+  servingLabel: {
+    color: G.textLight,
+    fontSize: 11,
+    fontFamily: FONTS.semiBold,
+    textTransform: "uppercase",
+  },
+  servingValue: {
+    flexShrink: 1,
+    color: G.text,
     fontSize: 12,
     fontFamily: FONTS.bold,
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: G.divider,
     marginVertical: 14,
   },
   sectionLabel: {
-    color: COLORS.text,
-    fontSize: 13,
+    color: G.textLight,
+    fontSize: 11,
     fontFamily: FONTS.extraBold,
     marginBottom: 10,
     textTransform: "uppercase",
-    letterSpacing: 0.3,
+    letterSpacing: 0.6,
   },
   itemRow: {
     flexDirection: "row",
@@ -606,63 +795,174 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: G.chipBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   itemLabel: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 12,
     fontFamily: FONTS.bold,
   },
   itemConf: {
-    color: COLORS.primary,
+    color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.extraBold,
   },
-  portionHeader: {
+  originCard: {
+    backgroundColor: G.cardBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 2,
+  },
+  originIntro: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 10,
+    alignItems: "flex-start",
+    gap: 10,
   },
-  portionLocalLabel: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontFamily: FONTS.semiBold,
-  },
-  portionRow: {
-    flexDirection: "row",
-    gap: 6,
-    backgroundColor: COLORS.inputBg,
-    borderRadius: 14,
-    padding: 4,
-  },
-  portionOption: {
-    flex: 1,
+  originIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 10,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: G.accentBorder,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 10,
-    paddingVertical: 10,
   },
-  portionOptionActive: {
-    backgroundColor: COLORS.primary,
+  originTitle: {
+    color: G.text,
+    fontSize: 14,
+    fontFamily: FONTS.extraBold,
+    marginBottom: 4,
   },
-  portionOptionText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontFamily: FONTS.bold,
-  },
-  portionOptionTextActive: {
-    color: COLORS.white,
-  },
-  portionHint: {
-    color: COLORS.textMuted,
+  originDescription: {
+    color: G.textMuted,
     fontSize: 12,
     fontFamily: FONTS.medium,
-    marginTop: 8,
     lineHeight: 18,
+  },
+  originMetaRow: {
+    flexDirection: "row",
+    alignItems: "stretch",
+    gap: 12,
+    borderTopWidth: 1,
+    borderTopColor: G.divider,
+    marginTop: 12,
+    paddingTop: 12,
+  },
+  originMetaCell: {
+    flex: 1,
+    gap: 3,
+  },
+  originMetaDivider: {
+    width: 1,
+    backgroundColor: G.divider,
+  },
+  originMetaLabel: {
+    color: G.textLight,
+    fontSize: 10,
+    fontFamily: FONTS.semiBold,
+    textTransform: "uppercase",
+  },
+  originMetaValue: {
+    color: G.text,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+  },
+  freshnessCard: {
+    backgroundColor: G.cardBg,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
+    padding: 14,
+  },
+  freshnessTop: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 10,
+  },
+  freshnessIcon: {
+    width: 34,
+    height: 34,
+    borderRadius: 11,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  freshnessTitle: {
+    color: G.text,
+    fontSize: 14,
+    fontFamily: FONTS.extraBold,
+    marginBottom: 3,
+  },
+  freshnessSummary: {
+    color: G.textMuted,
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    lineHeight: 18,
+  },
+  freshnessScore: {
+    minWidth: 58,
+    textAlign: "right",
+    fontSize: 22,
+    fontFamily: FONTS.extraBold,
+  },
+  freshnessScoreUnit: {
+    color: G.textLight,
+    fontSize: 11,
+    fontFamily: FONTS.bold,
+  },
+  freshnessTrack: {
+    height: 6,
+    backgroundColor: "rgba(255,255,255,0.08)",
+    borderRadius: 999,
+    overflow: "hidden",
+    marginTop: 12,
+  },
+  freshnessFill: {
+    height: "100%",
+    borderRadius: 999,
+  },
+  freshnessSignalWrap: {
+    gap: 8,
+    marginTop: 12,
+  },
+  freshnessSignal: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+  },
+  freshnessDot: {
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginTop: 6,
+  },
+  freshnessSignalText: {
+    flex: 1,
+    color: G.textMuted,
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    lineHeight: 18,
+  },
+  freshnessTip: {
+    color: G.text,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+    lineHeight: 18,
+    marginTop: 12,
+  },
+  freshnessDisclaimer: {
+    color: G.textLight,
+    fontSize: 11,
+    fontFamily: FONTS.medium,
+    lineHeight: 16,
+    marginTop: 8,
   },
   nutritionGrid: {
     flexDirection: "row",
@@ -670,7 +970,7 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   disclaimer: {
-    color: COLORS.textLight,
+    color: G.textLight,
     fontSize: 11,
     fontFamily: FONTS.medium,
     lineHeight: 16,
@@ -679,7 +979,9 @@ const styles = StyleSheet.create({
   adviceCard: {
     flexDirection: "row",
     gap: 10,
-    backgroundColor: COLORS.softGreen,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: G.accentBorder,
     borderRadius: 14,
     padding: 14,
   },
@@ -687,19 +989,23 @@ const styles = StyleSheet.create({
     width: 30,
     height: 30,
     borderRadius: 9,
-    backgroundColor: COLORS.white,
+    backgroundColor: "rgba(255,255,255,0.9)",
     alignItems: "center",
     justifyContent: "center",
     marginTop: 1,
   },
+  adviceLogo: {
+    width: 22,
+    height: 22,
+  },
   adviceTitle: {
-    color: COLORS.primaryDark,
+    color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.bold,
     marginBottom: 4,
   },
   adviceText: {
-    color: COLORS.text,
+    color: G.textMuted,
     fontSize: 13,
     fontFamily: FONTS.medium,
     lineHeight: 20,
@@ -711,24 +1017,26 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   editFoodText: {
-    color: COLORS.textMuted,
+    color: G.textMuted,
     fontSize: 13,
     fontFamily: FONTS.bold,
   },
   lowConfCard: {
-    backgroundColor: "#FFF3DC",
+    backgroundColor: G.warnBg,
+    borderWidth: 1,
+    borderColor: G.warnBorder,
     borderRadius: 16,
     padding: 14,
     marginBottom: 14,
   },
   lowConfTitle: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 14,
     fontFamily: FONTS.bold,
     marginBottom: 4,
   },
   lowConfSub: {
-    color: COLORS.textMuted,
+    color: G.textMuted,
     fontSize: 12,
     fontFamily: FONTS.medium,
     marginBottom: 12,
@@ -739,19 +1047,19 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   chip: {
-    backgroundColor: COLORS.white,
+    backgroundColor: G.chipBg,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 9,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: G.cardBorder,
   },
   chipActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+    backgroundColor: G.accent,
+    borderColor: G.accent,
   },
   chipText: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 13,
     fontFamily: FONTS.bold,
   },
@@ -764,21 +1072,21 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingVertical: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: G.divider,
     marginTop: 10,
   },
   fibreLabel: {
-    color: COLORS.textMuted,
+    color: G.textMuted,
     fontSize: 13,
     fontFamily: FONTS.bold,
   },
   fibreValue: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 13,
     fontFamily: FONTS.extraBold,
   },
   sourceLabel: {
-    color: COLORS.textLight,
+    color: G.textLight,
     fontSize: 11,
     fontFamily: FONTS.medium,
     marginTop: 6,
@@ -790,16 +1098,20 @@ const styles = StyleSheet.create({
     paddingTop: 12,
     gap: 10,
     borderTopWidth: 1,
-    borderTopColor: COLORS.border,
+    borderTopColor: G.divider,
   },
   saveButton: {
     minHeight: 52,
     borderRadius: 14,
-    backgroundColor: COLORS.primary,
+    backgroundColor: G.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    shadowColor: G.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
   },
   saveButtonText: {
     color: COLORS.white,
@@ -810,14 +1122,15 @@ const styles = StyleSheet.create({
     minHeight: 46,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: G.actionBorder,
+    backgroundColor: G.pillBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
   editButtonText: {
-    color: COLORS.text,
+    color: G.textMuted,
     fontSize: 14,
     fontFamily: FONTS.bold,
   },
@@ -833,19 +1146,23 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 20,
-    backgroundColor: COLORS.primary,
+    backgroundColor: G.accent,
     alignItems: "center",
     justifyContent: "center",
     marginBottom: 14,
+    shadowColor: G.accent,
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    shadowOffset: { width: 0, height: 6 },
   },
   savedTitle: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 22,
     fontFamily: FONTS.extraBold,
     marginBottom: 6,
   },
   savedMeal: {
-    color: COLORS.textMuted,
+    color: G.textMuted,
     fontSize: 14,
     fontFamily: FONTS.medium,
     textAlign: "center",
@@ -853,7 +1170,7 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   savedTime: {
-    color: COLORS.textLight,
+    color: G.textLight,
     fontSize: 12,
     fontFamily: FONTS.medium,
     marginBottom: 20,
@@ -863,13 +1180,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderWidth: 1.5,
-    borderColor: COLORS.primary,
+    borderColor: G.accentBorder,
+    backgroundColor: G.accentBg,
     borderRadius: 14,
     paddingHorizontal: 20,
     paddingVertical: 13,
   },
   scanAnotherText: {
-    color: COLORS.primary,
+    color: G.accent,
     fontSize: 14,
     fontFamily: FONTS.bold,
   },

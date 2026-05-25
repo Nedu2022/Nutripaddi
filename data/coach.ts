@@ -31,7 +31,7 @@ export const AI_RESPONSES: Record<string, string> = {
 export const INITIAL_MESSAGES: ChatMessage[] = [
   {
     id: "welcome",
-    text: "Hello, I am your African AI Nutritionist. Ask me about wraps of swallow, plates of rice, bowls of soup, and simple ways to balance local food.",
+    text: "Hello, I am your African nutrition coach. Ask me about wraps of swallow, plates of rice, bowls of soup, and simple ways to balance local food.",
     isUser: false,
     timestamp: "Just now",
   },

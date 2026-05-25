@@ -33,7 +33,6 @@ export const ROUTES = {
   foodResult: route("/(tabs)/food-result"),
   mealDetails: route("/(tabs)/meal-details"),
   nutritionHistory: route("/(tabs)/nutrition-history"),
-  foodDatabase: route("/(tabs)/food-database"),
   settings: route("/(tabs)/settings"),
   smartSuggestions: route("/(tabs)/smart-suggestions"),
   nutritionLessons: route("/(tabs)/nutrition-lessons"),

@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { Camera, ChartNoAxesColumn, ChefHat, Sparkles } from "lucide-react-native";
+import { Camera, ChartNoAxesColumn, ChefHat, Leaf } from "lucide-react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -83,7 +83,7 @@ function MealTicketArtwork() {
         <Text style={styles.ticketMeal}>Eat Smarter</Text>
         <Text style={styles.ticketMeta}>track • learn • grow</Text>
         <View style={styles.ticketFooter}>
-          <Sparkles color={COLORS.secondary} size={16} strokeWidth={2} />
+          <Leaf color={COLORS.secondary} size={16} strokeWidth={2} />
           <Text style={styles.ticketFooterText}>your food companion</Text>
         </View>
       </View>

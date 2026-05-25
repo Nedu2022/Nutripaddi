@@ -1,33 +1,248 @@
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   BookOpen,
   CheckCircle2,
+  ChevronRight,
   ClipboardList,
+  Coffee,
+  Flame,
+  Leaf,
   MessageCircle,
+  Moon,
   Plus,
   ScanLine,
-  Sparkles,
-  WifiOff,
+  TrendingUp,
+  Utensils,
+  Zap,
 } from "lucide-react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Svg, { Circle } from "react-native-svg";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
-import SectionTitle from "@/components/SectionTitle";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { DAILY_TOTALS, DUMMY_MEALS, WEEKLY_CALORIES } from "@/data/meals";
 import { useLanguage } from "@/hooks/useLanguage";
 
+const LOGO_MARK = require("@/assets/images/logo-mark.png");
+
+// ── Design tokens (light premium / BitePal-inspired) ─────────────────────────
+const D = {
+  bg:          "#F5F6FA",
+  card:        "#FFFFFF",
+  cardBorder:  "#EFEFEF",
+  divider:     "#F2F2F2",
+  text:        "#0A0A0A",
+  textMuted:   "#6B7280",
+  textLight:   "#B0B8C4",
+  accent:      COLORS.primary,
+  accentDim:   COLORS.softGreen,
+  orange:      "#FF6B35",
+  orangeDim:   "rgba(255,107,53,0.10)",
+  indigo:      "#6366F1",
+  indigoDim:   "rgba(99,102,241,0.10)",
+  amber:       "#F59E0B",
+  amberDim:    "rgba(245,158,11,0.10)",
+  purple:      "#C77DFF",
+  purpleDim:   "rgba(199,125,255,0.14)",
+};
+
 const MACRO_TARGETS = { carbs: 275, protein: 90, fat: 73 };
-const TODAY_INDEX   = 6; // Sunday in WEEKLY_CALORIES
+const TODAY_INDEX   = 6;
 
 const INSIGHT =
-  "You have logged meals with plenty carbohydrates today. Try adding egg, fish, beans, chicken, or one piece of meat to your next meal.";
+  "You've logged meals heavy in carbs today. Try adding egg, fish, beans, or chicken to your next meal for a better macro balance.";
 
 const MEAL_TYPE_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
+const MEAL_META = {
+  Breakfast: { Icon: Coffee,   color: D.orange,  bg: D.orangeDim  },
+  Lunch:     { Icon: Utensils, color: D.accent,  bg: D.accentDim  },
+  Dinner:    { Icon: Moon,     color: D.indigo,  bg: D.indigoDim  },
+  Snack:     { Icon: Zap,      color: D.amber,   bg: D.amberDim   },
+} as const;
+
+const QUICK_ACTIONS = [
+  { Icon: MessageCircle, label: "Ask Coach",  route: ROUTES.aiCoach,          color: D.indigo, bg: D.indigoDim },
+  { Icon: ClipboardList, label: "Meal Log",   route: ROUTES.mealLog,          color: D.accent, bg: D.accentDim },
+  { Icon: CheckCircle2,  label: "Feedback",   route: ROUTES.studyFeedback,    color: D.amber,  bg: D.amberDim  },
+  { Icon: BookOpen,      label: "Lessons",    route: ROUTES.nutritionLessons, color: D.purple, bg: D.purpleDim },
+] as const;
+
+// ── Calorie Ring ────────────────────────────────────────────────────────────
+const RING_SIZE    = 200;
+const RING_STROKE  = 20;
+const RING_RADIUS  = (RING_SIZE - RING_STROKE) / 2;
+const RING_CIRCUM  = 2 * Math.PI * RING_RADIUS;
+
+function CalorieRing({ calories, target }: { calories: number; target: number }) {
+  const pct       = Math.min(calories / target, 1);
+  const filled    = pct * RING_CIRCUM;
+  const remaining = Math.max(DAILY_TOTALS.target - calories, 0);
+
+  return (
+    <View style={ringStyles.container}>
+      <Svg
+        width={RING_SIZE}
+        height={RING_SIZE}
+        style={{ transform: [{ rotate: "-90deg" }] }}
+      >
+        {/* Track */}
+        <Circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          stroke="#EEEEEE"
+          strokeWidth={RING_STROKE}
+          fill="none"
+        />
+        {/* Progress */}
+        <Circle
+          cx={RING_SIZE / 2}
+          cy={RING_SIZE / 2}
+          r={RING_RADIUS}
+          stroke={D.accent}
+          strokeWidth={RING_STROKE}
+          fill="none"
+          strokeDasharray={`${filled} ${RING_CIRCUM - filled}`}
+          strokeLinecap="round"
+        />
+      </Svg>
+
+      {/* Center text */}
+      <View style={ringStyles.center} pointerEvents="none">
+        <Text style={ringStyles.kcalNum}>{calories.toLocaleString()}</Text>
+        <Text style={ringStyles.kcalLabel}>of {target.toLocaleString()} kcal</Text>
+        <View style={ringStyles.remainRow}>
+          <TrendingUp color={D.accent} size={11} />
+          <Text style={ringStyles.remainText}>{remaining.toLocaleString()} left</Text>
+        </View>
+      </View>
+    </View>
+  );
+}
+
+const ringStyles = StyleSheet.create({
+  container: {
+    width:       RING_SIZE,
+    height:      RING_SIZE,
+    alignSelf:   "center",
+    alignItems:  "center",
+    justifyContent: "center",
+  },
+  center: {
+    position:  "absolute",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  kcalNum: {
+    color:      D.text,
+    fontSize:   36,
+    fontFamily: FONTS.extraBold,
+    letterSpacing: 0,
+    lineHeight: 40,
+  },
+  kcalLabel: {
+    color:      D.textLight,
+    fontSize:   11,
+    fontFamily: FONTS.medium,
+    marginTop:  3,
+  },
+  remainRow: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           4,
+    marginTop:     7,
+    backgroundColor: D.accentDim,
+    borderRadius:  999,
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+  },
+  remainText: {
+    color:      D.accent,
+    fontSize:   11,
+    fontFamily: FONTS.bold,
+  },
+});
+
+// ── Macro Bar ───────────────────────────────────────────────────────────────
+function MacroBar({
+  label,
+  value,
+  target,
+  color,
+  unit = "g",
+}: {
+  label: string;
+  value: number;
+  target: number;
+  color: string;
+  unit?: string;
+}) {
+  const pct = Math.min((value / target) * 100, 100);
+  return (
+    <View style={macroStyles.row}>
+      <View style={macroStyles.meta}>
+        <Text style={macroStyles.label}>{label}</Text>
+        <Text style={macroStyles.value}>
+          <Text style={[macroStyles.valueBold, { color }]}>{value}</Text>
+          <Text style={macroStyles.unit}>/{target}{unit}</Text>
+        </Text>
+      </View>
+      <View style={macroStyles.track}>
+        <View
+          style={[
+            macroStyles.fill,
+            { width: `${pct}%`, backgroundColor: color },
+          ]}
+        />
+      </View>
+    </View>
+  );
+}
+
+const macroStyles = StyleSheet.create({
+  row: {
+    marginBottom: 12,
+  },
+  meta: {
+    flexDirection:  "row",
+    justifyContent: "space-between",
+    alignItems:     "center",
+    marginBottom:   7,
+  },
+  label: {
+    color:      D.textMuted,
+    fontSize:   12,
+    fontFamily: FONTS.semiBold,
+  },
+  value: {
+    fontSize:   12,
+    fontFamily: FONTS.medium,
+  },
+  valueBold: {
+    fontFamily: FONTS.extraBold,
+    fontSize:   13,
+  },
+  unit: {
+    color:      D.textLight,
+    fontSize:   11,
+  },
+  track: {
+    height:          7,
+    borderRadius:    999,
+    backgroundColor: "#EEEEEE",
+    overflow:        "hidden",
+  },
+  fill: {
+    height:       "100%",
+    borderRadius: 999,
+  },
+});
+
+// ── Main Screen ─────────────────────────────────────────────────────────────
 export default function DashboardTab() {
   const { t } = useLanguage();
 
@@ -35,12 +250,9 @@ export default function DashboardTab() {
     Math.round((DAILY_TOTALS.calories / DAILY_TOTALS.target) * 100),
     100
   );
-  const calorieLeft        = Math.max(DAILY_TOTALS.target - DAILY_TOTALS.calories, 0);
-  const maxWeekly          = Math.max(...WEEKLY_CALORIES.map((d) => d.value));
-
-  const hour     = new Date().getHours();
-  const greeting =
-    hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const maxWeekly = Math.max(...WEEKLY_CALORIES.map((d) => d.value));
+  const hour      = new Date().getHours();
+  const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
 
   const todayDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -48,150 +260,179 @@ export default function DashboardTab() {
     day:     "numeric",
   });
 
-  // Build today's meals in breakfast-first order
   const loggedMeals = MEAL_TYPE_ORDER.map((type) => ({
     type,
     meal: DUMMY_MEALS.find((m) => m.mealType === type) ?? null,
   }));
 
+  const loggedCount = loggedMeals.filter((m) => m.meal).length;
+
   return (
-    <ScreenWrapper scroll>
+    <ScreenWrapper scroll bg={D.bg}>
 
-      {/* ── HEADER ─────────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.duration(380)} style={styles.header}>
+      {/* ── HEADER ────────────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
         <View>
-          <Text style={styles.greeting}>{greeting}, Betty</Text>
-          <Text style={styles.headerDate}>{todayDate}</Text>
+          <Text style={styles.greeting}>{greeting},</Text>
+          <Text style={styles.name}>Nnedu</Text>
+          <Text style={styles.date}>{todayDate}</Text>
         </View>
-        <View style={styles.offlineBadge}>
-          <WifiOff color={COLORS.primary} size={12} />
-          <Text style={styles.offlineText}>Offline ready</Text>
+        <View style={styles.headerRight}>
+          <View style={styles.streakBadge}>
+            <Flame color={D.orange} size={13} />
+            <Text style={styles.streakText}>3-day streak</Text>
+          </View>
+          <View style={styles.avatar}>
+            <Text style={styles.avatarText}>N</Text>
+          </View>
         </View>
       </Animated.View>
 
-      {/* ── HERO ───────────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(60).duration(380)} style={styles.hero}>
-        <View style={styles.heroTop}>
-          <View>
-            <Text style={styles.heroLabel}>Calories today</Text>
-            <View style={styles.calorieRow}>
-              <Text style={styles.calorieNum}>{DAILY_TOTALS.calories.toLocaleString()}</Text>
-              <Text style={styles.calorieOf}>/{DAILY_TOTALS.target.toLocaleString()}</Text>
-            </View>
-          </View>
-          <View style={styles.remainPill}>
-            <Text style={styles.remainNum}>{calorieLeft}</Text>
-            <Text style={styles.remainLabel}>left</Text>
-          </View>
-        </View>
+      {/* ── HERO – CALORIE RING ───────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.heroCard}>
+        <Text style={styles.heroEyebrow}>CALORIES TODAY</Text>
 
-        {/* Progress track */}
-        <View style={styles.track}>
-          <View style={[styles.trackFill, { width: `${caloriePercent}%` }]} />
-        </View>
-        <Text style={styles.trackLabel}>{caloriePercent}% of daily goal</Text>
+        <CalorieRing
+          calories={DAILY_TOTALS.calories}
+          target={DAILY_TOTALS.target}
+        />
+
+        <Text style={styles.heroPct}>{caloriePercent}% of daily goal</Text>
       </Animated.View>
 
-      {/* ── MACROS ─────────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(110).duration(380)} style={styles.macroRow}>
-        <MacroCell
+      {/* ── MACROS ───────────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.macrosCard}>
+        <Text style={styles.cardTitle}>Macros</Text>
+        <MacroBar
           label="Carbs"
           value={DAILY_TOTALS.carbs}
           target={MACRO_TARGETS.carbs}
-          color={COLORS.freshOrange}
+          color={D.orange}
         />
-        <View style={styles.macroDivider} />
-        <MacroCell
+        <MacroBar
           label="Protein"
           value={DAILY_TOTALS.protein}
           target={MACRO_TARGETS.protein}
-          color={COLORS.primary}
+          color={D.accent}
         />
-        <View style={styles.macroDivider} />
-        <MacroCell
+        <MacroBar
           label="Fat"
           value={DAILY_TOTALS.fat}
           target={MACRO_TARGETS.fat}
-          color="#888"
+          color={D.indigo}
         />
       </Animated.View>
 
-      {/* ── SCAN CTA ───────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(160).duration(380)}>
+      {/* ── SCAN CTA ─────────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(150).duration(320)}>
         <Pressable onPress={() => router.push(ROUTES.scan)} style={styles.scanCta}>
-          <ScanLine color={COLORS.white} size={20} />
-          <Text style={styles.scanCtaText}>{t.scanMeal}</Text>
+          <View style={styles.scanLeft}>
+            <View style={styles.scanIconBg}>
+              <ScanLine color="#FFFFFF" size={19} />
+            </View>
+            <View>
+              <Text style={styles.scanTitle}>Scan a Meal</Text>
+              <Text style={styles.scanSub}>Food detection</Text>
+            </View>
+          </View>
+          <View style={styles.scanArrow}>
+            <ChevronRight color="rgba(0,0,0,0.5)" size={18} />
+          </View>
         </Pressable>
       </Animated.View>
 
-      {/* ── TODAY'S MEALS ──────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(210).duration(380)} style={styles.mealsCard}>
-        <Text style={styles.mealsCardTitle}>{"Today's meals"}</Text>
-        {loggedMeals.map(({ type, meal }, i) => (
-          <View key={type}>
-            {i > 0 && <View style={styles.mealDivider} />}
-            {meal ? (
-              <Pressable
-                onPress={() => router.push(ROUTES.mealDetails)}
-                style={styles.mealRow}
-              >
-                <View style={styles.mealTimeCol}>
-                  <Text style={styles.mealTime}>{meal.timeLogged}</Text>
-                </View>
-                <View style={styles.mealInfo}>
-                  <Text style={styles.mealName} numberOfLines={1}>
-                    {meal.foodName}
-                  </Text>
-                  <Text style={styles.mealType}>{type}</Text>
-                </View>
-                <View style={styles.mealKcalWrap}>
-                  <Text style={styles.mealKcal}>{meal.calories}</Text>
-                  <Text style={styles.mealKcalUnit}>kcal</Text>
-                </View>
-              </Pressable>
-            ) : (
-              <Pressable
-                onPress={() => router.push(ROUTES.scan)}
-                style={styles.mealRowEmpty}
-              >
-                <View style={styles.mealTimeCol}>
-                  <Text style={styles.mealTimeEmpty}>–</Text>
-                </View>
-                <Text style={styles.mealEmptyLabel}>{type} not logged yet</Text>
-                <View style={styles.addIcon}>
-                  <Plus color={COLORS.primary} size={14} />
-                </View>
-              </Pressable>
-            )}
+      {/* ── TODAY'S MEALS ────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(200).duration(320)}>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>{"Today's meals"}</Text>
+          <View style={styles.countBadge}>
+            <Text style={styles.countText}>{loggedCount}/{loggedMeals.length}</Text>
           </View>
-        ))}
+        </View>
+
+        <View style={styles.glassCard}>
+          {loggedMeals.map(({ type, meal }, i) => {
+            const { Icon, color, bg } = MEAL_META[type];
+            return (
+              <View key={type}>
+                {i > 0 && <View style={styles.divider} />}
+                {meal ? (
+                  <Pressable
+                    onPress={() => router.push(ROUTES.mealDetails)}
+                    style={styles.mealRow}
+                  >
+                    <View style={[styles.mealIcon, { backgroundColor: bg }]}>
+                      <Icon color={color} size={16} />
+                    </View>
+                    <View style={styles.mealInfo}>
+                      <Text style={styles.mealName} numberOfLines={1}>
+                        {meal.foodName}
+                      </Text>
+                      <View style={styles.mealMeta}>
+                        <Text style={styles.mealType}>{type}</Text>
+                        <Text style={styles.mealDot}>·</Text>
+                        <Text style={styles.mealTime}>{meal.timeLogged}</Text>
+                        {typeof meal.freshnessScore === "number" && (
+                          <View style={[styles.freshPill, { backgroundColor: D.accentDim }]}>
+                            <Leaf color={D.accent} size={9} />
+                            <Text style={styles.freshText}>{meal.freshnessScore}%</Text>
+                          </View>
+                        )}
+                      </View>
+                    </View>
+                    <View style={styles.mealKcal}>
+                      <Text style={styles.mealKcalNum}>{meal.calories}</Text>
+                      <Text style={styles.mealKcalUnit}>kcal</Text>
+                    </View>
+                  </Pressable>
+                ) : (
+                  <Pressable
+                    onPress={() => router.push(ROUTES.scan)}
+                    style={styles.mealRowEmpty}
+                  >
+                    <View style={[styles.mealIconEmpty, { backgroundColor: bg }]}>
+                      <Icon color={color} size={16} />
+                    </View>
+                    <Text style={styles.mealEmptyLabel}>Log {type}</Text>
+                    <View style={[styles.addBtn, { backgroundColor: D.accentDim }]}>
+                      <Plus color={D.accent} size={13} />
+                    </View>
+                  </Pressable>
+                )}
+              </View>
+            );
+          })}
+        </View>
       </Animated.View>
 
-      {/* ── AI INSIGHT ─────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(260).duration(380)} style={styles.insight}>
-        <View style={styles.insightLeft}>
-          <View style={styles.insightDot} />
+      {/* ── NUTRIPADI INSIGHT ────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(250).duration(320)} style={styles.insightCard}>
+        <View style={[styles.insightIcon, { backgroundColor: D.accentDim }]}>
+          <Image resizeMode="contain" source={LOGO_MARK} style={styles.insightLogo} />
         </View>
         <View style={styles.insightBody}>
-          <View style={styles.insightHeader}>
-            <Sparkles color={COLORS.primary} size={14} />
-            <Text style={styles.insightTitle}>NutriPadi says</Text>
-          </View>
+          <Text style={styles.insightTitle}>NutriPadi says</Text>
           <Text style={styles.insightText}>{INSIGHT}</Text>
         </View>
       </Animated.View>
 
-      {/* ── WEEKLY ─────────────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(310).duration(380)}>
-        <SectionTitle
-          actionLabel={t.seeAll}
-          onAction={() => router.push(ROUTES.nutritionHistory)}
-          title="This week"
-        />
-        <View style={styles.weekly}>
+      {/* ── WEEKLY CHART ─────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(300).duration(320)}>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>This week</Text>
+          <Pressable
+            onPress={() => router.push(ROUTES.nutritionHistory)}
+            style={styles.seeAllRow}
+          >
+            <Text style={styles.seeAllText}>{t.seeAll}</Text>
+            <ChevronRight color={D.accent} size={14} />
+          </Pressable>
+        </View>
+
+        <View style={[styles.glassCard, styles.weeklyCard]}>
           {WEEKLY_CALORIES.map((day, i) => {
             const isToday = i === TODAY_INDEX;
-            const barH    = Math.max(16, (day.value / maxWeekly) * 68);
+            const barH    = Math.max(8, (day.value / maxWeekly) * 72);
             return (
               <View key={day.day} style={styles.barCol}>
                 {isToday && (
@@ -206,7 +447,7 @@ export default function DashboardTab() {
                     ]}
                   />
                 </View>
-                <Text style={[styles.barDay, isToday && styles.barDayToday]}>
+                <Text style={[styles.barLabel, isToday && styles.barLabelToday]}>
                   {day.day}
                 </Text>
               </View>
@@ -215,426 +456,470 @@ export default function DashboardTab() {
         </View>
       </Animated.View>
 
-      {/* ── QUICK ACTIONS ──────────────────────────────────────────────── */}
-      <Animated.View entering={FadeInUp.delay(360).duration(380)}>
-        <SectionTitle title={t.quickActions} />
+      {/* ── QUICK ACTIONS ────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(350).duration(320)}>
+        <View style={styles.sectionRow}>
+          <Text style={styles.sectionTitle}>{t.quickActions}</Text>
+        </View>
+
         <View style={styles.actionGrid}>
-          {[
-            { icon: <MessageCircle color={COLORS.primary} size={20} />, label: t.askCoach,      route: ROUTES.aiCoach },
-            { icon: <ClipboardList color={COLORS.primary} size={20} />, label: t.viewMealLog,   route: ROUTES.mealLog },
-            { icon: <BookOpen      color={COLORS.primary} size={20} />, label: "Food Library",  route: ROUTES.foodDatabase },
-            { icon: <CheckCircle2  color={COLORS.primary} size={20} />, label: "Feedback",      route: ROUTES.studyFeedback },
-          ].map(({ icon, label, route }) => (
-            <Pressable
-              key={label}
-              onPress={() => router.push(route)}
-              style={styles.actionCard}
-            >
-              <View style={styles.actionIconWrap}>{icon}</View>
-              <Text style={styles.actionLabel}>{label}</Text>
-            </Pressable>
+          {([QUICK_ACTIONS.slice(0, 2), QUICK_ACTIONS.slice(2, 4)] as const).map((row, ri) => (
+            <View key={ri} style={styles.actionRow}>
+              {row.map(({ Icon, label, route, color, bg }) => (
+                <Pressable
+                  key={label}
+                  onPress={() => router.push(route)}
+                  style={styles.actionCard}
+                >
+                  <View style={[styles.actionIconBg, { backgroundColor: bg }]}>
+                    <Icon color={color} size={20} />
+                  </View>
+                  <Text style={styles.actionLabel}>{label}</Text>
+                </Pressable>
+              ))}
+            </View>
           ))}
         </View>
       </Animated.View>
 
-      <View style={{ height: 28 }} />
     </ScreenWrapper>
   );
 }
 
-function MacroCell({
-  label,
-  value,
-  target,
-  color,
-}: {
-  label: string;
-  value: number;
-  target: number;
-  color: string;
-}) {
-  return (
-    <View style={styles.macroCell}>
-      <Text style={[styles.macroValue, { color }]}>{value}<Text style={styles.macroUnit}>g</Text></Text>
-      <Text style={styles.macroLabel}>{label}</Text>
-      <Text style={styles.macroTarget}>of {target}g</Text>
-    </View>
-  );
-}
-
+// ── Styles ───────────────────────────────────────────────────────────────────
 const styles = StyleSheet.create({
   // Header
   header: {
     flexDirection:  "row",
-    alignItems:     "center",
     justifyContent: "space-between",
-    marginTop:      12,
-    marginBottom:   20,
-  },
-  greeting: {
-    color:      COLORS.text,
-    fontSize:   22,
-    fontFamily: FONTS.extraBold,
-  },
-  headerDate: {
-    color:      COLORS.textMuted,
-    fontSize:   13,
-    fontFamily: FONTS.medium,
-    marginTop:  3,
-  },
-  offlineBadge: {
-    flexDirection:   "row",
-    alignItems:      "center",
-    gap:             5,
-    backgroundColor: COLORS.softGreen,
-    borderRadius:    999,
-    paddingHorizontal: 10,
-    paddingVertical:   6,
-  },
-  offlineText: {
-    color:      COLORS.primaryDark,
-    fontSize:   11,
-    fontFamily: FONTS.bold,
-  },
-
-  // Hero
-  hero: {
-    backgroundColor: COLORS.secondary,
-    borderRadius:    22,
-    padding:         22,
-    marginBottom:    12,
-  },
-  heroTop: {
-    flexDirection:  "row",
     alignItems:     "flex-start",
-    justifyContent: "space-between",
+    marginTop:      4,
     marginBottom:   18,
   },
-  heroLabel: {
-    color:      "rgba(255,255,255,0.55)",
-    fontSize:   12,
-    fontFamily: FONTS.semiBold,
-    marginBottom: 6,
-  },
-  calorieRow: {
-    flexDirection: "row",
-    alignItems:    "baseline",
-    gap:           4,
-  },
-  calorieNum: {
-    color:      COLORS.white,
-    fontSize:   44,
-    fontFamily: FONTS.extraBold,
-    lineHeight: 50,
-  },
-  calorieOf: {
-    color:      "rgba(255,255,255,0.45)",
-    fontSize:   15,
+  greeting: {
+    color:      D.textMuted,
+    fontSize:   13,
     fontFamily: FONTS.medium,
+    marginBottom: 2,
   },
-  remainPill: {
-    alignItems:      "center",
-    backgroundColor: "rgba(255,255,255,0.1)",
-    borderRadius:    16,
-    paddingHorizontal: 16,
-    paddingVertical:   12,
-    minWidth:        72,
-  },
-  remainNum: {
-    color:      COLORS.freshOrange,
-    fontSize:   22,
+  name: {
+    color:      D.text,
+    fontSize:   26,
     fontFamily: FONTS.extraBold,
+    lineHeight: 32,
   },
-  remainLabel: {
-    color:      "rgba(255,255,255,0.55)",
+  date: {
+    color:      D.textLight,
+    fontSize:   12,
+    fontFamily: FONTS.medium,
+    marginTop:  4,
+  },
+  headerRight: {
+    alignItems: "flex-end",
+    gap:        10,
+    paddingTop: 2,
+  },
+  streakBadge: {
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               5,
+    backgroundColor:   D.orangeDim,
+    borderRadius:      999,
+    paddingHorizontal: 10,
+    paddingVertical:   5,
+  },
+  streakText: {
+    color:      D.orange,
     fontSize:   11,
-    fontFamily: FONTS.semiBold,
-    marginTop:  2,
+    fontFamily: FONTS.bold,
   },
-  track: {
-    height:          10,
-    borderRadius:    999,
-    backgroundColor: "rgba(255,255,255,0.12)",
-    overflow:        "hidden",
+  avatar: {
+    width:           38,
+    height:          38,
+    borderRadius:    19,
+    backgroundColor: D.accentDim,
+    borderWidth:     1.5,
+    borderColor:     D.accent,
+    alignItems:      "center",
+    justifyContent:  "center",
   },
-  trackFill: {
-    height:          10,
-    borderRadius:    999,
-    backgroundColor: COLORS.freshOrange,
-  },
-  trackLabel: {
-    color:      "rgba(255,255,255,0.5)",
-    fontSize:   11,
-    fontFamily: FONTS.semiBold,
-    marginTop:  8,
+  avatarText: {
+    color:      D.accent,
+    fontSize:   16,
+    fontFamily: FONTS.extraBold,
   },
 
-  // Macros
-  macroRow: {
-    flexDirection:   "row",
-    backgroundColor: COLORS.white,
-    borderRadius:    18,
-    borderWidth:     1,
-    borderColor:     COLORS.border,
+  // Hero calorie ring card
+  heroCard: {
+    backgroundColor: D.card,
+    borderRadius:    22,
+    paddingVertical: 18,
+    paddingHorizontal: 18,
     marginBottom:    12,
-    paddingVertical: 16,
+    alignItems:      "center",
+    borderWidth:     1,
+    borderColor:     D.cardBorder,
   },
-  macroCell: {
-    flex:       1,
-    alignItems: "center",
-    gap:        3,
+  heroEyebrow: {
+    color:         D.textLight,
+    fontSize:      10,
+    fontFamily:    FONTS.semiBold,
+    letterSpacing: 0,
+    marginBottom:  12,
   },
-  macroDivider: {
-    width:           1,
-    backgroundColor: COLORS.border,
-    marginVertical:  6,
-  },
-  macroValue: {
-    fontSize:   24,
-    fontFamily: FONTS.extraBold,
-  },
-  macroUnit: {
-    fontSize:   13,
-    fontFamily: FONTS.bold,
-  },
-  macroLabel: {
-    color:      COLORS.text,
+  heroPct: {
+    color:      D.textLight,
     fontSize:   12,
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.semiBold,
+    marginTop:  10,
   },
-  macroTarget: {
-    color:      COLORS.textLight,
-    fontSize:   11,
-    fontFamily: FONTS.medium,
+
+  // Macros cardS
+  macrosCard: {
+    backgroundColor: D.card,
+    borderRadius:    20,
+    padding:         16,
+    marginBottom:    12,
+    borderWidth:     1,
+    borderColor:     D.cardBorder,
+  },
+  cardTitle: {
+    color:        D.textMuted,
+    fontSize:     11,
+    fontFamily:   FONTS.semiBold,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+    marginBottom: 12,
   },
 
   // Scan CTA
   scanCta: {
-    flexDirection:   "row",
-    alignItems:      "center",
-    justifyContent:  "center",
-    gap:             9,
-    backgroundColor: COLORS.primary,
-    borderRadius:    16,
-    paddingVertical: 16,
-    marginBottom:    16,
-  },
-  scanCtaText: {
-    color:      COLORS.white,
-    fontSize:   16,
-    fontFamily: FONTS.bold,
-  },
-
-  // Today's meals
-  mealsCard: {
-    backgroundColor: COLORS.white,
-    borderRadius:    18,
-    borderWidth:     1,
-    borderColor:     COLORS.border,
-    marginBottom:    14,
-    overflow:        "hidden",
-  },
-  mealsCardTitle: {
-    color:          COLORS.text,
-    fontSize:       15,
-    fontFamily:     FONTS.extraBold,
+    flexDirection:     "row",
+    alignItems:        "center",
+    justifyContent:    "space-between",
+    backgroundColor:   D.accent,
+    borderRadius:      18,
+    paddingVertical:   14,
     paddingHorizontal: 16,
-    paddingTop:     16,
-    paddingBottom:  12,
+    marginBottom:      16,
+    shadowColor:       D.accent,
+    shadowOpacity:     0.4,
+    shadowRadius:      20,
+    shadowOffset:      { width: 0, height: 8 },
+    elevation:         10,
   },
-  mealDivider: {
-    height:           1,
-    backgroundColor:  COLORS.border,
-    marginHorizontal: 16,
-  },
-  mealRow: {
+  scanLeft: {
     flexDirection: "row",
     alignItems:    "center",
     gap:           12,
-    paddingHorizontal: 16,
+  },
+  scanIconBg: {
+    width:           40,
+    height:          40,
+    borderRadius:    13,
+    backgroundColor: "rgba(255,255,255,0.16)",
+    alignItems:      "center",
+    justifyContent:  "center",
+  },
+  scanTitle: {
+    color:      "white",
+    fontSize:   16,
+    fontFamily: FONTS.extraBold,
+  },
+  scanSub: {
+    color:      "white",
+    fontSize:   11,
+    fontFamily: FONTS.medium,
+    marginTop:  1,
+  },
+  scanArrow: {
+    width:           32,
+    height:          32,
+    borderRadius:    11,
+    backgroundColor: "white",
+    alignItems:      "center",
+    justifyContent:  "center",
+  },
+
+  // Section header
+  sectionRow: {
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "space-between",
+    marginBottom:   10,
+  },
+  sectionTitle: {
+    color:      D.text,
+    fontSize:   17,
+    fontFamily: FONTS.extraBold,
+  },
+  seeAllRow: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           2,
+  },
+  seeAllText: {
+    color:      D.accent,
+    fontSize:   13,
+    fontFamily: FONTS.semiBold,
+  },
+  countBadge: {
+    backgroundColor:   D.accentDim,
+    borderRadius:      999,
+    paddingHorizontal: 10,
+    paddingVertical:   4,
+  },
+  countText: {
+    color:      D.accent,
+    fontSize:   12,
+    fontFamily: FONTS.bold,
+  },
+
+  // Glass card base
+  glassCard: {
+    backgroundColor: D.card,
+    borderRadius:    20,
+    borderWidth:     1,
+    borderColor:     D.cardBorder,
+    overflow:        "hidden",
+    marginBottom:    14,
+  },
+  divider: {
+    height:           1,
+    backgroundColor:  D.divider,
+    marginHorizontal: 18,
+  },
+
+  // Meal rows
+  mealRow: {
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               12,
+    paddingHorizontal: 14,
     paddingVertical:   12,
   },
-  mealTimeCol: {
-    width: 72,
-  },
-  mealTime: {
-    color:      COLORS.textMuted,
-    fontSize:   12,
-    fontFamily: FONTS.semiBold,
+  mealIcon: {
+    width:           40,
+    height:          40,
+    borderRadius:    13,
+    alignItems:      "center",
+    justifyContent:  "center",
   },
   mealInfo: {
     flex: 1,
   },
   mealName: {
-    color:      COLORS.text,
+    color:      D.text,
     fontSize:   14,
     fontFamily: FONTS.bold,
+    marginBottom: 4,
+  },
+  mealMeta: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           5,
+    flexWrap:      "wrap",
   },
   mealType: {
-    color:      COLORS.textMuted,
+    color:      D.textMuted,
+    fontSize:   11,
+    fontFamily: FONTS.semiBold,
+  },
+  mealDot: {
+    color:   D.textLight,
+    fontSize: 11,
+  },
+  mealTime: {
+    color:      D.textLight,
     fontSize:   11,
     fontFamily: FONTS.medium,
-    marginTop:  2,
   },
-  mealKcalWrap: {
-    alignItems: "flex-end",
+  freshPill: {
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               3,
+    borderRadius:      999,
+    paddingHorizontal: 6,
+    paddingVertical:   2,
+  },
+  freshText: {
+    color:      D.accent,
+    fontSize:   10,
+    fontFamily: FONTS.bold,
   },
   mealKcal: {
-    color:      COLORS.text,
-    fontSize:   15,
+    alignItems: "flex-end",
+  },
+  mealKcalNum: {
+    color:      D.text,
+    fontSize:   16,
     fontFamily: FONTS.extraBold,
   },
   mealKcalUnit: {
-    color:      COLORS.textMuted,
+    color:      D.textLight,
     fontSize:   10,
     fontFamily: FONTS.medium,
+    marginTop:  1,
   },
   mealRowEmpty: {
-    flexDirection: "row",
-    alignItems:    "center",
-    gap:           12,
-    paddingHorizontal: 16,
+    flexDirection:     "row",
+    alignItems:        "center",
+    gap:               12,
+    paddingHorizontal: 14,
     paddingVertical:   12,
   },
-  mealTimeEmpty: {
-    color:      COLORS.textLight,
-    fontSize:   14,
-    fontFamily: FONTS.medium,
+  mealIconEmpty: {
+    width:      40,
+    height:     40,
+    borderRadius: 13,
+    alignItems:  "center",
+    justifyContent: "center",
+    opacity:     0.6,
   },
   mealEmptyLabel: {
     flex:       1,
-    color:      COLORS.textLight,
+    color:      D.textLight,
     fontSize:   13,
     fontFamily: FONTS.medium,
   },
-  addIcon: {
+  addBtn: {
     width:           28,
     height:          28,
-    borderRadius:    8,
-    backgroundColor: COLORS.softGreen,
+    borderRadius:    9,
     alignItems:      "center",
     justifyContent:  "center",
   },
 
-  // AI Insight
-  insight: {
+  // NutriPadi Insight
+  insightCard: {
     flexDirection:   "row",
-    gap:             0,
-    backgroundColor: COLORS.softGreen,
+    gap:             14,
+    backgroundColor: D.accentDim,
     borderRadius:    18,
-    marginBottom:    20,
-    overflow:        "hidden",
+    padding:         14,
+    marginBottom:    14,
+    borderWidth:     1,
+    borderColor:     D.accentDim,
   },
-  insightLeft: {
-    width:           6,
-    backgroundColor: COLORS.primary,
+  insightIcon: {
+    width:           38,
+    height:          38,
+    borderRadius:    12,
+    alignItems:      "center",
+    justifyContent:  "center",
+    flexShrink:      0,
   },
-  insightDot: {
-    flex: 1,
+  insightLogo: {
+    width: 28,
+    height: 28,
   },
   insightBody: {
-    flex:    1,
-    padding: 16,
-  },
-  insightHeader: {
-    flexDirection: "row",
-    alignItems:    "center",
-    gap:           6,
-    marginBottom:  6,
+    flex: 1,
   },
   insightTitle: {
-    color:      COLORS.primaryDark,
-    fontSize:   13,
-    fontFamily: FONTS.bold,
+    color:         D.accent,
+    fontSize:      11,
+    fontFamily:    FONTS.extraBold,
+    letterSpacing: 0,
+    textTransform: "uppercase",
+    marginBottom:  5,
   },
   insightText: {
-    color:      COLORS.text,
+    color:      D.textMuted,
     fontSize:   13,
     fontFamily: FONTS.regular,
     lineHeight: 20,
   },
 
   // Weekly chart
-  weekly: {
-    flexDirection:      "row",
-    alignItems:         "flex-end",
-    justifyContent:     "space-between",
-    backgroundColor:    COLORS.white,
-    borderRadius:       16,
-    borderWidth:        1,
-    borderColor:        COLORS.border,
-    paddingHorizontal:  14,
-    paddingBottom:      12,
-    paddingTop:         10,
-    height:             118,
-    marginBottom:       20,
+  weeklyCard: {
+    flexDirection:     "row",
+    alignItems:        "flex-end",
+    justifyContent:    "space-between",
+    height:            152,
+    paddingHorizontal: 14,
+    paddingTop:        24,
+    paddingBottom:     12,
+    overflow:          "hidden",
   },
   barCol: {
     flex:       1,
     alignItems: "center",
-    gap:        5,
+    gap:        6,
     justifyContent: "flex-end",
   },
   barValToday: {
-    color:      COLORS.freshOrange,
+    color:      D.orange,
     fontSize:   9,
     fontFamily: FONTS.bold,
+    letterSpacing: 0,
   },
   barTrack: {
-    width:           18,
+    width:           15,
     height:          72,
     borderRadius:    999,
-    backgroundColor: COLORS.softGreen,
+    backgroundColor: "#EEEEEE",
     justifyContent:  "flex-end",
     overflow:        "hidden",
   },
   barTrackToday: {
-    backgroundColor: "#FFF0E8",
+    backgroundColor: D.orangeDim,
   },
   barFill: {
-    width:           18,
+    width:           15,
     borderRadius:    999,
-    backgroundColor: COLORS.primary,
+    backgroundColor: D.accent,
+    opacity:         0.55,
   },
   barFillToday: {
-    backgroundColor: COLORS.freshOrange,
+    backgroundColor: D.orange,
+    opacity:         1,
   },
-  barDay: {
-    color:      COLORS.textMuted,
-    fontSize:   11,
+  barLabel: {
+    color:      D.textLight,
+    fontSize:   10,
     fontFamily: FONTS.semiBold,
   },
-  barDayToday: {
-    color:      COLORS.freshOrange,
+  barLabelToday: {
+    color:      D.orange,
     fontFamily: FONTS.bold,
   },
 
   // Quick actions
   actionGrid: {
+    gap: 10,
+  },
+  actionRow: {
     flexDirection: "row",
-    flexWrap:      "wrap",
     gap:           10,
   },
   actionCard: {
-    width:           "47%",
-    backgroundColor: COLORS.white,
-    borderRadius:    16,
-    padding:         16,
-    borderWidth:     1,
-    borderColor:     COLORS.border,
-    gap:             10,
-  },
-  actionIconWrap: {
-    width:           40,
-    height:          40,
-    borderRadius:    12,
-    backgroundColor: COLORS.softGreen,
+    flex:            1,
+    minHeight:       104,
+    backgroundColor: D.card,
+    borderRadius:    18,
+    padding:         12,
+    shadowColor:     "#000",
+    shadowOpacity:   0.05,
+    shadowRadius:    10,
+    shadowOffset:    { width: 0, height: 4 },
+    elevation:       3,
     alignItems:      "center",
     justifyContent:  "center",
   },
+  actionIconBg: {
+    width:           38,
+    height:          38,
+    borderRadius:    13,
+    alignItems:      "center",
+    justifyContent:  "center",
+    marginBottom:    10,
+  },
   actionLabel: {
-    color:      COLORS.text,
-    fontSize:   13,
+    color:      D.text,
+    fontSize:   12,
     fontFamily: FONTS.bold,
+    lineHeight: 16,
+    textAlign:  "center",
   },
 });

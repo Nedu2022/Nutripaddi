@@ -4,6 +4,15 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import type { DetectedMealPortion } from "@/src/types/detection";
 
+const G = {
+  trackBg: "rgba(255, 255, 255, 0.09)",
+  trackBorder: "rgba(255, 255, 255, 0.12)",
+  optionBg: "rgba(255, 255, 255, 0.07)",
+  activeBg: COLORS.primary,
+  text: "rgba(255, 255, 255, 0.55)",
+  activeText: COLORS.white,
+};
+
 type PortionSelectorProps = {
   value: DetectedMealPortion;
   onChange: (value: DetectedMealPortion) => void;
@@ -42,8 +51,10 @@ export default function PortionSelector({
 const styles = StyleSheet.create({
   container: {
     flexDirection: "row",
-    gap: 6,
-    backgroundColor: COLORS.inputBg,
+    gap: 5,
+    backgroundColor: G.trackBg,
+    borderWidth: 1,
+    borderColor: G.trackBorder,
     borderRadius: 14,
     padding: 4,
   },
@@ -51,18 +62,22 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
-    borderRadius: 11,
+    borderRadius: 10,
     paddingVertical: 10,
   },
   optionActive: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: G.activeBg,
+    shadowColor: G.activeBg,
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
   text: {
-    color: COLORS.textMuted,
+    color: G.text,
     fontSize: 13,
     fontFamily: FONTS.bold,
   },
   textActive: {
-    color: COLORS.white,
+    color: G.activeText,
   },
 });

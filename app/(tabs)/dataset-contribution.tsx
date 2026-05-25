@@ -6,7 +6,6 @@ import {
   Database,
   ImagePlus,
   ShieldCheck,
-  Sparkles,
 } from "lucide-react-native";
 
 import AppHeader from "@/components/AppHeader";
@@ -43,7 +42,7 @@ export default function DatasetContributionScreen() {
     <ScreenWrapper scroll>
       <AppHeader
         showBack
-        title="Improve African Food AI"
+        title="Improve African Food Recognition"
         subtitle="Optional dataset contribution"
       />
 
@@ -141,7 +140,7 @@ export default function DatasetContributionScreen() {
 
       {submitted && (
         <View style={styles.successCard}>
-          <Sparkles color={COLORS.success} size={18} />
+          <Check color={COLORS.success} size={18} />
           <Text style={styles.successText}>
             Contribution saved locally for this prototype.
           </Text>
@@ -161,7 +160,6 @@ export default function DatasetContributionScreen() {
         onPress={() => setSubmitted(true)}
         title="Submit Contribution"
       />
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

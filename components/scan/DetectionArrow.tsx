@@ -22,8 +22,13 @@ type DetectionArrowProps = {
 
 const BASE_WIDTH = 360;
 const BASE_HEIGHT = 640;
-const LABEL_WIDTH = 148;
-const LABEL_HEIGHT = 34;
+const LABEL_WIDTH = 164;
+const LABEL_HEIGHT = 38;
+const SIDE_PADDING = 18;
+const LABEL_GAP = 18;
+const TOP_SAFE_AREA = 126;
+const BOTTOM_SAFE_AREA = 232;
+const STACK_OFFSETS = [0, -18, 18, -36];
 
 function clamp(value: number, min: number, max: number) {
   "worklet";
@@ -53,14 +58,24 @@ export default function DetectionArrow({
     );
   }, [index, opacity, pulse, translateY]);
 
-  const dotX = (item.x / BASE_WIDTH) * frameWidth;
-  const dotY = (item.y / BASE_HEIGHT) * frameHeight;
-  const labelOnLeft = dotX > frameWidth * 0.52;
+  const labelWidth = Math.min(LABEL_WIDTH, frameWidth - SIDE_PADDING * 2);
+  const dotX = clamp((item.x / BASE_WIDTH) * frameWidth, 28, frameWidth - 28);
+  const dotY = clamp((item.y / BASE_HEIGHT) * frameHeight, 132, frameHeight - 210);
+  const labelOnLeft = dotX > frameWidth / 2;
+  const labelAbove = dotY > frameHeight * 0.44;
+  const labelOffset = STACK_OFFSETS[index] ?? 0;
   const labelX = labelOnLeft
-    ? clamp(dotX - LABEL_WIDTH - 20, 14, frameWidth - LABEL_WIDTH - 14)
-    : clamp(dotX + 20, 14, frameWidth - LABEL_WIDTH - 14);
-  const labelY = clamp(dotY - 48, 88, frameHeight - 260);
-  const lineStartX = labelOnLeft ? labelX + LABEL_WIDTH : labelX;
+    ? clamp(dotX - labelWidth - LABEL_GAP, SIDE_PADDING, frameWidth - labelWidth - SIDE_PADDING)
+    : clamp(dotX + LABEL_GAP, SIDE_PADDING, frameWidth - labelWidth - SIDE_PADDING);
+  const preferredY = labelAbove
+    ? dotY - LABEL_HEIGHT - LABEL_GAP + labelOffset
+    : dotY + LABEL_GAP + labelOffset;
+  const labelY = clamp(
+    preferredY,
+    TOP_SAFE_AREA,
+    frameHeight - BOTTOM_SAFE_AREA
+  );
+  const lineStartX = labelOnLeft ? labelX + labelWidth - 8 : labelX + 8;
   const lineStartY = labelY + LABEL_HEIGHT / 2;
   const dx = dotX - lineStartX;
   const dy = dotY - lineStartY;
@@ -87,7 +102,7 @@ export default function DetectionArrow({
           styles.pointerLine,
           {
             left: lineStartX + dx / 2 - lineLength / 2,
-            top: lineStartY + dy / 2,
+            top: lineStartY + dy / 2 - 1,
             width: lineLength,
             transform: [{ rotate: angle }],
           },
@@ -97,7 +112,7 @@ export default function DetectionArrow({
         <Animated.View style={[styles.dotPulse, pulseStyle]} />
         <View style={styles.dot} />
       </View>
-      <View style={[styles.label, { left: labelX, top: labelY }]}>
+      <View style={[styles.label, { left: labelX, top: labelY, width: labelWidth }]}>
         <Text style={styles.labelText} numberOfLines={1}>
           {item.label}
         </Text>
@@ -110,7 +125,7 @@ export default function DetectionArrow({
 const styles = StyleSheet.create({
   pointerLine: {
     position: "absolute",
-    height: 1.5,
+    height: 2,
     borderRadius: 999,
     backgroundColor: COLORS.primary,
     shadowColor: COLORS.primary,
@@ -127,43 +142,46 @@ const styles = StyleSheet.create({
   },
   dotPulse: {
     position: "absolute",
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: "rgba(0,128,0,0.28)",
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: "rgba(0,128,0,0.24)",
   },
   dot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 10,
+    height: 10,
+    borderRadius: 6,
     backgroundColor: COLORS.white,
     borderWidth: 2,
     borderColor: COLORS.primary,
   },
   label: {
     position: "absolute",
-    width: LABEL_WIDTH,
     minHeight: LABEL_HEIGHT,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     gap: 8,
-    backgroundColor: "rgba(0,0,0,0.72)",
-    borderColor: "rgba(255,255,255,0.18)",
+    backgroundColor: "rgba(0,0,0,0.78)",
+    borderColor: "rgba(0,128,0,0.54)",
     borderWidth: 1,
     borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 9,
+    shadowColor: COLORS.primary,
+    shadowOpacity: 0.2,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 0 },
   },
   labelText: {
     flex: 1,
     color: COLORS.white,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: FONTS.bold,
   },
   confidenceText: {
     color: COLORS.primary,
-    fontSize: 12,
+    fontSize: 13,
     fontFamily: FONTS.extraBold,
   },
 });

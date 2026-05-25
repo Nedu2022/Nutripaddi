@@ -10,13 +10,26 @@ export type SavedMeal = {
   protein: number;
   fat: number;
   fibre: number;
+  freshnessScore?: number;
+  freshnessLabel?: string;
   portionLabel: string;
   timeLogged: string;
   dateLogged: string;
 };
 
 export async function saveMeal(
-  data: Pick<SavedMeal, "mealName" | "calories" | "carbs" | "protein" | "fat" | "fibre" | "portionLabel">
+  data: Pick<
+    SavedMeal,
+    | "mealName"
+    | "calories"
+    | "carbs"
+    | "protein"
+    | "fat"
+    | "fibre"
+    | "freshnessScore"
+    | "freshnessLabel"
+    | "portionLabel"
+  >
 ): Promise<SavedMeal> {
   const raw = await AsyncStorage.getItem(STORAGE_KEY);
   const history: SavedMeal[] = raw ? (JSON.parse(raw) as SavedMeal[]) : [];

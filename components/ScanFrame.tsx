@@ -1,81 +1,79 @@
 import { StyleSheet, View } from "react-native";
 
-import { COLORS } from "@/constants/colors";
+type Props = {
+  color?: string;
+  glowing?: boolean;
+};
 
-export default function ScanFrame() {
+const FRAME  = 280;
+const ARM    = 54;
+const THICK  = 4;
+const RADIUS = 18;
+
+export default function ScanFrame({
+  color   = "rgba(255,255,255,0.90)",
+  glowing = false,
+}: Props) {
+  const shadow = glowing
+    ? { shadowColor: color, shadowOpacity: 0.75, shadowRadius: 12, shadowOffset: { width: 0, height: 0 } }
+    : {};
+
   return (
     <View style={styles.frame}>
-      {/* Top-left corner */}
-      <View style={[styles.corner, styles.topLeft]} />
-      {/* Top-right corner */}
-      <View style={[styles.corner, styles.topRight]} />
-      {/* Bottom-left corner */}
-      <View style={[styles.corner, styles.bottomLeft]} />
-      {/* Bottom-right corner */}
-      <View style={[styles.corner, styles.bottomRight]} />
-
-      {/* Scan line */}
-      <View style={styles.scanLine} />
+      {glowing && (
+        <View style={[styles.innerGlow, { backgroundColor: "rgba(0,210,106,0.06)" }]} />
+      )}
+      <View style={[styles.c, styles.tl, { borderColor: color }, shadow]} />
+      <View style={[styles.c, styles.tr, { borderColor: color }, shadow]} />
+      <View style={[styles.c, styles.bl, { borderColor: color }, shadow]} />
+      <View style={[styles.c, styles.br, { borderColor: color }, shadow]} />
     </View>
   );
 }
 
-const CORNER_SIZE = 40;
-const BORDER_WIDTH = 2;
-
 const styles = StyleSheet.create({
   frame: {
-    width: "100%",
-    aspectRatio: 1,
-    maxWidth: 320,
-    maxHeight: 320,
-    borderRadius: 24,
-    alignItems: "center",
+    width:  FRAME,
+    height: FRAME,
+    alignItems:     "center",
     justifyContent: "center",
-    alignSelf: "center",
   },
-  corner: {
+  innerGlow: {
+    position:     "absolute",
+    top: 8, left: 8, right: 8, bottom: 8,
+    borderRadius: RADIUS,
+  },
+  c: {
     position: "absolute",
-    width: CORNER_SIZE,
-    height: CORNER_SIZE,
+    width:    ARM,
+    height:   ARM,
   },
-  topLeft: {
-    top: 16,
-    left: 16,
-    borderTopWidth: BORDER_WIDTH,
-    borderLeftWidth: BORDER_WIDTH,
-    borderColor: COLORS.white,
-    borderTopLeftRadius: 10,
+  tl: {
+    top: 0, left: 0,
+    borderTopWidth:    THICK,
+    borderLeftWidth:   THICK,
+    borderColor:       "white",
+    borderTopLeftRadius: RADIUS,
   },
-  topRight: {
-    top: 16,
-    right: 16,
-    borderTopWidth: BORDER_WIDTH,
-    borderRightWidth: BORDER_WIDTH,
-    borderColor: COLORS.white,
-    borderTopRightRadius: 10,
+  tr: {
+    top: 0, right: 0,
+    borderTopWidth:     THICK,
+    borderRightWidth:   THICK,
+    borderColor:        "white",
+    borderTopRightRadius: RADIUS,
   },
-  bottomLeft: {
-    bottom: 16,
-    left: 16,
-    borderBottomWidth: BORDER_WIDTH,
-    borderLeftWidth: BORDER_WIDTH,
-    borderColor: COLORS.white,
-    borderBottomLeftRadius: 10,
+  bl: {
+    bottom: 0, left: 0,
+    borderBottomWidth:  THICK,
+    borderLeftWidth:    THICK,
+    borderColor:        "white",
+    borderBottomLeftRadius: RADIUS,
   },
-  bottomRight: {
-    bottom: 16,
-    right: 16,
-    borderBottomWidth: BORDER_WIDTH,
-    borderRightWidth: BORDER_WIDTH,
-    borderColor: COLORS.white,
-    borderBottomRightRadius: 10,
-  },
-  scanLine: {
-    width: "80%",
-    height: 1.5,
-    backgroundColor: COLORS.white,
-    borderRadius: 1,
-    opacity: 0.8,
+  br: {
+    bottom: 0, right: 0,
+    borderBottomWidth:  THICK,
+    borderRightWidth:   THICK,
+    borderColor:        "white",
+    borderBottomRightRadius: RADIUS,
   },
 });

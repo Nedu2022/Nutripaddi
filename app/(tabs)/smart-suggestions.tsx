@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Sparkles } from "lucide-react-native";
+import { Leaf } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
@@ -20,7 +20,7 @@ export default function SmartSuggestionsScreen() {
 
   return (
     <ScreenWrapper scroll>
-      <AppHeader showBack title="Smart Suggestions" subtitle="AI-powered meal ideas" />
+      <AppHeader showBack title="Smart Suggestions" subtitle="Personal meal ideas" />
 
       {/* Category Chips */}
       <View style={styles.chipRow}>
@@ -66,15 +66,14 @@ export default function SmartSuggestionsScreen() {
         })}
       </Animated.View>
 
-      {/* AI Tip */}
+      {/* Tip */}
       <View style={styles.tipCard}>
-        <Sparkles color={COLORS.primary} size={16} />
+        <Leaf color={COLORS.primary} size={16} />
         <Text style={styles.tipText}>
           These are simple meal ideas. Pick the amount that fits your goal.
         </Text>
       </View>
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

@@ -4,13 +4,12 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
   ArrowLeft,
-  Camera,
   Flashlight,
   FlashlightOff,
   ImagePlus,
+  RefreshCw,
   RotateCcw,
   ScanLine,
-  X,
 } from "lucide-react-native";
 import { CameraView, useCameraPermissions } from "expo-camera";
 import * as ImagePicker from "expo-image-picker";
@@ -20,22 +19,17 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import CustomButton from "@/components/CustomButton";
 import CameraOverlay from "@/components/scan/CameraOverlay";
-import DetectionArrow from "@/components/scan/DetectionArrow";
 import LiveNutritionSheet from "@/components/scan/LiveNutritionSheet";
-import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
   detectFoodFromFrame,
   detectFoodFromImage,
   enrichSummaryWithItems,
-  enrichSummaryWithPortion,
 } from "@/src/services/foodDetectionService";
 import { saveMeal } from "@/src/services/mealHistoryService";
 import type {
   DetectedFoodItem,
-  DetectedMealPortion,
   DetectedMealSummary,
   FoodDetectionResult,
   ScanState,
@@ -49,25 +43,24 @@ export default function ScanTab() {
   const cameraRef = useRef<CameraView | null>(null);
 
   const [flashOn, setFlashOn]         = useState(false);
+  const [facing, setFacing]           = useState<"back" | "front">("back");
   const [isPaused, setIsPaused]       = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
 
-  const [scanState, setScanState]     = useState<ScanState>("idle");
-  const [detections, setDetections]   = useState<DetectedFoodItem[]>([]);
-  const [summary, setSummary]         = useState<DetectedMealSummary | null>(null);
-  const [sheetSnap, setSheetSnap]     = useState<SheetSnap>("hidden");
-  const [savedTime, setSavedTime]     = useState<string | undefined>();
+  const [scanState, setScanState]   = useState<ScanState>("idle");
+  const [detections, setDetections] = useState<DetectedFoodItem[]>([]);
+  const [summary, setSummary]       = useState<DetectedMealSummary | null>(null);
+  const [sheetSnap, setSheetSnap]   = useState<SheetSnap>("hidden");
+  const [savedTime, setSavedTime]   = useState<string | undefined>();
 
-  // ── PERMISSION HANDLING ─────────────────────────────────────────────────
+  // ── PERMISSIONS ──────────────────────────────────────────────────────────
   useEffect(() => {
-    if (!permission?.granted && permission?.canAskAgain) {
-      requestPermission();
-    }
+    if (!permission?.granted && permission?.canAskAgain) requestPermission();
   }, [permission, requestPermission]);
 
-  // ── APPLY DETECTION RESULT ───────────────────────────────────────────────
+  // ── APPLY DETECTION RESULT ────────────────────────────────────────────────
   const applyDetectionResult = useCallback((result: FoodDetectionResult) => {
     if (result.imageQuality === "poor") {
       setScanState("poor_image");
@@ -78,25 +71,36 @@ export default function ScanTab() {
     }
     if (!result.summary) return;
 
+    setIsPaused(true);
     setScanState((prev) => {
-      if (prev === "saved") return prev; // don't overwrite saved state
-      const c = result.summary!.confidence;
-      return c >= 80 ? "good_match" : "low_confidence";
+      if (prev === "saved") return prev;
+      return result.summary!.confidence >= 80 ? "good_match" : "low_confidence";
     });
-
     setDetections(result.summary.detectedItems);
     setSummary((prev) => {
       if (!prev) {
         setSheetSnap("half");
         return result.summary;
       }
-      // Keep user's portion choice; only update detections + confidence
       const updated = enrichSummaryWithItems(prev, result.summary!.detectedItems);
       return { ...updated, portion: prev.portion };
     });
   }, []);
 
-  // ── LIVE DETECTION LOOP ──────────────────────────────────────────────────
+  const freezeCameraFrame = useCallback(async () => {
+    if (capturedUri) return;
+    try {
+      const photo = await cameraRef.current?.takePictureAsync({
+        quality: 0.88,
+        skipProcessing: true,
+      });
+      if (photo?.uri) setCapturedUri(photo.uri);
+    } catch {
+      // Keep live preview if capture fails
+    }
+  }, [capturedUri]);
+
+  // ── LIVE DETECTION LOOP ───────────────────────────────────────────────────
   const isSaved = scanState === "saved";
   useEffect(() => {
     if (!permission?.granted || isPaused || capturedUri || isSaved) return;
@@ -105,31 +109,34 @@ export default function ScanTab() {
     let cancelled = false;
     let tick = 1;
 
-    const firstDetection = setTimeout(async () => {
+    const firstDetect = setTimeout(async () => {
       setIsDetecting(true);
       setScanState("detecting");
       const result = await detectFoodFromFrame({ tick });
       if (!cancelled) {
-        applyDetectionResult(result);
-        setIsDetecting(false);
+        if (result.imageQuality === "good" && result.summary) await freezeCameraFrame();
+        if (!cancelled) { applyDetectionResult(result); setIsDetecting(false); }
       }
     }, 2200);
 
-    const liveUpdates = setInterval(async () => {
+    const liveLoop = setInterval(async () => {
       if (cancelled) return;
       tick += 1;
       const result = await detectFoodFromFrame({ tick });
-      if (!cancelled) applyDetectionResult(result);
+      if (!cancelled) {
+        if (result.imageQuality === "good" && result.summary) await freezeCameraFrame();
+        if (!cancelled) applyDetectionResult(result);
+      }
     }, 5600);
 
     return () => {
       cancelled = true;
-      clearTimeout(firstDetection);
-      clearInterval(liveUpdates);
+      clearTimeout(firstDetect);
+      clearInterval(liveLoop);
     };
-  }, [applyDetectionResult, capturedUri, isPaused, isSaved, permission?.granted]);
+  }, [applyDetectionResult, capturedUri, freezeCameraFrame, isPaused, isSaved, permission?.granted]);
 
-  // ── CAPTURE ──────────────────────────────────────────────────────────────
+  // ── MANUAL CAPTURE ────────────────────────────────────────────────────────
   const captureImage = async () => {
     setIsCapturing(true);
     setIsPaused(true);
@@ -153,7 +160,7 @@ export default function ScanTab() {
     }
   };
 
-  // ── GALLERY ──────────────────────────────────────────────────────────────
+  // ── GALLERY ───────────────────────────────────────────────────────────────
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -172,10 +179,10 @@ export default function ScanTab() {
     }
   };
 
-  // ── PORTION CHANGE ────────────────────────────────────────────────────────
-  const handlePortionChange = (portion: DetectedMealPortion) => {
-    if (!summary) return;
-    setSummary(enrichSummaryWithPortion(summary, portion));
+  // ── FLIP CAMERA ───────────────────────────────────────────────────────────
+  const flipCamera = () => {
+    if (capturedUri) return;
+    setFacing((f) => (f === "back" ? "front" : "back"));
   };
 
   // ── FOOD CORRECTION ───────────────────────────────────────────────────────
@@ -193,13 +200,15 @@ export default function ScanTab() {
     if (!summary) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     const saved = await saveMeal({
-      mealName:     summary.mealName,
-      calories:     summary.nutrition.calories,
-      carbs:        summary.nutrition.carbs,
-      protein:      summary.nutrition.protein,
-      fat:          summary.nutrition.fat,
-      fibre:        summary.nutrition.fibre,
-      portionLabel: summary.localPortionLabel,
+      mealName:       summary.mealName,
+      calories:       summary.nutrition.calories,
+      carbs:          summary.nutrition.carbs,
+      protein:        summary.nutrition.protein,
+      fat:            summary.nutrition.fat,
+      fibre:          summary.nutrition.fibre,
+      freshnessScore: summary.freshness.score,
+      freshnessLabel: summary.freshness.label,
+      portionLabel:   summary.localPortionLabel,
     });
     setSavedTime(saved.timeLogged);
     setScanState("saved");
@@ -218,29 +227,15 @@ export default function ScanTab() {
     setSavedTime(undefined);
   };
 
-
-  // ── STATUS TEXT ───────────────────────────────────────────────────────────
-  const statusText: Record<ScanState, string> = {
-    idle:            "Point your camera at your meal",
-    scanning:        "Scanning…",
-    detecting:       "We are seeing some food…",
-    good_match:      "We found your meal",
-    low_confidence:  "We are not fully sure — please confirm",
-    poor_image:      "We cannot see the meal clearly",
-    nutrition_ready: "Nutrition estimate ready",
-    saved:           "Meal saved to your history",
-    offline:         "Offline mode — using local food data",
-  };
-
-  // ── PERMISSION SCREEN ─────────────────────────────────────────────────────
+  // ── PERMISSION DENIED ─────────────────────────────────────────────────────
   if (!permission?.granted) {
     return (
-      <View style={styles.fallbackContainer}>
-        <View style={styles.permissionIcon}>
-          <ScanLine color={COLORS.primary} size={36} />
+      <View style={styles.fallback}>
+        <View style={styles.permIcon}>
+          <ScanLine color="#00B85A" size={36} />
         </View>
-        <Text style={styles.fallbackTitle}>{t.cameraNeeded}</Text>
-        <Text style={styles.fallbackSubtitle}>
+        <Text style={styles.permTitle}>{t.cameraNeeded}</Text>
+        <Text style={styles.permSub}>
           Camera access lets NutriPadi recognise your meal from a clear photo.
         </Text>
         <CustomButton onPress={requestPermission} title={t.grantPermission} />
@@ -248,12 +243,14 @@ export default function ScanTab() {
     );
   }
 
-  const cameraActive = !capturedUri || capturedUri.includes("preview");
+  const cameraActive    = !capturedUri || capturedUri.includes("preview");
+  const showCaptureDock = (sheetSnap === "hidden" || sheetSnap === "collapsed") && scanState !== "saved";
+  const hasCapture      = !!(summary || capturedUri);
 
   return (
     <View style={styles.container}>
 
-      {/* ── CAMERA / FROZEN FRAME ──────────────────────────────────────── */}
+      {/* ── CAMERA / FROZEN FRAME ─────────────────────────────────────── */}
       {!cameraActive ? (
         <Image
           contentFit="cover"
@@ -264,136 +261,99 @@ export default function ScanTab() {
         <CameraView
           ref={cameraRef}
           enableTorch={flashOn}
-          facing="back"
+          facing={facing}
           style={StyleSheet.absoluteFillObject}
         />
       )}
 
-      {/* ── DETECTION OVERLAY ─────────────────────────────────────────── */}
+      {/* ── CAMERA OVERLAY (frame + guidance + arrows) ────────────────── */}
       <CameraOverlay
         detections={detections}
         isDetecting={isDetecting || isCapturing}
         isPaused={isPaused}
+        scanState={scanState}
       />
 
-      {/* ── DETECTION ARROWS ──────────────────────────────────────────── */}
-      {detections.slice(0, 4).map((item, index) => (
-        <DetectionArrow
-          key={`${item.id}-${item.confidence}`}
-          frameHeight={600}
-          frameWidth={390}
-          index={index}
-          item={item}
-        />
-      ))}
-
       {/* ── TOP BAR ───────────────────────────────────────────────────── */}
-      <View style={[styles.topBar, { paddingTop: insets.top + 10 }]}>
-        <Pressable onPress={() => router.back()} style={styles.iconButton}>
-          <ArrowLeft color={COLORS.white} size={20} />
-        </Pressable>
-        <View style={styles.titleBlock}>
-          <Text style={styles.title}>Scan your meal</Text>
-          <Text style={styles.subtitle}>Point your camera at the food</Text>
-        </View>
-        <Pressable
-          onPress={() => router.replace(ROUTES.tabs)}
-          style={styles.iconButton}
-        >
-          <X color={COLORS.white} size={20} />
-        </Pressable>
-      </View>
-
-      {/* ── TOOL ROW (flash / pause / gallery) ────────────────────────── */}
       <Animated.View
-        entering={FadeInUp.delay(160).duration(420)}
-        style={[styles.toolRow, { top: insets.top + 82 }]}
+        entering={FadeInDown.duration(380)}
+        style={[styles.topBar, { paddingTop: insets.top + 12 }]}
       >
+        <Pressable onPress={() => router.back()} style={styles.topBtn}>
+          <ArrowLeft color="rgba(255,255,255,0.92)" size={20} />
+        </Pressable>
+
+        <Text style={styles.topTitle}>Scan your meal</Text>
+
         <Pressable
           onPress={() => setFlashOn((f) => !f)}
-          style={styles.toolButton}
+          style={[styles.topBtn, flashOn && styles.topBtnFlashOn]}
         >
-          {flashOn ? (
-            <FlashlightOff color={COLORS.white} size={17} />
-          ) : (
-            <Flashlight color={COLORS.white} size={17} />
-          )}
-          <Text style={styles.toolText}>{flashOn ? "Flash off" : "Flash"}</Text>
-        </Pressable>
-        <Pressable onPress={pickImage} style={styles.toolButton}>
-          <ImagePlus color={COLORS.white} size={17} />
-          <Text style={styles.toolText}>Gallery</Text>
+          {flashOn
+            ? <FlashlightOff color="#FFD60A" size={20} />
+            : <Flashlight    color="rgba(255,255,255,0.92)" size={20} />}
         </Pressable>
       </Animated.View>
 
-      {/* ── SCAN STATUS PILL ──────────────────────────────────────────── */}
-      {scanState !== "good_match" && scanState !== "low_confidence" && (
-        <View style={[styles.statusPillBottom, { bottom: sheetSnap === "hidden" ? insets.bottom + 130 : 0 }]}>
-          {scanState !== "idle" && (
-            <View style={styles.statusPill}>
-              <Text style={styles.statusText}>{statusText[scanState]}</Text>
-            </View>
-          )}
-        </View>
-      )}
-
-      {/* ── POOR IMAGE STATE ──────────────────────────────────────────── */}
+      {/* ── POOR IMAGE CARD ───────────────────────────────────────────── */}
       {scanState === "poor_image" && (
-        <View style={[styles.poorImageCard, { bottom: insets.bottom + 120 }]}>
-          <Text style={styles.poorImageTitle}>
-            We cannot see the meal clearly
-          </Text>
-          <Text style={styles.poorImageSub}>
-            Try better lighting or move the camera closer.
-          </Text>
-          <Pressable onPress={resetScan} style={styles.poorImageButton}>
-            <RotateCcw color={COLORS.white} size={15} />
-            <Text style={styles.poorImageButtonText}>Try again</Text>
+        <View style={[styles.poorCard, { bottom: insets.bottom + 162 }]}>
+          <View style={styles.poorIconCircle}>
+            <ScanLine color="#FFBB33" size={18} />
+          </View>
+          <View style={styles.poorBody}>
+            <Text style={styles.poorTitle}>{"Can't see the food clearly"}</Text>
+            <Text style={styles.poorSub}>Try better lighting or move closer.</Text>
+          </View>
+          <Pressable onPress={resetScan} style={styles.poorRetryBtn}>
+            <RotateCcw color="#FFFFFF" size={16} />
           </Pressable>
         </View>
       )}
 
       {/* ── CAPTURE DOCK ──────────────────────────────────────────────── */}
-      {scanState !== "poor_image" && scanState !== "saved" && (
+      {showCaptureDock && (
         <Animated.View
-          entering={FadeInDown.delay(260).duration(420)}
-          style={[
-            styles.captureDock,
-            {
-              bottom:
-                sheetSnap === "half" || sheetSnap === "full"
-                  ? "auto"
-                  : insets.bottom + 30,
-              top:
-                sheetSnap === "half" || sheetSnap === "full"
-                  ? insets.top + 82
-                  : "auto",
-            },
-          ]}
+          entering={FadeInUp.delay(220).duration(400)}
+          style={[styles.captureDock, { bottom: insets.bottom + 28 }]}
         >
-          {(summary || capturedUri) && (
-            <Pressable onPress={resetScan} style={styles.retakeButton}>
-              <RotateCcw color={COLORS.white} size={17} />
-              <Text style={styles.retakeText}>Retake</Text>
-            </Pressable>
-          )}
-          {sheetSnap === "hidden" || sheetSnap === "collapsed" ? (
-            <Pressable
-              disabled={isCapturing}
-              onPress={captureImage}
-              style={({ pressed }) => [
-                styles.captureButton,
-                pressed && styles.capturePressed,
-                isCapturing && styles.captureDisabled,
-              ]}
-            >
-              {isCapturing ? (
-                <ScanLine color={COLORS.secondary} size={30} />
-              ) : (
-                <Camera color={COLORS.secondary} size={30} />
-              )}
-            </Pressable>
-          ) : null}
+          {/* Left: Gallery or Retake */}
+          <Pressable
+            onPress={hasCapture ? resetScan : pickImage}
+            style={styles.sideBtn}
+          >
+            {hasCapture
+              ? <RotateCcw color="rgba(255,255,255,0.92)" size={22} />
+              : <ImagePlus  color="rgba(255,255,255,0.92)" size={22} />}
+          </Pressable>
+
+          {/* Centre: iOS-style shutter button */}
+          <Pressable
+            disabled={isCapturing}
+            onPress={captureImage}
+            style={[styles.captureRing, isCapturing && { opacity: 0.72 }]}
+          >
+            {({ pressed }) => (
+              <View
+                style={[
+                  styles.captureDisc,
+                  (pressed || isCapturing) && styles.captureDiscPressed,
+                ]}
+              />
+            )}
+          </Pressable>
+
+          {/* Right: Flip camera */}
+          <Pressable
+            onPress={flipCamera}
+            disabled={!!capturedUri}
+            style={[styles.sideBtn, capturedUri ? styles.sideBtnOff : null]}
+          >
+            <RefreshCw
+              color={capturedUri ? "rgba(255,255,255,0.28)" : "rgba(255,255,255,0.92)"}
+              size={22}
+            />
+          </Pressable>
         </Animated.View>
       )}
 
@@ -403,7 +363,6 @@ export default function ScanTab() {
         scanState={scanState}
         snap={sheetSnap}
         onSnapChange={setSheetSnap}
-        onPortionChange={handlePortionChange}
         onFoodCorrection={handleFoodCorrection}
         onSave={handleSave}
         onClear={resetScan}
@@ -416,198 +375,166 @@ export default function ScanTab() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: "#000",
   },
-  fallbackContainer: {
-    flex: 1,
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: COLORS.background,
-    padding: 24,
+
+  // Permission screen
+  fallback: {
+    flex:            1,
+    alignItems:      "center",
+    justifyContent:  "center",
+    backgroundColor: "#F5F6FA",
+    padding:         24,
   },
-  permissionIcon: {
-    width: 92,
-    height: 92,
-    borderRadius: 28,
-    backgroundColor: COLORS.softGreen,
-    alignItems: "center",
-    justifyContent: "center",
-    marginBottom: 20,
+  permIcon: {
+    width:           92,
+    height:          92,
+    borderRadius:    28,
+    backgroundColor: "rgba(0,184,90,0.09)",
+    alignItems:      "center",
+    justifyContent:  "center",
+    marginBottom:    20,
   },
-  fallbackTitle: {
-    color: COLORS.text,
-    fontSize: 22,
-    fontFamily: FONTS.bold,
+  permTitle: {
+    color:        "#0A0A0A",
+    fontSize:     22,
+    fontFamily:   FONTS.bold,
     marginBottom: 8,
-    textAlign: "center",
+    textAlign:    "center",
   },
-  fallbackSubtitle: {
-    color: COLORS.textMuted,
-    fontSize: 15,
-    fontFamily: FONTS.regular,
-    lineHeight: 22,
+  permSub: {
+    color:        "#6B7280",
+    fontSize:     15,
+    fontFamily:   FONTS.regular,
+    lineHeight:   22,
     marginBottom: 24,
-    textAlign: "center",
+    textAlign:    "center",
   },
+
+  // Top bar
   topBar: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    zIndex: 20,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
+    position:       "absolute",
+    left:           18,
+    right:          18,
+    zIndex:         20,
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "space-between",
   },
-  iconButton: {
-    width: 42,
-    height: 42,
-    borderRadius: 21,
-    backgroundColor: "rgba(0,0,0,0.52)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    alignItems: "center",
-    justifyContent: "center",
+  topBtn: {
+    width:           44,
+    height:          44,
+    borderRadius:    22,
+    backgroundColor: "rgba(0,0,0,0.48)",
+    alignItems:      "center",
+    justifyContent:  "center",
   },
-  titleBlock: {
-    flex: 1,
-    alignItems: "center",
+  topBtnFlashOn: {
+    backgroundColor: "rgba(255,214,10,0.18)",
   },
-  title: {
-    color: COLORS.white,
-    fontSize: 17,
-    fontFamily: FONTS.extraBold,
+  topTitle: {
+    color:            "rgba(255,255,255,0.92)",
+    fontSize:         16,
+    fontFamily:       FONTS.extraBold,
+    textShadowColor:  "rgba(0,0,0,0.5)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
   },
-  subtitle: {
-    color: "rgba(255,255,255,0.72)",
-    fontSize: 12,
+
+  // Poor image card
+  poorCard: {
+    position:        "absolute",
+    left:            22,
+    right:           22,
+    flexDirection:   "row",
+    alignItems:      "center",
+    gap:             12,
+    backgroundColor: "rgba(0,0,0,0.84)",
+    borderRadius:    20,
+    padding:         16,
+    borderWidth:     1,
+    borderColor:     "rgba(255,175,0,0.22)",
+    zIndex:          25,
+  },
+  poorIconCircle: {
+    width:           42,
+    height:          42,
+    borderRadius:    13,
+    backgroundColor: "rgba(255,187,51,0.18)",
+    alignItems:      "center",
+    justifyContent:  "center",
+    flexShrink:      0,
+  },
+  poorBody: { flex: 1 },
+  poorTitle: {
+    color:        "#FFFFFF",
+    fontSize:     14,
+    fontFamily:   FONTS.bold,
+    marginBottom: 3,
+  },
+  poorSub: {
+    color:      "rgba(255,255,255,0.62)",
+    fontSize:   12,
     fontFamily: FONTS.medium,
-    marginTop: 2,
+    lineHeight: 17,
   },
-  toolRow: {
-    position: "absolute",
-    left: 18,
-    right: 18,
-    zIndex: 18,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: 8,
+  poorRetryBtn: {
+    width:           40,
+    height:          40,
+    borderRadius:    12,
+    backgroundColor: "#00B85A",
+    alignItems:      "center",
+    justifyContent:  "center",
+    flexShrink:      0,
+    shadowColor:     "#00B85A",
+    shadowOpacity:   0.4,
+    shadowRadius:    8,
+    shadowOffset:    { width: 0, height: 3 },
+    elevation:       4,
   },
-  toolButton: {
-    minHeight: 36,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.46)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    paddingHorizontal: 14,
-  },
-  toolText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontFamily: FONTS.bold,
-  },
-  statusPillBottom: {
-    position: "absolute",
-    alignSelf: "center",
-    zIndex: 18,
-  },
-  statusPill: {
-    backgroundColor: "rgba(0,0,0,0.64)",
-    borderRadius: 999,
-    paddingHorizontal: 16,
-    paddingVertical: 9,
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-  },
-  statusText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontFamily: FONTS.bold,
-  },
-  poorImageCard: {
-    position: "absolute",
-    left: 20,
-    right: 20,
-    backgroundColor: "rgba(0,0,0,0.80)",
-    borderRadius: 20,
-    padding: 20,
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.12)",
-    zIndex: 25,
-  },
-  poorImageTitle: {
-    color: COLORS.white,
-    fontSize: 16,
-    fontFamily: FONTS.bold,
-    textAlign: "center",
-    marginBottom: 6,
-  },
-  poorImageSub: {
-    color: "rgba(255,255,255,0.7)",
-    fontSize: 13,
-    fontFamily: FONTS.medium,
-    textAlign: "center",
-    lineHeight: 20,
-    marginBottom: 16,
-  },
-  poorImageButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-  },
-  poorImageButtonText: {
-    color: COLORS.white,
-    fontSize: 14,
-    fontFamily: FONTS.bold,
-  },
+
+  // Capture dock
   captureDock: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    zIndex: 22,
-    alignItems: "center",
+    position:       "absolute",
+    left:           0,
+    right:          0,
+    zIndex:         22,
+    flexDirection:  "row",
+    alignItems:     "center",
     justifyContent: "center",
-    flexDirection: "row",
-    gap: 16,
+    gap:            28,
   },
-  captureButton: {
-    width: 82,
-    height: 82,
-    borderRadius: 41,
-    backgroundColor: COLORS.white,
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 6,
-    borderColor: "rgba(255,255,255,0.36)",
+  sideBtn: {
+    width:           56,
+    height:          56,
+    borderRadius:    28,
+    backgroundColor: "rgba(0,0,0,0.44)",
+    alignItems:      "center",
+    justifyContent:  "center",
   },
-  capturePressed: {
-    transform: [{ scale: 0.96 }],
-    opacity: 0.9,
+  sideBtnOff: {
+    opacity: 0.45,
   },
-  captureDisabled: {
-    opacity: 0.72,
+
+  // iOS-style shutter button
+  captureRing: {
+    width:           90,
+    height:          90,
+    borderRadius:    45,
+    borderWidth:     4,
+    borderColor:     "rgba(255,255,255,0.90)",
+    alignItems:      "center",
+    justifyContent:  "center",
+    backgroundColor: "transparent",
   },
-  retakeButton: {
-    minHeight: 44,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    borderRadius: 999,
-    backgroundColor: "rgba(0,0,0,0.58)",
-    borderWidth: 1,
-    borderColor: "rgba(255,255,255,0.14)",
-    paddingHorizontal: 14,
+  captureDisc: {
+    width:           74,
+    height:          74,
+    borderRadius:    37,
+    backgroundColor: "rgba(255,255,255,0.94)",
   },
-  retakeText: {
-    color: COLORS.white,
-    fontSize: 13,
-    fontFamily: FONTS.bold,
+  captureDiscPressed: {
+    transform:       [{ scale: 0.88 }],
+    backgroundColor: "rgba(255,255,255,0.65)",
   },
 });

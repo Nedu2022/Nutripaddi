@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { CheckCircle2, MessageSquareText, Sparkles } from "lucide-react-native";
+import { CheckCircle2, MessageSquareText } from "lucide-react-native";
 
 import AppHeader from "@/components/AppHeader";
 import CustomButton from "@/components/CustomButton";
@@ -83,7 +83,7 @@ export default function StudyFeedbackScreen() {
 
       {submitted && (
         <View style={styles.successCard}>
-          <Sparkles color={COLORS.success} size={18} />
+          <CheckCircle2 color={COLORS.success} size={18} />
           <Text style={styles.successText}>
             Thank you. Your feedback has been recorded locally for the study
             prototype.
@@ -96,7 +96,6 @@ export default function StudyFeedbackScreen() {
         onPress={() => setSubmitted(true)}
         title="Submit Feedback"
       />
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

@@ -233,13 +233,6 @@ export const en = {
   learnFromAI: "Learn from your AI Food Coach",
   featuredTips: "Featured Tips",
 
-  // Food Database
-  foodDatabase: "African Food Library",
-  searchFoods: "Search African foods...",
-  bestFor: "Best for",
-  watchOutFor: "Watch out for",
-  aiTip: "AI Tip",
-
   // Misc
   selected: "Selected",
   tapToChoose: "Tap to choose",

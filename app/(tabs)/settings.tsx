@@ -12,6 +12,7 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { clearAuthSession } from "@/src/services/authSessionService";
 
 type SettingRowProps = {
   icon: React.ReactNode;
@@ -48,6 +49,11 @@ export default function SettingsScreen() {
   const [mealReminders, setMealReminders] = useState(true);
   const [offlineMode, setOfflineMode] = useState(true);
   const [tone, setTone] = useState("Gentle");
+
+  const handleLogout = async () => {
+    await clearAuthSession();
+    router.replace(ROUTES.login);
+  };
 
   const langDisplay: Record<string, string> = {
     english: "English", yoruba: "Yorùbá", hausa: "Hausa", igbo: "Igbo",
@@ -121,12 +127,11 @@ export default function SettingsScreen() {
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>{t.account}</Text>
         <View style={styles.sectionCard}>
-          <SettingRow icon={<LogOut color={COLORS.error} size={20} />} label={t.logout} danger onPress={() => router.replace(ROUTES.login)} />
+          <SettingRow icon={<LogOut color={COLORS.error} size={20} />} label={t.logout} danger onPress={handleLogout} />
           <SettingRow icon={<Trash2 color={COLORS.error} size={20} />} label={t.deleteAccount} danger />
         </View>
       </View>
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

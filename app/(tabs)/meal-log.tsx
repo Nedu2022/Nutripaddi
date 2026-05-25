@@ -1,12 +1,12 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
-  Coffee, Sun, Moon, Cookie, ClipboardList, WifiOff,
+  Coffee, Moon, Utensils, Zap,
+  ChevronRight, TrendingUp, CalendarDays,
 } from "lucide-react-native";
-import Animated, { FadeInUp } from "react-native-reanimated";
+import Animated, { FadeInDown } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
-import SectionTitle from "@/components/SectionTitle";
 import MealCard from "@/components/MealCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
@@ -14,69 +14,133 @@ import { DUMMY_MEALS, DAILY_TOTALS } from "@/data/meals";
 import { useLanguage } from "@/hooks/useLanguage";
 import { ROUTES } from "@/constants/routes";
 
+const D = {
+  bg:        "#F5F6FA",
+  card:      "#FFFFFF",
+  border:    "#F0F0F0",
+  divider:   "#F5F5F5",
+  text:      "#0A0A0A",
+  muted:     "#6B7280",
+  light:     "#B0B8C4",
+  accent:    COLORS.primary,
+  accentDim: COLORS.softGreen,
+};
+
 const MEAL_CATEGORIES = [
-  { key: "Breakfast", icon: Coffee, color: COLORS.warning, bg: COLORS.softYellow },
-  { key: "Lunch", icon: Sun, color: COLORS.primary, bg: COLORS.softGreen },
-  { key: "Dinner", icon: Moon, color: COLORS.secondary, bg: COLORS.softOrange },
-  { key: "Snack", icon: Cookie, color: COLORS.error, bg: COLORS.softRed },
+  { key: "Breakfast", Icon: Coffee,    dot: "#FF8C42" },
+  { key: "Lunch",     Icon: Utensils,  dot: D.accent  },
+  { key: "Dinner",    Icon: Moon,      dot: "#6366F1" },
+  { key: "Snack",     Icon: Zap,       dot: "#F59E0B" },
+];
+
+const MACROS = [
+  { label: "Carbs",   key: "carbs"   as const, dot: "#FF8C42" },
+  { label: "Protein", key: "protein" as const, dot: D.accent  },
+  { label: "Fat",     key: "fat"     as const, dot: "#6366F1" },
 ];
 
 export default function MealLogTab() {
   const { t } = useLanguage();
 
-  const getMealsByType = (type: string) => DUMMY_MEALS.filter((m) => m.mealType === type);
-  const getTypeCalories = (type: string) => getMealsByType(type).reduce((sum, m) => sum + m.calories, 0);
+  const getMealsByType  = (type: string) => DUMMY_MEALS.filter((m) => m.mealType === type);
+  const getTypeCalories = (type: string) =>
+    getMealsByType(type).reduce((sum, m) => sum + m.calories, 0);
+
+  const todayDate = new Date().toLocaleDateString("en-US", {
+    weekday: "long", month: "short", day: "numeric",
+  });
+
+  const progressPct = Math.min(DAILY_TOTALS.calories / DAILY_TOTALS.target, 1);
+  const remaining   = Math.max(DAILY_TOTALS.target - DAILY_TOTALS.calories, 0);
 
   return (
-    <ScreenWrapper scroll>
-      <Animated.View entering={FadeInUp.duration(400)} style={styles.header}>
-        <Text style={styles.title}>{t.mealLogTitle}</Text>
-        <Text style={styles.subtitle}>Saved locally for offline use.</Text>
+    <ScreenWrapper scroll bg={D.bg}>
+
+      {/* ── HEADER ──────────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
+        <View>
+          <Text style={styles.title}>Meal Log</Text>
+          <Text style={styles.subtitle}>{todayDate}</Text>
+        </View>
+        <View style={styles.countBadge}>
+          <Text style={styles.countText}>{DUMMY_MEALS.length} logged</Text>
+        </View>
       </Animated.View>
 
-      {/* Daily Summary */}
-      <View style={styles.summaryRow}>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{DAILY_TOTALS.calories}</Text>
-          <Text style={styles.summaryLabel}>{t.totalCalories}</Text>
+      {/* ── SUMMARY CARD ────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.summaryCard}>
+        <Text style={styles.summaryEyebrow}>{"TODAY'S INTAKE"}</Text>
+        <View style={styles.summaryRow}>
+          <Text style={styles.summaryNum}>{DAILY_TOTALS.calories.toLocaleString()}</Text>
+          <Text style={styles.summaryUnit}>kcal</Text>
         </View>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryValue}>{DUMMY_MEALS.length}</Text>
-          <Text style={styles.summaryLabel}>{t.mealsLogged}</Text>
+
+        {/* Progress bar */}
+        <View style={styles.progressTrack}>
+          <View style={[styles.progressFill, { width: `${progressPct * 100}%` as any }]} />
         </View>
-      </View>
 
-      <View style={styles.offlineCard}>
-        <WifiOff color={COLORS.primary} size={18} />
-        <Text style={styles.offlineText}>
-          You can view saved meals and local food data without internet.
-        </Text>
-      </View>
+        <View style={styles.summaryFooter}>
+          <View style={styles.summaryFooterItem}>
+            <TrendingUp color={D.accent} size={12} />
+            <Text style={styles.summaryFooterText}>
+              {Math.round(progressPct * 100)}% of {DAILY_TOTALS.target.toLocaleString()} goal
+            </Text>
+          </View>
+          <Text style={styles.summaryDivider}>·</Text>
+          <Text style={styles.summaryFooterText}>{remaining.toLocaleString()} kcal left</Text>
+        </View>
+      </Animated.View>
 
-      {/* Meal Categories */}
-      <View style={styles.categoryRow}>
+      {/* ── MACRO STRIP ─────────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.macroStrip}>
+        {MACROS.map((m, i) => (
+          <View key={m.label} style={[styles.macroCell, i < MACROS.length - 1 && styles.macroCellBorder]}>
+            <View style={styles.macroDotRow}>
+              <View style={[styles.macroDot, { backgroundColor: m.dot }]} />
+              <Text style={styles.macroCellLabel}>{m.label}</Text>
+            </View>
+            <Text style={styles.macroCellVal}>
+              {DAILY_TOTALS[m.key]}
+              <Text style={styles.macroCellG}>g</Text>
+            </Text>
+          </View>
+        ))}
+      </Animated.View>
+
+      {/* ── CATEGORY GRID ───────────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(150).duration(320)} style={styles.catGrid}>
         {MEAL_CATEGORIES.map((cat) => {
-          const Icon = cat.icon;
-          const cals = getTypeCalories(cat.key);
+          const cals  = getTypeCalories(cat.key);
+          const count = getMealsByType(cat.key).length;
+          const hasLog = count > 0;
           return (
-            <View key={cat.key} style={styles.categoryCard}>
-              <View style={[styles.categoryIcon, { backgroundColor: cat.bg }]}>
-                <Icon color={cat.color} size={18} />
+            <View key={cat.key} style={styles.catCard}>
+              <View style={[styles.catIconWrap, hasLog && styles.catIconWrapActive]}>
+                <cat.Icon color={hasLog ? D.accent : D.light} size={17} />
               </View>
-              <Text style={styles.categoryName}>{cat.key}</Text>
-              <Text style={styles.categoryCals}>{cals > 0 ? `${cals}` : "—"}</Text>
+              <Text style={styles.catName}>{cat.key}</Text>
+              <Text style={[styles.catCals, !hasLog && styles.catCalsEmpty]}>
+                {hasLog ? `${cals} kcal` : "Empty"}
+              </Text>
             </View>
           );
         })}
-      </View>
+      </Animated.View>
 
-      {/* Meals by Category */}
-      {MEAL_CATEGORIES.map((cat) => {
+      {/* ── MEALS BY CATEGORY ───────────────────────────────────────── */}
+      {MEAL_CATEGORIES.map((cat, catIdx) => {
         const meals = getMealsByType(cat.key);
         if (meals.length === 0) return null;
         return (
-          <View key={cat.key}>
-            <SectionTitle title={cat.key} />
+          <Animated.View
+            key={cat.key}
+            entering={FadeInDown.delay(200 + catIdx * 40).duration(320)}
+          >
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>{cat.key}</Text>
+              <Text style={styles.sectionCals}>{getTypeCalories(cat.key)} kcal</Text>
+            </View>
             {meals.map((meal) => (
               <MealCard
                 key={meal.id}
@@ -84,90 +148,285 @@ export default function MealLogTab() {
                 onPress={() => router.push(ROUTES.mealDetails)}
               />
             ))}
-          </View>
+          </Animated.View>
         );
       })}
 
-      <Pressable onPress={() => router.push(ROUTES.nutritionHistory)} style={styles.reportCard}>
-        <View style={styles.reportIcon}>
-          <ClipboardList color={COLORS.primary} size={20} />
-        </View>
-        <View style={styles.reportCopy}>
-          <Text style={styles.reportTitle}>{t.viewWeeklyReport}</Text>
-          <Text style={styles.reportText}>{t.weeklyReportText}</Text>
-        </View>
-      </Pressable>
+      {/* ── WEEKLY REPORT CTA ───────────────────────────────────────── */}
+      <Animated.View entering={FadeInDown.delay(360).duration(320)}>
+        <Pressable
+          onPress={() => router.push(ROUTES.nutritionHistory)}
+          style={styles.reportCard}
+        >
+          <View style={styles.reportLeft}>
+            <View style={styles.reportIconWrap}>
+              <CalendarDays color={D.accent} size={19} />
+            </View>
+            <View>
+              <Text style={styles.reportTitle}>{t.viewWeeklyReport}</Text>
+              <Text style={styles.reportSub}>{t.weeklyReportText}</Text>
+            </View>
+          </View>
+          <ChevronRight color={D.light} size={18} />
+        </Pressable>
+      </Animated.View>
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }
 
 const styles = StyleSheet.create({
-  header: { marginTop: 18, marginBottom: 16 },
-  title: { color: COLORS.text, fontSize: 26, fontFamily: FONTS.extraBold },
-  subtitle: { color: COLORS.textMuted, fontSize: 14, fontFamily: FONTS.medium, marginTop: 4 },
-  summaryRow: { flexDirection: "row", gap: 12, marginBottom: 16 },
-  summaryCard: {
-    flex: 1, backgroundColor: COLORS.secondary, borderRadius: 16, padding: 16, alignItems: "center",
+  header: {
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "space-between",
+    marginTop:      16,
+    marginBottom:   20,
   },
-  summaryValue: { color: COLORS.white, fontSize: 24, fontFamily: FONTS.extraBold },
-  summaryLabel: { color: COLORS.textLight, fontSize: 11, fontFamily: FONTS.medium, marginTop: 4 },
-  offlineCard: {
-    flexDirection: "row",
-    gap: 10,
-    backgroundColor: COLORS.softGreen,
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 16,
+  title: {
+    color:      D.text,
+    fontSize:   28,
+    fontFamily: FONTS.extraBold,
   },
-  offlineText: {
-    flex: 1,
-    color: COLORS.text,
-    fontSize: 13,
+  subtitle: {
+    color:      D.muted,
+    fontSize:   13,
     fontFamily: FONTS.medium,
-    lineHeight: 19,
+    marginTop:  3,
   },
-  categoryRow: { flexDirection: "row", gap: 8, marginBottom: 20 },
-  categoryCard: {
-    flex: 1, backgroundColor: COLORS.card, borderRadius: 14, padding: 10, alignItems: "center",
-    borderWidth: 1, borderColor: COLORS.border,
+  countBadge: {
+    backgroundColor:   D.accentDim,
+    borderRadius:      999,
+    paddingHorizontal: 14,
+    paddingVertical:   7,
   },
-  categoryIcon: { width: 34, height: 34, borderRadius: 10, alignItems: "center", justifyContent: "center", marginBottom: 4 },
-  categoryName: { color: COLORS.text, fontSize: 11, fontFamily: FONTS.bold },
-  categoryCals: { color: COLORS.primary, fontSize: 12, fontFamily: FONTS.bold, marginTop: 2 },
-  reportCard: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    backgroundColor: COLORS.white,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    padding: 16,
-    marginTop: 8,
-  },
-  reportIcon: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: COLORS.softGreen,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  reportCopy: {
-    flex: 1,
-  },
-  reportTitle: {
-    color: COLORS.text,
-    fontSize: 15,
+  countText: {
+    color:      D.accent,
+    fontSize:   12,
     fontFamily: FONTS.bold,
   },
-  reportText: {
-    color: COLORS.textMuted,
-    fontSize: 12,
+
+  // Summary card
+  summaryCard: {
+    backgroundColor: D.card,
+    borderRadius:    22,
+    padding:         20,
+    marginBottom:    12,
+    shadowColor:     "#000",
+    shadowOpacity:   0.05,
+    shadowRadius:    14,
+    shadowOffset:    { width: 0, height: 4 },
+    elevation:       3,
+  },
+  summaryEyebrow: {
+    color:         D.light,
+    fontSize:      10,
+    fontFamily:    FONTS.semiBold,
+    letterSpacing: 1,
+    marginBottom:  10,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems:    "flex-end",
+    gap:           6,
+    marginBottom:  14,
+  },
+  summaryNum: {
+    color:      D.text,
+    fontSize:   44,
+    fontFamily: FONTS.extraBold,
+    lineHeight: 48,
+  },
+  summaryUnit: {
+    color:        D.muted,
+    fontSize:     14,
+    fontFamily:   FONTS.semiBold,
+    marginBottom: 8,
+  },
+  progressTrack: {
+    height:          6,
+    borderRadius:    999,
+    backgroundColor: "#EEEEEE",
+    overflow:        "hidden",
+    marginBottom:    12,
+  },
+  progressFill: {
+    height:          "100%",
+    borderRadius:    999,
+    backgroundColor: D.accent,
+  },
+  summaryFooter: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           8,
+  },
+  summaryFooterItem: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           4,
+  },
+  summaryFooterText: {
+    color:      D.muted,
+    fontSize:   12,
     fontFamily: FONTS.medium,
-    lineHeight: 18,
-    marginTop: 3,
+  },
+  summaryDivider: {
+    color:   D.light,
+    fontSize: 12,
+  },
+
+  // Macro strip
+  macroStrip: {
+    flexDirection:   "row",
+    backgroundColor: D.card,
+    borderRadius:    18,
+    marginBottom:    14,
+    paddingVertical: 16,
+    shadowColor:     "#000",
+    shadowOpacity:   0.04,
+    shadowRadius:    10,
+    shadowOffset:    { width: 0, height: 3 },
+    elevation:       2,
+  },
+  macroCell: {
+    flex:       1,
+    alignItems: "center",
+    gap:        6,
+  },
+  macroCellBorder: {
+    borderRightWidth:  1,
+    borderRightColor: D.divider,
+  },
+  macroDotRow: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           5,
+  },
+  macroDot: {
+    width:        6,
+    height:       6,
+    borderRadius: 3,
+  },
+  macroCellLabel: {
+    color:      D.muted,
+    fontSize:   11,
+    fontFamily: FONTS.medium,
+  },
+  macroCellVal: {
+    color:      D.text,
+    fontSize:   20,
+    fontFamily: FONTS.extraBold,
+  },
+  macroCellG: {
+    fontSize:   12,
+    fontFamily: FONTS.semiBold,
+    color:      D.light,
+  },
+
+  // Category grid
+  catGrid: {
+    flexDirection: "row",
+    gap:           10,
+    marginBottom:  24,
+  },
+  catCard: {
+    flex:            1,
+    backgroundColor: D.card,
+    borderRadius:    18,
+    padding:         14,
+    alignItems:      "center",
+    gap:             5,
+    shadowColor:     "#000",
+    shadowOpacity:   0.04,
+    shadowRadius:    8,
+    shadowOffset:    { width: 0, height: 3 },
+    elevation:       2,
+  },
+  catIconWrap: {
+    width:           36,
+    height:          36,
+    borderRadius:    12,
+    backgroundColor: "#F3F4F6",
+    alignItems:      "center",
+    justifyContent:  "center",
+    marginBottom:    2,
+  },
+  catIconWrapActive: {
+    backgroundColor: D.accentDim,
+  },
+  catName: {
+    color:      D.text,
+    fontSize:   10,
+    fontFamily: FONTS.bold,
+  },
+  catCals: {
+    color:      D.accent,
+    fontSize:   11,
+    fontFamily: FONTS.extraBold,
+  },
+  catCalsEmpty: {
+    color:      D.light,
+    fontFamily: FONTS.medium,
+  },
+
+  // Section headers
+  sectionHeader: {
+    flexDirection:  "row",
+    alignItems:     "center",
+    justifyContent: "space-between",
+    marginBottom:   10,
+    marginTop:      6,
+  },
+  sectionTitle: {
+    color:      D.text,
+    fontSize:   15,
+    fontFamily: FONTS.extraBold,
+  },
+  sectionCals: {
+    color:      D.light,
+    fontSize:   12,
+    fontFamily: FONTS.semiBold,
+  },
+
+  // Report CTA
+  reportCard: {
+    flexDirection:     "row",
+    alignItems:        "center",
+    justifyContent:    "space-between",
+    backgroundColor:   D.card,
+    borderRadius:      20,
+    padding:           16,
+    marginTop:         8,
+    shadowColor:       "#000",
+    shadowOpacity:     0.05,
+    shadowRadius:      12,
+    shadowOffset:      { width: 0, height: 3 },
+    elevation:         2,
+  },
+  reportLeft: {
+    flexDirection: "row",
+    alignItems:    "center",
+    gap:           14,
+    flex:          1,
+  },
+  reportIconWrap: {
+    width:           46,
+    height:          46,
+    borderRadius:    15,
+    backgroundColor: D.accentDim,
+    alignItems:      "center",
+    justifyContent:  "center",
+  },
+  reportTitle: {
+    color:      D.text,
+    fontSize:   15,
+    fontFamily: FONTS.bold,
+  },
+  reportSub: {
+    color:      D.muted,
+    fontSize:   12,
+    fontFamily: FONTS.medium,
+    marginTop:  2,
+    lineHeight: 17,
   },
 });

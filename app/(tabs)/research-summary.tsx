@@ -61,7 +61,6 @@ export default function ResearchSummaryScreen() {
         </Text>
       </View>
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

@@ -1,4 +1,5 @@
 import type { NutritionEstimate } from "./nutrition";
+import type { FreshnessEstimate } from "./freshness";
 
 export type DetectedFoodType =
   | "swallow"
@@ -40,6 +41,7 @@ export type DetectedMealSummary = {
   localPortionLabel: string;
   detectedItems: DetectedFoodItem[];
   nutrition: NutritionEstimate;
+  freshness: FreshnessEstimate;
   advice: string;
 };
 

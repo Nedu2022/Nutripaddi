@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import {
   PanResponder,
   Pressable,
@@ -10,10 +10,11 @@ import {
 import {
   CheckCircle2,
   ChevronUp,
+  MapPin,
   Pencil,
   ScanLine,
-  Sparkles,
 } from "lucide-react-native";
+import { BlurView } from "expo-blur";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -21,22 +22,29 @@ import Animated, {
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import PortionSelector from "@/components/scan/PortionSelector";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { getPortionLabel } from "@/src/services/foodDetectionService";
-import type {
-  DetectedMealPortion,
-  DetectedMealSummary,
-} from "@/src/types/detection";
+import type { DetectedMealSummary } from "@/src/types/detection";
 
-const PORTION_ESTIMATES: Record<
-  DetectedMealPortion,
-  { kcal: number; carbs: number; protein: number; fat: number }
-> = {
-  small:  { kcal: 380, carbs: 48, protein: 14, fat: 14 },
-  normal: { kcal: 580, carbs: 72, protein: 20, fat: 22 },
-  large:  { kcal: 780, carbs: 98, protein: 28, fat: 30 },
+// Glassmorphism color tokens
+const G = {
+  bg: "rgba(8, 8, 12, 0.72)",
+  border: "rgba(255, 255, 255, 0.13)",
+  handle: "rgba(255, 255, 255, 0.28)",
+  cardBg: "rgba(255, 255, 255, 0.07)",
+  cardBorder: "rgba(255, 255, 255, 0.10)",
+  divider: "rgba(255, 255, 255, 0.09)",
+  text: "#FFFFFF",
+  textMuted: "rgba(255, 255, 255, 0.62)",
+  textLight: "rgba(255, 255, 255, 0.38)",
+  accent: COLORS.primary,
+  accentDark: COLORS.primaryDark,
+  accentBg: "rgba(0, 128, 0, 0.15)",
+  warnBg: "rgba(255, 175, 0, 0.14)",
+  warnText: "#FFBB33",
+  pillBg: "rgba(255, 255, 255, 0.10)",
+  chipBg: "rgba(255, 255, 255, 0.09)",
+  chipActiveBg: COLORS.primary,
 };
 
 type DetectedMealBottomSheetProps = {
@@ -44,7 +52,6 @@ type DetectedMealBottomSheetProps = {
   summary: DetectedMealSummary | null;
   onAnalyze: () => void;
   onEdit: () => void;
-  onPortionChange: (portion: DetectedMealPortion, localLabel: string) => void;
 };
 
 function clamp(value: number, min: number, max: number) {
@@ -56,13 +63,9 @@ export default function DetectedMealBottomSheet({
   summary,
   onAnalyze,
   onEdit,
-  onPortionChange,
 }: DetectedMealBottomSheetProps) {
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
-  const [portion, setPortion] = useState<DetectedMealPortion>(
-    summary?.portion ?? "normal"
-  );
   const sheetHeight = Math.min(500, Math.max(410, height * 0.58));
   const collapsedY = sheetHeight - 126;
   const halfY = Math.max(118, sheetHeight - 318);
@@ -71,12 +74,6 @@ export default function DetectedMealBottomSheet({
   const translateY = useSharedValue(hiddenY);
   const startY = useRef(halfY);
   const isLowConfidence = Boolean(summary && summary.confidence < 82);
-
-  useEffect(() => {
-    if (summary?.portion) {
-      setPortion(summary.portion);
-    }
-  }, [summary?.portion]);
 
   useEffect(() => {
     translateY.value = withTiming(visible && summary ? halfY : hiddenY, {
@@ -113,11 +110,13 @@ export default function DetectedMealBottomSheet({
 
   if (!summary) return null;
 
-  const handlePortionChange = (value: DetectedMealPortion) => {
-    const localLabel = getPortionLabel(value);
-    setPortion(value);
-    onPortionChange(value, localLabel);
-  };
+  const swallow = summary.detectedItems.find((item) => item.type === "swallow");
+  const soup = summary.detectedItems.find((item) => item.type === "soup");
+  const protein = summary.detectedItems.find((item) => item.type === "protein");
+  const pattern =
+    swallow && soup
+      ? `Swallow + soup${protein ? " + protein" : ""}`
+      : summary.detectedItems[0]?.label ?? "Mixed plate";
 
   return (
     <Animated.View
@@ -130,14 +129,25 @@ export default function DetectedMealBottomSheet({
         sheetStyle,
       ]}
     >
+      {/* Frosted glass backdrop */}
+      <BlurView
+        intensity={78}
+        tint="dark"
+        style={StyleSheet.absoluteFill}
+      />
+      {/* Tinted overlay on top of blur */}
+      <View style={styles.tintOverlay} />
+
+      {/* Drag area */}
       <View {...panResponder.panHandlers} style={styles.dragArea}>
         <View style={styles.handle} />
-        <ChevronUp color={COLORS.textLight} size={16} />
+        <ChevronUp color={G.textLight} size={16} />
       </View>
 
+      {/* Header */}
       <View style={styles.topRow}>
         <View style={styles.titleIcon}>
-          <Sparkles color={COLORS.primary} size={18} />
+          <ScanLine color={G.accent} size={18} />
         </View>
         <View style={styles.titleCopy}>
           <Text style={styles.eyebrow}>
@@ -147,12 +157,15 @@ export default function DetectedMealBottomSheet({
         </View>
       </View>
 
+      {/* Confidence + quick action */}
       <View style={styles.collapsedActionRow}>
-        <View style={styles.matchPill}>
-          <CheckCircle2 color={COLORS.primary} size={14} />
-          <Text style={styles.matchText}>
-            {isLowConfidence ? "Needs review" : "Good match"} ·{" "}
-            {summary.confidence}%
+        <View style={[styles.matchPill, isLowConfidence && styles.matchPillWarn]}>
+          <CheckCircle2
+            color={isLowConfidence ? G.warnText : G.accent}
+            size={14}
+          />
+          <Text style={[styles.matchText, isLowConfidence && styles.matchTextWarn]}>
+            {isLowConfidence ? "Needs review" : "Good match"} · {summary.confidence}%
           </Text>
         </View>
         <Pressable onPress={onAnalyze} style={styles.smallAnalyzeButton}>
@@ -190,41 +203,58 @@ export default function DetectedMealBottomSheet({
             ))}
           </View>
 
-          <View style={styles.portionHeader}>
-            <Text style={styles.sectionLabel}>Quick amount</Text>
-            <Text style={styles.localPortion}>{getPortionLabel(portion)}</Text>
+          <Text style={styles.sectionLabel}>Food origin</Text>
+          <View style={styles.originCard}>
+            <View style={styles.originIcon}>
+              <MapPin color={G.accent} size={15} />
+            </View>
+            <View style={styles.originCopy}>
+              <Text style={styles.originTitle}>Local meal pattern</Text>
+              <Text style={styles.originText}>
+                {pattern} recognised from the visible foods.
+              </Text>
+              <Text style={styles.localPortion}>
+                Detected amount: {summary.localPortionLabel}
+              </Text>
+            </View>
           </View>
-          <PortionSelector value={portion} onChange={handlePortionChange} />
-          <Text style={styles.helperText}>
-            This looks like {getPortionLabel(portion).toLowerCase()}. You can
-            adjust it if it is not correct.
-          </Text>
         </>
       )}
 
       {!isLowConfidence && (
         <View style={styles.estimateRow}>
-          {(["kcal", "carbs", "protein", "fat"] as const).map((key) => (
-            <View key={key} style={styles.estimateCell}>
-              <Text style={styles.estimateValue}>
-                ~{PORTION_ESTIMATES[portion][key]}
-                {key === "kcal" ? "" : "g"}
-              </Text>
-              <Text style={styles.estimateLabel}>{key}</Text>
-            </View>
-          ))}
+          <View style={styles.estimateCell}>
+            <Text style={styles.estimateValue}>~{summary.nutrition.calories}</Text>
+            <Text style={styles.estimateLabel}>kcal</Text>
+          </View>
+          <View style={styles.estimateDivider} />
+          <View style={styles.estimateCell}>
+            <Text style={styles.estimateValue}>~{summary.nutrition.carbs}g</Text>
+            <Text style={styles.estimateLabel}>carbs</Text>
+          </View>
+          <View style={styles.estimateDivider} />
+          <View style={styles.estimateCell}>
+            <Text style={styles.estimateValue}>~{summary.nutrition.protein}g</Text>
+            <Text style={styles.estimateLabel}>protein</Text>
+          </View>
+          <View style={styles.estimateDivider} />
+          <View style={styles.estimateCell}>
+            <Text style={styles.estimateValue}>~{summary.nutrition.fat}g</Text>
+            <Text style={styles.estimateLabel}>fat</Text>
+          </View>
         </View>
       )}
 
+      {/* Action buttons */}
       <View style={styles.actionRow}>
         <Pressable onPress={onAnalyze} style={styles.analyzeButton}>
-          <ScanLine color={COLORS.white} size={18} />
+          <ScanLine color="#FFFFFF" size={18} />
           <Text style={styles.analyzeText}>
             {isLowConfidence ? "Continue" : "Analyze Nutrition"}
           </Text>
         </Pressable>
         <Pressable onPress={onEdit} style={styles.editButton}>
-          <Pencil color={COLORS.text} size={17} />
+          <Pencil color={G.textMuted} size={17} />
           <Text style={styles.editText}>Not correct? Edit</Text>
         </Pressable>
       </View>
@@ -238,15 +268,23 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: COLORS.white,
     borderTopLeftRadius: 28,
     borderTopRightRadius: 28,
+    borderTopWidth: 1,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: G.border,
+    overflow: "hidden",
     paddingHorizontal: 20,
-    shadowColor: COLORS.secondary,
-    shadowOpacity: 0.2,
-    shadowRadius: 24,
-    shadowOffset: { width: 0, height: -10 },
-    elevation: 16,
+    shadowColor: "#000",
+    shadowOpacity: 0.5,
+    shadowRadius: 32,
+    shadowOffset: { width: 0, height: -12 },
+    elevation: 24,
+  },
+  tintOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: G.bg,
   },
   dragArea: {
     height: 34,
@@ -257,7 +295,7 @@ const styles = StyleSheet.create({
     width: 44,
     height: 5,
     borderRadius: 999,
-    backgroundColor: COLORS.border,
+    backgroundColor: G.handle,
     marginBottom: 3,
   },
   topRow: {
@@ -269,7 +307,9 @@ const styles = StyleSheet.create({
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: COLORS.softGreen,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: "rgba(0, 128, 0, 0.25)",
     alignItems: "center",
     justifyContent: "center",
   },
@@ -277,13 +317,15 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   eyebrow: {
-    color: COLORS.primary,
-    fontSize: 12,
+    color: G.accent,
+    fontSize: 11,
     fontFamily: FONTS.extraBold,
-    marginBottom: 2,
+    textTransform: "uppercase",
+    letterSpacing: 0.5,
+    marginBottom: 3,
   },
   mealName: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 18,
     fontFamily: FONTS.extraBold,
     lineHeight: 24,
@@ -300,22 +342,35 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    backgroundColor: COLORS.softGreen,
+    backgroundColor: G.accentBg,
+    borderWidth: 1,
+    borderColor: "rgba(0, 128, 0, 0.2)",
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 9,
   },
+  matchPillWarn: {
+    backgroundColor: G.warnBg,
+    borderColor: "rgba(255, 175, 0, 0.2)",
+  },
   matchText: {
-    color: COLORS.primaryDark,
+    color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.bold,
+  },
+  matchTextWarn: {
+    color: G.warnText,
   },
   smallAnalyzeButton: {
     minHeight: 36,
     borderRadius: 999,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: G.accent,
     justifyContent: "center",
     paddingHorizontal: 16,
+    shadowColor: G.accent,
+    shadowOpacity: 0.4,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
   },
   smallAnalyzeText: {
     color: COLORS.white,
@@ -324,14 +379,16 @@ const styles = StyleSheet.create({
   },
   divider: {
     height: 1,
-    backgroundColor: COLORS.border,
+    backgroundColor: G.divider,
     marginVertical: 14,
   },
   sectionLabel: {
-    color: COLORS.text,
-    fontSize: 14,
+    color: G.textMuted,
+    fontSize: 11,
     fontFamily: FONTS.extraBold,
     marginBottom: 9,
+    textTransform: "uppercase",
+    letterSpacing: 0.6,
   },
   itemList: {
     flexDirection: "row",
@@ -343,44 +400,69 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 7,
-    backgroundColor: COLORS.inputBg,
+    backgroundColor: G.chipBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
     borderRadius: 999,
     paddingHorizontal: 11,
     paddingVertical: 8,
   },
   itemName: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 12,
     fontFamily: FONTS.bold,
   },
   itemConfidence: {
-    color: COLORS.primary,
+    color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.extraBold,
   },
-  portionHeader: {
+  originCard: {
     flexDirection: "row",
-    justifyContent: "space-between",
+    alignItems: "flex-start",
+    gap: 10,
+    backgroundColor: G.cardBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
+    borderRadius: 16,
+    padding: 14,
+  },
+  originIcon: {
+    width: 30,
+    height: 30,
+    borderRadius: 10,
+    backgroundColor: G.accentBg,
     alignItems: "center",
+    justifyContent: "center",
   },
-  localPortion: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontFamily: FONTS.bold,
-    marginBottom: 9,
+  originCopy: {
+    flex: 1,
   },
-  helperText: {
-    color: COLORS.textMuted,
+  originTitle: {
+    color: G.text,
+    fontSize: 13,
+    fontFamily: FONTS.extraBold,
+    marginBottom: 4,
+  },
+  originText: {
+    color: G.textMuted,
     fontSize: 12,
     fontFamily: FONTS.medium,
     lineHeight: 18,
-    marginTop: 8,
+    marginBottom: 6,
+  },
+  localPortion: {
+    color: G.text,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
   },
   estimateRow: {
     flexDirection: "row",
-    backgroundColor: COLORS.inputBg,
-    borderRadius: 14,
-    paddingVertical: 12,
+    backgroundColor: G.cardBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
+    borderRadius: 16,
+    paddingVertical: 14,
     marginTop: 14,
   },
   estimateCell: {
@@ -388,13 +470,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 3,
   },
+  estimateDivider: {
+    width: 1,
+    backgroundColor: G.divider,
+  },
   estimateValue: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 15,
     fontFamily: FONTS.extraBold,
   },
   estimateLabel: {
-    color: COLORS.textMuted,
+    color: G.textLight,
     fontSize: 11,
     fontFamily: FONTS.semiBold,
     textTransform: "uppercase",
@@ -406,11 +492,15 @@ const styles = StyleSheet.create({
   analyzeButton: {
     minHeight: 52,
     borderRadius: 15,
-    backgroundColor: COLORS.secondary,
+    backgroundColor: G.accent,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
+    shadowColor: G.accent,
+    shadowOpacity: 0.35,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
   },
   analyzeText: {
     color: COLORS.white,
@@ -421,24 +511,27 @@ const styles = StyleSheet.create({
     minHeight: 48,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: G.border,
+    backgroundColor: G.pillBg,
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
   },
   editText: {
-    color: COLORS.text,
+    color: G.textMuted,
     fontSize: 14,
     fontFamily: FONTS.bold,
   },
   lowConfidenceCard: {
-    backgroundColor: COLORS.softYellow,
+    backgroundColor: G.warnBg,
+    borderWidth: 1,
+    borderColor: "rgba(255, 175, 0, 0.2)",
     borderRadius: 16,
     padding: 14,
   },
   lowMessage: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 13,
     fontFamily: FONTS.medium,
     lineHeight: 20,
@@ -450,13 +543,15 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   choiceChip: {
-    backgroundColor: COLORS.white,
+    backgroundColor: G.chipBg,
+    borderWidth: 1,
+    borderColor: G.cardBorder,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
   choiceText: {
-    color: COLORS.text,
+    color: G.text,
     fontSize: 12,
     fontFamily: FONTS.bold,
   },

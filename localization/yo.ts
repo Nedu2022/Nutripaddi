@@ -67,7 +67,6 @@ export const yo: typeof en = {
   tabDashboard: "Ilé", tabScan: "Ṣàwárí", tabCoach: "Olùrànlọ́wọ́", tabMealLog: "Àkọsílẹ̀", tabProfile: "Profaili",
   smartSuggestions: "Ìmọ̀ràn", aiMealIdeas: "Èrò oúnjẹ", adjustPortions: "Ṣàtúnṣe ìwọ̀n rẹ.",
   nutritionLessons: "Ẹ̀kọ́ Oúnjẹ", learnFromAI: "Kọ́ lọ́wọ́ olùrànlọ́wọ́", featuredTips: "Ìmọ̀ràn Pàtàkì",
-  foodDatabase: "Àkójọ Oúnjẹ", searchFoods: "Wá oúnjẹ...", bestFor: "Dára fún", watchOutFor: "Ṣọ́ra fún", aiTip: "Ìmọ̀ràn",
   selected: "A ti yàn", tapToChoose: "Tẹ láti yan", meals: "oúnjẹ", meal: "oúnjẹ", kcal: "kcal",
   forgotPasswordTitle: "Gbàgbé ọ̀rọ̀ aṣínà?", forgotPasswordSubtitle: "A ó fi ọ̀nà ránṣẹ́.",
 };

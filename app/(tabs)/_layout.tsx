@@ -1,67 +1,129 @@
 import { Tabs } from "expo-router";
 import {
-  LayoutDashboard,
+  House,
   ScanLine,
   MessageCircle,
   ClipboardList,
   User,
 } from "lucide-react-native";
+import { BlurView } from "expo-blur";
+import { View, Text, StyleSheet, Platform } from "react-native";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
+
+const ACTIVE_COLOR   = COLORS.primary;
+const INACTIVE_COLOR = "#8A8F9A";
+const IS_WEB         = Platform.OS === "web";
+const TAB_BAR_HEIGHT = IS_WEB ? 66 : 70;
+const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 14 : 12;
+
+function TabBarGlass() {
+  return (
+    <View style={styles.glassLayer}>
+      {/* Ultra-thin blur — lets content show through */}
+      <BlurView intensity={55} tint="systemUltraThinMaterialLight" style={StyleSheet.absoluteFill} />
+      {/* 1-px specular edge at the top — the only thing that reads as "glass" */}
+      <View style={styles.specularTop} />
+    </View>
+  );
+}
+
+function TabIcon({
+  icon: Icon,
+  focused,
+  label,
+}: {
+  icon: React.ComponentType<{ color: string; size: number }>;
+  focused: boolean;
+  label: string;
+}) {
+  return (
+    <View style={[styles.tabItem, focused && styles.tabItemActive]}>
+      <Icon color={focused ? ACTIVE_COLOR : INACTIVE_COLOR} size={focused ? 23 : 22} />
+      <Text style={[styles.tabLabel, focused && styles.tabLabelActive]} numberOfLines={1}>
+        {label}
+      </Text>
+    </View>
+  );
+}
 
 export default function TabsLayout() {
   return (
     <Tabs
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: COLORS.primary,
-        tabBarInactiveTintColor: "#98A2B3",
-        tabBarStyle: {
-          backgroundColor: COLORS.white,
-          borderTopColor: COLORS.border,
-          height: 76,
-          paddingBottom: 12,
-          paddingTop: 10,
+        tabBarActiveTintColor:   ACTIVE_COLOR,
+        tabBarInactiveTintColor: INACTIVE_COLOR,
+        tabBarHideOnKeyboard: true,
+        tabBarShowLabel: false,
+        tabBarItemStyle: {
+          height: TAB_BAR_HEIGHT - 10,
+          borderRadius: 999,
+          marginHorizontal: 1,
         },
-        tabBarLabelStyle: {
-          fontSize: 11,
-          fontFamily: FONTS.semiBold,
+        tabBarIconStyle: {
+          flex: 1,
+          width: "100%",
+        },
+        tabBarBackground: () => <TabBarGlass />,
+        tabBarStyle: {
+          position:          "absolute",
+          left:              38,
+          right:             38,
+          bottom:            TAB_BAR_BOTTOM,
+          height:            TAB_BAR_HEIGHT,
+          borderRadius:      TAB_BAR_HEIGHT / 2,
+          paddingHorizontal: 4,
+          paddingVertical:   5,
+          // transparent — let the blur be the background
+          backgroundColor:   "transparent",
+          borderTopWidth:    0,
+          borderWidth:       1,
+          borderColor:       "rgba(255,255,255,0.50)",
+          overflow:          "hidden",
+          shadowColor:       "#000",
+          shadowOpacity:     0.12,
+          shadowRadius:      24,
+          shadowOffset:      { width: 0, height: 8 },
+          elevation:         18,
         },
       }}
     >
       <Tabs.Screen
         name="index"
         options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color }) => (
-            <LayoutDashboard color={color} size={22} />
+          title: "Home",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={House} focused={focused} label="Home" />
           ),
         }}
       />
       <Tabs.Screen
         name="scan"
         options={{
-          title: "Scan Meal",
+          title: "Scan",
           tabBarStyle: { display: "none" },
-          tabBarIcon: ({ color }) => <ScanLine color={color} size={22} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={ScanLine} focused={focused} label="Scan" />
+          ),
         }}
       />
       <Tabs.Screen
         name="ai-coach"
         options={{
-          title: "AI Coach",
-          tabBarIcon: ({ color }) => (
-            <MessageCircle color={color} size={22} />
+          title: "Coach",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={MessageCircle} focused={focused} label="Coach" />
           ),
         }}
       />
       <Tabs.Screen
         name="meal-log"
         options={{
-          title: "Meal Log",
-          tabBarIcon: ({ color }) => (
-            <ClipboardList color={color} size={22} />
+          title: "Log",
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={ClipboardList} focused={focused} label="Log" />
           ),
         }}
       />
@@ -69,76 +131,63 @@ export default function TabsLayout() {
         name="profile"
         options={{
           title: "Profile",
-          tabBarIcon: ({ color }) => <User color={color} size={22} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon icon={User} focused={focused} label="Profile" />
+          ),
         }}
       />
-      {/* Hidden screens accessible via navigation */}
-      <Tabs.Screen
-        name="analyzing"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="food-result"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="food-database"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="nutrition-history"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="meal-details"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="smart-suggestions"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="nutrition-lessons"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="study-feedback"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="research-summary"
-        options={{
-          href: null,
-        }}
-      />
-      <Tabs.Screen
-        name="dataset-contribution"
-        options={{
-          href: null,
-        }}
-      />
+      {/* Hidden screens */}
+      <Tabs.Screen name="analyzing"            options={{ href: null }} />
+      <Tabs.Screen name="food-result"          options={{ href: null }} />
+      <Tabs.Screen name="nutrition-history"    options={{ href: null }} />
+      <Tabs.Screen name="meal-details"         options={{ href: null }} />
+      <Tabs.Screen name="settings"             options={{ href: null }} />
+      <Tabs.Screen name="smart-suggestions"    options={{ href: null }} />
+      <Tabs.Screen name="nutrition-lessons"    options={{ href: null }} />
+      <Tabs.Screen name="study-feedback"       options={{ href: null }} />
+      <Tabs.Screen name="research-summary"     options={{ href: null }} />
+      <Tabs.Screen name="dataset-contribution" options={{ href: null }} />
     </Tabs>
   );
 }
+
+const styles = StyleSheet.create({
+  glassLayer: {
+    ...StyleSheet.absoluteFillObject,
+    overflow:     "hidden",
+    borderRadius: TAB_BAR_HEIGHT / 2,
+  },
+  specularTop: {
+    position:        "absolute",
+    top:             0,
+    left:            18,
+    right:           18,
+    height:          1,
+    borderRadius:    999,
+    backgroundColor: "rgba(255,255,255,0.85)",
+  },
+
+  tabItem: {
+    alignItems:     "center",
+    justifyContent: "center",
+    gap:            2,
+    width:          "100%",
+    height:         "100%",
+    borderRadius:   999,
+  },
+  tabItemActive: {
+    backgroundColor: "rgba(255,255,255,0.30)",
+    borderWidth:     1,
+    borderColor:     "rgba(255,255,255,0.55)",
+  },
+  tabLabel: {
+    color:      INACTIVE_COLOR,
+    fontSize:   10,
+    fontFamily: FONTS.semiBold,
+    lineHeight: 12,
+  },
+  tabLabelActive: {
+    color:      ACTIVE_COLOR,
+    fontFamily: FONTS.bold,
+  },
+});

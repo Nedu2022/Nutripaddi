@@ -12,19 +12,21 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { saveAuthSession } from "@/src/services/authSessionService";
 
 export default function ProfileSetupScreen() {
   const { t } = useLanguage();
   const [nickname, setNickname] = useState("");
   const [error, setError] = useState("");
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
     if (!nickname.trim()) {
       setError("Please enter a nickname.");
       return;
     }
 
     setError("");
+    await saveAuthSession();
     router.replace(ROUTES.tabs);
   };
 

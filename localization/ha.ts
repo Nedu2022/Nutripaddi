@@ -67,7 +67,6 @@ export const ha: typeof en = {
   tabDashboard: "Gida", tabScan: "Duba", tabCoach: "Shawara", tabMealLog: "Rikodin", tabProfile: "Bayani",
   smartSuggestions: "Shawarwari", aiMealIdeas: "Ra'ayoyin abinci", adjustPortions: "Daidaita girman abinci.",
   nutritionLessons: "Darussan Abinci", learnFromAI: "Koya daga mai shawara", featuredTips: "Shawarwari na Musamman",
-  foodDatabase: "Tarin Abinci", searchFoods: "Bincika abinci...", bestFor: "Mafi kyau don", watchOutFor: "Yi hankali da", aiTip: "Shawara",
   selected: "An zaɓa", tapToChoose: "Taɓa don zaɓa", meals: "abinci", meal: "abinci", kcal: "kcal",
   forgotPasswordTitle: "An manta kalmar sirri?", forgotPasswordSubtitle: "Za mu aika maka hanyar sake saita.",
 };

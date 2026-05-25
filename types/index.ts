@@ -46,6 +46,8 @@ export type LoggedMeal = {
   protein: number;
   fat: number;
   fibre?: number;
+  freshnessScore?: number;
+  freshnessLabel?: string;
   portionSize?: PortionSize;
   confidence?: number;
   source?: string;

@@ -150,7 +150,6 @@ export default function NutritionHistoryScreen() {
         <MealCard key={meal.id} meal={meal} />
       ))}
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

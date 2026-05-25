@@ -10,6 +10,7 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { saveAuthSession } from "@/src/services/authSessionService";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -31,8 +32,11 @@ export default function LoginScreen() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleLogin = () => {
-    if (validate()) router.replace(ROUTES.tabs);
+  const handleLogin = async () => {
+    if (!validate()) return;
+
+    await saveAuthSession();
+    router.replace(ROUTES.tabs);
   };
 
   return (

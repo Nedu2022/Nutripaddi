@@ -1,6 +1,5 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, useWindowDimensions, View } from "react-native";
-import { CheckCircle2, ScanLine } from "lucide-react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -8,61 +7,82 @@ import Animated, {
   withSequence,
   withTiming,
 } from "react-native-reanimated";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import ScanFrame from "@/components/ScanFrame";
 import DetectionArrow from "@/components/scan/DetectionArrow";
-import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import type { DetectedFoodItem } from "@/src/types/detection";
+import type { DetectedFoodItem, ScanState } from "@/src/types/detection";
 
 type CameraOverlayProps = {
-  detections: DetectedFoodItem[];
-  isPaused: boolean;
+  detections:  DetectedFoodItem[];
+  isPaused:    boolean;
   isDetecting: boolean;
+  scanState:   ScanState;
 };
 
 const TIPS = [
-  "Place the full plate inside the frame",
+  "Place your food inside the frame",
   "Good lighting gives better results",
-  "Include all food items in view",
-  "Hold the phone steady for 2 seconds",
-  "Works best with clear, well-lit meals",
+  "Include all food items in the frame",
+  "Hold the phone steady for a moment",
+  "Works best with clear, well-lit food",
 ];
+
+const DETECTING_MSGS = [
+  "Identifying food items…",
+  "Analysing ingredients…",
+  "Preparing nutrition estimate…",
+  "Almost there…",
+];
+
+const STATE_TEXT: Partial<Record<ScanState, string>> = {
+  scanning:       "Hold steady for better detection",
+  good_match:     "Food detected",
+  low_confidence: "Confirm the food below",
+  poor_image:     "Couldn't see clearly — try again",
+  saved:          "Meal saved!",
+  offline:        "Working with local data",
+};
 
 export default function CameraOverlay({
   detections,
   isPaused,
   isDetecting,
+  scanState,
 }: CameraOverlayProps) {
   const { width, height } = useWindowDimensions();
-  const pulse = useSharedValue(1);
-  const scanLine = useSharedValue(0);
-  const [tipIndex, setTipIndex] = useState(0);
+  const insets             = useSafeAreaInsets();
 
+  const pulse    = useSharedValue(1);
+  const scanLine = useSharedValue(0);
+
+  const [tipIdx, setTipIdx]           = useState(0);
+  const [detectMsgIdx, setDetectMsgIdx] = useState(0);
+
+  // Rotate tip text while idle
   useEffect(() => {
     if (isPaused || detections.length > 0) return;
-    const timer = setInterval(() => {
-      setTipIndex((i) => (i + 1) % TIPS.length);
-    }, 3200);
-    return () => clearInterval(timer);
+    const t = setInterval(() => setTipIdx((i) => (i + 1) % TIPS.length), 3200);
+    return () => clearInterval(t);
   }, [isPaused, detections.length]);
 
+  // Rotate detecting messages while scanning
+  useEffect(() => {
+    if (!isDetecting) return;
+    const t = setInterval(() => setDetectMsgIdx((i) => (i + 1) % DETECTING_MSGS.length), 1100);
+    return () => clearInterval(t);
+  }, [isDetecting]);
+
+  // Pulse frame + animate scan line
   useEffect(() => {
     pulse.value = withRepeat(
-      withSequence(
-        withTiming(1.04, { duration: 1100 }),
-        withTiming(1, { duration: 1100 })
-      ),
-      -1,
-      true
+      withSequence(withTiming(1.025, { duration: 1400 }), withTiming(1, { duration: 1400 })),
+      -1, true,
     );
     scanLine.value = withRepeat(
-      withSequence(
-        withTiming(1, { duration: 1800 }),
-        withTiming(0, { duration: 1800 })
-      ),
-      -1,
-      false
+      withSequence(withTiming(1, { duration: 1900 }), withTiming(0, { duration: 1900 })),
+      -1, false,
     );
   }, [pulse, scanLine]);
 
@@ -70,21 +90,62 @@ export default function CameraOverlay({
     transform: [{ scale: pulse.value }],
   }));
 
+  // Scan line travels within the 280-frame: 0 = top (-130), 1 = bottom (+130)
   const lineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanLine.value * 220 - 110 }],
-    opacity: isPaused ? 0.25 : 0.9,
+    transform: [{ translateY: scanLine.value * 260 - 130 }],
+    opacity:   isPaused ? 0 : 0.85,
   }));
+
+  const visibleDetections = detections
+    .filter((item, i, arr) => arr.findIndex((c) => c.id === item.id) === i)
+    .slice(0, 4);
+  const hasResult = visibleDetections.length > 0;
+
+  // Frame corner colour
+  const frameColor = isDetecting
+    ? "#00D26A"
+    : isPaused
+    ? "rgba(255,255,255,0.45)"
+    : "rgba(255,255,255,0.90)";
+
+  // Single guidance text replacing both old tip-pill and status-pill
+  const guidanceText = isDetecting
+    ? DETECTING_MSGS[detectMsgIdx]
+    : STATE_TEXT[scanState] ?? TIPS[tipIdx];
+
+  // Center frame between top bar (~insets.top+88) and capture dock (~insets.bottom+150)
+  const topPad = insets.top + 88;
+  const botPad = insets.bottom + 158;
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-      <View style={styles.vignette} />
-      <Animated.View style={[styles.scanFrameWrap, frameStyle]}>
-        <View style={styles.frameGlow} />
-        <ScanFrame />
-        <Animated.View style={[styles.liveScanLine, lineStyle]} />
-      </Animated.View>
 
-      {detections.slice(0, 4).map((item, index) => (
+      {/* Subtle vignette — only when no detections */}
+      {!hasResult && <View style={styles.vignette} />}
+
+      {/* Scan frame — centered in available camera area */}
+      {!hasResult && (
+        <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
+          <Animated.View style={frameStyle}>
+            <ScanFrame color={frameColor} glowing={isDetecting && !isPaused} />
+            {/* Scanning line inside the frame */}
+            <Animated.View style={[styles.scanLine, lineStyle]} />
+          </Animated.View>
+
+          {/* Guidance text below frame */}
+          <Text
+            style={[
+              styles.guidanceText,
+              isDetecting && styles.guidanceDetecting,
+            ]}
+          >
+            {guidanceText}
+          </Text>
+        </View>
+      )}
+
+      {/* Detection annotation arrows */}
+      {visibleDetections.map((item, index) => (
         <DetectionArrow
           key={`${item.id}-${item.confidence}`}
           frameHeight={height}
@@ -93,33 +154,6 @@ export default function CameraOverlay({
           item={item}
         />
       ))}
-
-      {!detections.length && !isPaused && (
-        <View style={styles.tipPill}>
-          <Text style={styles.tipText}>{TIPS[tipIndex]}</Text>
-        </View>
-      )}
-
-      <View style={styles.statusPill}>
-        {isPaused ? (
-          <>
-            <ScanLine color={COLORS.warning} size={14} />
-            <Text style={styles.statusText}>Scanning paused</Text>
-          </>
-        ) : detections.length ? (
-          <>
-            <CheckCircle2 color={COLORS.primary} size={14} />
-            <Text style={styles.statusText}>Food detected</Text>
-          </>
-        ) : (
-          <>
-            <ScanLine color={COLORS.primary} size={14} />
-            <Text style={styles.statusText}>
-              {isDetecting ? "Reading the plate..." : "Point at the food"}
-            </Text>
-          </>
-        )}
-      </View>
     </View>
   );
 }
@@ -127,71 +161,38 @@ export default function CameraOverlay({
 const styles = StyleSheet.create({
   vignette: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.28)",
+    backgroundColor: "rgba(0,0,0,0.16)",
   },
-  scanFrameWrap: {
-    position: "absolute",
-    top: "24%",
-    left: 22,
-    right: 22,
-    alignItems: "center",
+  frameZone: {
+    position:       "absolute",
+    top: 0, left: 0, right: 0, bottom: 0,
+    alignItems:     "center",
     justifyContent: "center",
   },
-  frameGlow: {
-    position: "absolute",
-    width: "82%",
-    aspectRatio: 1,
-    borderRadius: 28,
-    backgroundColor: "rgba(0,128,0,0.14)",
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.5,
-    shadowRadius: 28,
-    shadowOffset: { width: 0, height: 0 },
+  scanLine: {
+    position:        "absolute",
+    alignSelf:       "center",
+    width:           240,
+    height:          2,
+    borderRadius:    999,
+    backgroundColor: "#00D26A",
+    shadowColor:     "#00D26A",
+    shadowOpacity:   0.9,
+    shadowRadius:    12,
+    shadowOffset:    { width: 0, height: 0 },
   },
-  liveScanLine: {
-    position: "absolute",
-    width: "68%",
-    height: 2,
-    borderRadius: 999,
-    backgroundColor: COLORS.primary,
-    shadowColor: COLORS.primary,
-    shadowOpacity: 0.9,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 0 },
+  guidanceText: {
+    color:           "rgba(255,255,255,0.88)",
+    fontSize:        13,
+    fontFamily:      FONTS.semiBold,
+    textAlign:       "center",
+    marginTop:       22,
+    textShadowColor: "rgba(0,0,0,0.55)",
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 4,
+    letterSpacing:   0.2,
   },
-  tipPill: {
-    position: "absolute",
-    top: "62%",
-    alignSelf: "center",
-    backgroundColor: "rgba(0,0,0,0.58)",
-    borderColor: "rgba(255,255,255,0.14)",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  tipText: {
-    color: "rgba(255,255,255,0.88)",
-    fontSize: 12,
-    fontFamily: FONTS.medium,
-  },
-  statusPill: {
-    position: "absolute",
-    top: "18%",
-    alignSelf: "center",
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 7,
-    backgroundColor: "rgba(0,0,0,0.64)",
-    borderColor: "rgba(255,255,255,0.16)",
-    borderWidth: 1,
-    borderRadius: 999,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  statusText: {
-    color: COLORS.white,
-    fontSize: 12,
-    fontFamily: FONTS.bold,
+  guidanceDetecting: {
+    color: "#00D26A",
   },
 });

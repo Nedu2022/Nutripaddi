@@ -10,6 +10,7 @@ import {
   getLocalPortionLabel,
   getNutritionForMeal,
 } from "@/src/services/nutritionMappingService";
+import { getFreshnessForDetectedMeal } from "@/src/services/freshnessScoreService";
 
 type DetectionFrameInput = {
   tick?: number;
@@ -49,9 +50,12 @@ function buildSummary(
     localPortionLabel: getLocalPortionLabel(dominantType, portion),
     detectedItems: items,
     nutrition: getNutritionForMeal(items, portion),
+    freshness: getFreshnessForDetectedMeal(items, averageConfidence(items)),
     advice: getAdviceForMeal(items, portion),
   };
 }
+
+export const DEFAULT_DETECTED_MEAL_SUMMARY = buildSummary(LIVE_DETECTIONS);
 
 export function enrichSummaryWithPortion(
   summary: DetectedMealSummary,

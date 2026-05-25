@@ -11,7 +11,7 @@ import { getLucideIcon } from "@/utils/icons";
 export default function NutritionLessonsScreen() {
   return (
     <ScreenWrapper scroll>
-      <AppHeader showBack title="Nutrition Lessons" subtitle="Learn from your AI Nutritionist" />
+      <AppHeader showBack title="Nutrition Lessons" subtitle="Learn practical food lessons" />
 
       {/* Lesson Sections */}
       <Animated.View entering={FadeInUp.duration(400)} style={styles.sections}>
@@ -51,7 +51,6 @@ export default function NutritionLessonsScreen() {
         );
       })}
 
-      <View style={{ height: 24 }} />
     </ScreenWrapper>
   );
 }

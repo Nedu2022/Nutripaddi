@@ -10,6 +10,7 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { hasAuthSession } from "@/src/services/authSessionService";
 
 export default function SplashScreen() {
   const { t } = useLanguage();
@@ -21,8 +22,23 @@ export default function SplashScreen() {
     scale.value = withTiming(1, { duration: 850, easing: Easing.out(Easing.cubic) });
     opacity.value = withTiming(1, { duration: 700 });
     taglineOpacity.value = withDelay(500, withTiming(1, { duration: 600 }));
-    const timer = setTimeout(() => { router.replace(ROUTES.intro); }, 2800);
-    return () => clearTimeout(timer);
+
+    let mounted = true;
+    const timer = setTimeout(() => {
+      hasAuthSession()
+        .then((sessionExists) => {
+          if (!mounted) return;
+          router.replace(sessionExists ? ROUTES.tabs : ROUTES.intro);
+        })
+        .catch(() => {
+          if (mounted) router.replace(ROUTES.intro);
+        });
+    }, 1200);
+
+    return () => {
+      mounted = false;
+      clearTimeout(timer);
+    };
   }, [opacity, scale, taglineOpacity]);
 
   const logoStyle = useAnimatedStyle(() => ({

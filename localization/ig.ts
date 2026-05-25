@@ -67,7 +67,6 @@ export const ig: typeof en = {
   tabDashboard: "Ụlọ", tabScan: "Nyocha", tabCoach: "Ndụmọdụ", tabMealLog: "Ndekọ", tabProfile: "Profaịlụ",
   smartSuggestions: "Atụmatụ", aiMealIdeas: "Echiche nri", adjustPortions: "Hazie oke nri gị.",
   nutritionLessons: "Ihe Ọmụmụ Nri", learnFromAI: "Mụta n'aka onye ndụmọdụ", featuredTips: "Ndụmọdụ Pụrụ Iche",
-  foodDatabase: "Ọba Nri", searchFoods: "Chọọ nri...", bestFor: "Kachasị mma maka", watchOutFor: "Kpachara anya maka", aiTip: "Ndụmọdụ",
   selected: "Ahọpụtara", tapToChoose: "Pịa ịhọrọ", meals: "nri", meal: "nri", kcal: "kcal",
   forgotPasswordTitle: "Chefuru okwuntụghe?", forgotPasswordSubtitle: "Anyị ga-ezitere gị njikọ.",
 };

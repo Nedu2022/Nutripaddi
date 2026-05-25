@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { ScanLine, Sparkles } from "lucide-react-native";
+import { Check, ScanLine } from "lucide-react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -76,7 +76,7 @@ export default function AnalyzingScreen() {
             <View
               style={[styles.stepDot, i <= 3 && styles.stepDotActive]}
             >
-              {i <= 3 && <Sparkles color={COLORS.white} size={10} />}
+              {i <= 3 && <Check color={COLORS.white} size={10} />}
             </View>
             <Text
               style={[styles.stepText, i <= 3 && styles.stepTextActive]}
