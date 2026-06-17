@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Leaf } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
@@ -7,16 +7,46 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { MEAL_SUGGESTIONS, SUGGESTION_CATEGORIES } from "@/data/coach";
+import { getMealSuggestions } from "@/src/services/contentService";
+import type { MealSuggestion } from "@/types";
 import { getLucideIcon } from "@/utils/icons";
 
 export default function SmartSuggestionsScreen() {
   const [activeCategory, setActiveCategory] = useState("All");
+  const [suggestions, setSuggestions] = useState<MealSuggestion[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadSuggestions = async () => {
+      try {
+        const items = await getMealSuggestions();
+        if (!mounted) return;
+        setSuggestions(items);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load suggestions.");
+      }
+    };
+
+    void loadSuggestions();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const categories = useMemo(
+    () => ["All", ...Array.from(new Set(suggestions.map((item) => item.category)))],
+    [suggestions]
+  );
 
   const filtered =
     activeCategory === "All"
-      ? MEAL_SUGGESTIONS
-      : MEAL_SUGGESTIONS.filter((s) => s.category === activeCategory);
+      ? suggestions
+      : suggestions.filter((s) => s.category === activeCategory);
 
   return (
     <ScreenWrapper scroll>
@@ -24,7 +54,7 @@ export default function SmartSuggestionsScreen() {
 
       {/* Category Chips */}
       <View style={styles.chipRow}>
-        {SUGGESTION_CATEGORIES.map((cat) => (
+        {categories.map((cat) => (
           <Pressable
             key={cat}
             onPress={() => setActiveCategory(cat)}
@@ -44,6 +74,8 @@ export default function SmartSuggestionsScreen() {
           </Pressable>
         ))}
       </View>
+
+      {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
 
       {/* Suggestions */}
       <Animated.View entering={FadeInUp.duration(400)} style={styles.list}>
@@ -104,6 +136,13 @@ const styles = StyleSheet.create({
   },
   chipTextActive: {
     color: COLORS.white,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    marginBottom: 12,
+    textAlign: "center",
   },
   list: {
     gap: 12,

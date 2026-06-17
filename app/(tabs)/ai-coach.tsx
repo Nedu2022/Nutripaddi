@@ -1,4 +1,4 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   FlatList,
   Image,
@@ -16,12 +16,9 @@ import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import {
-  QUICK_QUESTIONS,
-  AI_RESPONSES,
-  INITIAL_MESSAGES,
-} from "@/data/coach";
-import type { ChatMessage } from "@/types";
+import { askCoach } from "@/src/services/coachService";
+import { getQuickQuestions } from "@/src/services/contentService";
+import type { ChatMessage, QuickQuestion } from "@/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
@@ -40,42 +37,66 @@ const D = {
 export default function AICoachTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
-  const [messages, setMessages] = useState<ChatMessage[]>(INITIAL_MESSAGES);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [quickQuestions, setQuickQuestions] = useState<QuickQuestion[]>([]);
   const [inputText, setInputText] = useState("");
+  const [isSending, setIsSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const inputBottomClearance = Platform.OS === "web"
     ? 18
     : Math.max(98, insets.bottom + 72);
 
-  const addMessage = (text: string, isUser: boolean) => {
-    const msg: ChatMessage = {
+  useEffect(() => {
+    let mounted = true;
+
+    const loadQuickQuestions = async () => {
+      try {
+        const items = await getQuickQuestions();
+        if (mounted) setQuickQuestions(items);
+      } catch {
+        if (mounted) setQuickQuestions([]);
+      }
+    };
+
+    void loadQuickQuestions();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const createMessage = (text: string, isUser: boolean): ChatMessage => ({
       id:        `msg-${Date.now()}-${isUser ? "u" : "ai"}`,
       text,
       isUser,
       timestamp: "Just now",
-    };
-    setMessages((prev) => [...prev, msg]);
-  };
+  });
 
-  const getAIResponse = (question: string): string => {
-    const matched = QUICK_QUESTIONS.find(
-      (q) => q.text.toLowerCase() === question.toLowerCase()
-    );
-    if (matched && AI_RESPONSES[matched.id]) return AI_RESPONSES[matched.id];
-    return AI_RESPONSES.default;
-  };
-
-  const handleSend = (text?: string) => {
+  const handleSend = async (text?: string) => {
     const msg = text || inputText.trim();
-    if (!msg) return;
+    if (!msg || isSending) return;
 
-    addMessage(msg, true);
+    const userMessage = createMessage(msg, true);
+    const nextMessages = [...messages, userMessage];
+    setMessages(nextMessages);
     setInputText("");
+    setIsSending(true);
 
-    setTimeout(() => {
-      addMessage(getAIResponse(msg), false);
+    try {
+      const reply = await askCoach(msg, messages);
+      setMessages((prev) => [...prev, createMessage(reply, false)]);
       setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
-    }, 800);
+    } catch (error) {
+      setMessages((prev) => [
+        ...prev,
+        createMessage(
+          error instanceof Error ? error.message : "The coach could not respond right now.",
+          false
+        ),
+      ]);
+    } finally {
+      setIsSending(false);
+    }
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
@@ -111,7 +132,7 @@ export default function AICoachTab() {
         <Text style={styles.quickLabel}>Suggested Questions</Text>
       </View>
       <View style={styles.chipWrap}>
-        {QUICK_QUESTIONS.slice(0, 6).map((q) => (
+        {quickQuestions.slice(0, 6).map((q) => (
           <Pressable
             key={q.id}
             onPress={() => handleSend(q.text)}
@@ -180,10 +201,10 @@ export default function AICoachTab() {
             />
             <Pressable
               onPress={() => handleSend()}
-              disabled={!inputText.trim()}
+              disabled={!inputText.trim() || isSending}
               style={({ pressed }) => [
                 styles.sendBtn,
-                !inputText.trim() && styles.sendBtnOff,
+                (!inputText.trim() || isSending) && styles.sendBtnOff,
                 pressed && styles.sendBtnPressed,
               ]}
             >

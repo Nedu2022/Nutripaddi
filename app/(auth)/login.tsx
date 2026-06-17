@@ -10,7 +10,9 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { login } from "@/src/services/authApi";
 import { saveAuthSession } from "@/src/services/authSessionService";
+import { getErrorMessage } from "@/src/services/errorService";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -21,6 +23,8 @@ export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [errors, setErrors] = useState<LoginErrors>({});
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const nextErrors: LoginErrors = {};
@@ -35,8 +39,21 @@ export default function LoginScreen() {
   const handleLogin = async () => {
     if (!validate()) return;
 
-    await saveAuthSession();
-    router.replace(ROUTES.tabs);
+    setFormError("");
+    setIsSubmitting(true);
+
+    try {
+      const session = await login({
+        email: email.trim().toLowerCase(),
+        password,
+      });
+      await saveAuthSession(session);
+      router.replace(ROUTES.tabs);
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,7 +71,8 @@ export default function LoginScreen() {
         </Pressable>
       </Animated.View>
 
-      <CustomButton onPress={handleLogin} title={t.login} />
+      {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+      <CustomButton loading={isSubmitting} onPress={handleLogin} title={t.login} />
       <Pressable onPress={() => router.push(ROUTES.signup)} hitSlop={10}>
         <Text style={styles.link}>{t.noAccount}</Text>
       </Pressable>
@@ -68,5 +86,6 @@ const styles = StyleSheet.create({
   title: { color: COLORS.text, fontSize: 28, fontFamily: FONTS.extraBold },
   forgot: { color: COLORS.primary, fontSize: 14, fontFamily: FONTS.bold, textAlign: "right" },
   form: { marginBottom: 24 },
+  formError: { color: COLORS.error, fontSize: 13, fontFamily: FONTS.medium, marginBottom: 14, textAlign: "center" },
   link: { color: COLORS.primary, fontSize: 15, fontFamily: FONTS.bold, marginTop: 22, textAlign: "center" },
 });

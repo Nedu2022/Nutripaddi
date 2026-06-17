@@ -7,14 +7,18 @@ import InputField from "@/components/InputField";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { ROUTES } from "@/constants/routes";
+import { requestPasswordReset } from "@/src/services/authApi";
+import { getErrorMessage } from "@/src/services/errorService";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function ForgotPasswordScreen() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSendReset = () => {
+  const handleSendReset = async () => {
     if (!email.trim()) {
       setError("Please enter your email address.");
       return;
@@ -26,7 +30,17 @@ export default function ForgotPasswordScreen() {
     }
 
     setError("");
-    router.replace(ROUTES.login);
+    setStatusMessage("");
+    setIsSubmitting(true);
+
+    try {
+      await requestPasswordReset(email.trim().toLowerCase());
+      setStatusMessage("If this email exists, a password reset link has been sent.");
+    } catch (apiError) {
+      setError(getErrorMessage(apiError));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -48,7 +62,8 @@ export default function ForgotPasswordScreen() {
         value={email}
       />
 
-      <CustomButton onPress={handleSendReset} title="Send Reset Link" />
+      {statusMessage ? <Text style={styles.statusMessage}>{statusMessage}</Text> : null}
+      <CustomButton loading={isSubmitting} onPress={handleSendReset} title="Send Reset Link" />
 
       <Pressable onPress={() => router.push(ROUTES.login)} hitSlop={10}>
         <Text style={styles.link}>Back to login</Text>
@@ -83,6 +98,13 @@ const styles = StyleSheet.create({
     fontSize: 15,
     fontWeight: "800",
     marginTop: 22,
+    textAlign: "center",
+  },
+  statusMessage: {
+    color: COLORS.primaryGreen,
+    fontSize: 13,
+    fontWeight: "800",
+    marginBottom: 14,
     textAlign: "center",
   },
 });

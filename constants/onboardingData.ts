@@ -4,36 +4,37 @@ export type OnboardingItem = {
   id: string;
   title: string;
   description: string;
+  // Set to a require(...) to use a photo; null uses the built-in vector artwork.
   image: ImageSourcePropType | null;
 };
 
 export const onboardingData: OnboardingItem[] = [
   {
-    id: "nutritionist",
-    title: "Your African AI Nutritionist",
+    id: "welcome",
+    title: "Nutrition for Two",
     description:
-      "NutriPadi helps you understand local meals like amala, egusi, jollof rice, beans, and plantain.",
-    image: require("@/assets/images/onboarding_human_1.png"),
+      "Pregnant or nursing? NutriPadi guides you through the first 1,000 days with food advice made for the African plate.",
+    image: null,
   },
   {
     id: "scan",
-    title: "Scan Your Meal",
+    title: "Just Snap Your Plate",
     description:
-      "Take a clear photo. The app checks the food name, how much is there, and key nutrition values.",
-    image: require("@/assets/images/onboarding_human_2.png"),
+      "Point your camera at eba, amala, rice or any local dish. No typing, no calorie counting.",
+    image: null,
   },
   {
     id: "nutrition",
-    title: "See What Is Inside",
+    title: "Spot the Hidden Hunger",
     description:
-      "Get simple calories, carbs, protein, fat, and AI advice based on African food references.",
-    image: require("@/assets/images/onboarding_human_3.png"),
+      "Instantly see iron, folate and protein — the nutrients that keep mother and baby strong.",
+    image: null,
   },
   {
-    id: "guidance",
-    title: "Eat Better, Keep Your Culture",
+    id: "coach",
+    title: "Your Pocket Coach",
     description:
-      "Choose English, Yoruba, Hausa, or Igbo preference and get guidance that respects African food habits.",
-    image: require("@/assets/images/onboarding_human_1.png"),
+      "Get friendly, affordable food swaps in your own language, any time of day.",
+    image: null,
   },
 ];

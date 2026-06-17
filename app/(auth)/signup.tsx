@@ -10,6 +10,9 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { register } from "@/src/services/authApi";
+import { saveAuthSession } from "@/src/services/authSessionService";
+import { getErrorMessage } from "@/src/services/errorService";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -22,6 +25,8 @@ export default function SignupScreen() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [errors, setErrors] = useState<SignupErrors>({});
+  const [formError, setFormError] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const validate = () => {
     const nextErrors: SignupErrors = {};
@@ -36,8 +41,30 @@ export default function SignupScreen() {
     return Object.keys(nextErrors).length === 0;
   };
 
-  const handleSignup = () => {
-    if (validate()) router.push(ROUTES.languageSelect);
+  const handleSignup = async () => {
+    if (!validate()) return;
+
+    setFormError("");
+    setIsSubmitting(true);
+
+    try {
+      const session = await register({
+        email: email.trim().toLowerCase(),
+        fullName: fullName.trim(),
+        password,
+      });
+      if (session) {
+        await saveAuthSession(session);
+        router.push(ROUTES.languageSelect);
+        return;
+      }
+
+      setFormError("Check your email to confirm your account, then log in.");
+    } catch (error) {
+      setFormError(getErrorMessage(error));
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -54,7 +81,8 @@ export default function SignupScreen() {
         <InputField error={errors.confirmPassword} label={t.confirmPassword} onChangeText={setConfirmPassword} placeholder="Re-enter password" secureTextEntry value={confirmPassword} />
       </Animated.View>
 
-      <CustomButton onPress={handleSignup} title={t.signUp} />
+      {formError ? <Text style={styles.formError}>{formError}</Text> : null}
+      <CustomButton loading={isSubmitting} onPress={handleSignup} title={t.signUp} />
       <Pressable onPress={() => router.push(ROUTES.login)} hitSlop={10}>
         <Text style={styles.link}>{t.hasAccount}</Text>
       </Pressable>
@@ -67,5 +95,6 @@ const styles = StyleSheet.create({
   kicker: { color: COLORS.primary, fontSize: 14, fontFamily: FONTS.bold, marginBottom: 8 },
   title: { color: COLORS.text, fontSize: 28, fontFamily: FONTS.extraBold },
   form: { marginBottom: 24 },
+  formError: { color: COLORS.error, fontSize: 13, fontFamily: FONTS.medium, marginBottom: 14, textAlign: "center" },
   link: { color: COLORS.primary, fontSize: 15, fontFamily: FONTS.bold, marginTop: 22, textAlign: "center" },
 });

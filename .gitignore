@@ -6,8 +6,12 @@ node_modules/
 # Expo
 .expo/
 dist/
+dist-pages-test/
 web-build/
 expo-env.d.ts
+
+# Supabase local metadata
+supabase/.temp/
 
 # Native
 .kotlin/
@@ -31,7 +35,9 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo

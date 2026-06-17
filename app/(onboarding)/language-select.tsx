@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
-import { Globe, Check } from "lucide-react-native";
+import { Check } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
 import CustomButton from "@/components/CustomButton";
@@ -12,12 +12,15 @@ import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import type { SupportedLanguage } from "@/localization";
+import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
-const LANGUAGES: { id: SupportedLanguage; name: string; subtitle: string; marker: string }[] = [
-  { id: "english", name: "English", subtitle: "Continue in English", marker: "EN" },
-  { id: "yoruba", name: "Yorùbá", subtitle: "Tẹsiwaju ni Yoruba", marker: "YO" },
-  { id: "hausa", name: "Hausa", subtitle: "Ci gaba da Hausa", marker: "HA" },
-  { id: "igbo", name: "Igbo", subtitle: "Gaa n'ihu n'asụsụ Igbo", marker: "IG" },
+const LANGUAGES: { id: SupportedLanguage; name: string; subtitle: string; region: string; marker: string }[] = [
+  { id: "english",  name: "English",  subtitle: "Continue in English",          region: "Pan-African",       marker: "EN" },
+  { id: "french",   name: "Français", subtitle: "Continuer en Français",        region: "Afrique Centrale",  marker: "FR" },
+  { id: "swahili",  name: "Kiswahili",subtitle: "Endelea kwa Kiswahili",        region: "Afrika Mashariki",  marker: "SW" },
+  { id: "yoruba",   name: "Yorùbá",   subtitle: "Tẹsiwaju ni Yoruba",          region: "Àárùn-oorùn Áfríkà",marker: "YO" },
+  { id: "hausa",    name: "Hausa",    subtitle: "Ci gaba da Hausa",             region: "Yammacin Afirka",   marker: "HA" },
+  { id: "igbo",     name: "Igbo",     subtitle: "Gaa n'ihu n'asụsụ Igbo",     region: "Ọdịda-anyanwụ Afịrịkà", marker: "IG" },
 ];
 
 export default function LanguageSelectScreen() {
@@ -26,7 +29,8 @@ export default function LanguageSelectScreen() {
 
   const handleContinue = () => {
     setLanguage(selected);
-    router.push(ROUTES.healthInfo);
+    updateOnboardingDraft({ language: selected });
+    router.push(ROUTES.lifeStage);
   };
 
   return (
@@ -36,7 +40,7 @@ export default function LanguageSelectScreen() {
         step={1}
         subtitle={t.chooseLanguageSub}
         title={t.chooseLanguage}
-        totalSteps={5}
+        totalSteps={6}
       />
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
@@ -55,6 +59,7 @@ export default function LanguageSelectScreen() {
                 <View>
                   <Text style={[styles.langName, isSelected && styles.langNameSelected]}>{lang.name}</Text>
                   <Text style={styles.langSub}>{lang.subtitle}</Text>
+                  <Text style={styles.langRegion}>{lang.region}</Text>
                 </View>
               </View>
               {isSelected && (
@@ -66,11 +71,6 @@ export default function LanguageSelectScreen() {
           );
         })}
       </Animated.View>
-
-      <View style={styles.infoCard}>
-        <Globe color={COLORS.primary} size={18} />
-        <Text style={styles.infoText}>{t.langMoreSoon}</Text>
-      </View>
 
       <CustomButton onPress={handleContinue} title={t.continue} />
     </ScreenWrapper>
@@ -95,13 +95,9 @@ const styles = StyleSheet.create({
   langName: { color: COLORS.text, fontSize: 17, fontFamily: FONTS.bold },
   langNameSelected: { color: COLORS.primaryDark },
   langSub: { color: COLORS.textMuted, fontSize: 13, fontFamily: FONTS.regular, marginTop: 2 },
+  langRegion: { color: COLORS.primary, fontSize: 11, fontFamily: FONTS.semiBold, marginTop: 3, opacity: 0.75 },
   checkCircle: {
     width: 28, height: 28, borderRadius: 14,
     backgroundColor: COLORS.primary, alignItems: "center", justifyContent: "center",
   },
-  infoCard: {
-    flexDirection: "row", alignItems: "center", gap: 10,
-    backgroundColor: COLORS.softGreen, borderRadius: 12, padding: 14, marginBottom: 20,
-  },
-  infoText: { flex: 1, color: COLORS.primaryDark, fontSize: 13, fontFamily: FONTS.medium },
 });

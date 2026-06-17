@@ -1,10 +1,12 @@
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
   Settings, ChevronRight, Award, Heart, Shield,
   Activity, Scale, Ruler, Calendar, LogOut, Globe, Database,
   MessageSquareText, BarChart3, SlidersHorizontal, Utensils,
-  Target, Flame,
+  Target, Flame, Baby,
 } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
 
@@ -14,6 +16,14 @@ import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { clearAuthSession } from "@/src/services/authSessionService";
+import {
+  getSavedMeals,
+  getWeeklyCalories,
+  type SavedMeal,
+  type WeeklyCalories,
+} from "@/src/services/mealHistoryService";
+import { describeMaternalStage } from "@/src/services/maternalNutrition";
+import { getProfile, type ProfileData } from "@/src/services/profileService";
 
 const D = {
   bg:         "#F5F6FA",
@@ -31,22 +41,6 @@ const D = {
   amberDim:   "rgba(245,158,11,0.09)",
   red:        "#EF4444",
   redDim:     "rgba(239,68,68,0.09)",
-};
-
-const PROFILE_DATA = {
-  nickname:         "Nnedu",
-  initials:         "NN",
-  email:            "nnedu@nutripaddi.com",
-  goal:             "Eat healthier",
-  age:              24,
-  weight:           60,
-  height:           165,
-  healthAwareness:  "General wellness",
-  eatingLifestyle:  "Control how much I eat",
-  aiTone:           "Gentle",
-  mealsLogged:      42,
-  daysStreak:       7,
-  caloriesAvg:      1840,
 };
 
 type IconCircleProps = {
@@ -91,8 +85,50 @@ function MenuRow({ icon, iconBg, label, value, onPress, danger, last }: MenuRowP
   );
 }
 
+function getCurrentStreak(days: WeeklyCalories[]) {
+  let count = 0;
+  for (const day of days.slice().reverse()) {
+    if (day.value <= 0) break;
+    count += 1;
+  }
+  return count;
+}
+
 export default function ProfileTab() {
   const { t, language } = useLanguage();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [meals, setMeals] = useState<SavedMeal[]>([]);
+  const [weeklyCalories, setWeeklyCalories] = useState<WeeklyCalories[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadProfile = async () => {
+      try {
+        const [profileData, savedMeals, weekly] = await Promise.all([
+          getProfile(),
+          getSavedMeals({ limit: 200 }),
+          getWeeklyCalories(),
+        ]);
+
+        if (!mounted) return;
+        setProfile(profileData);
+        setMeals(savedMeals);
+        setWeeklyCalories(weekly);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load profile.");
+      }
+    };
+
+    void loadProfile();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleLogout = async () => {
     await clearAuthSession();
@@ -102,6 +138,18 @@ export default function ProfileTab() {
   const langDisplay: Record<string, string> = {
     english: "English", yoruba: "Yorùbá", hausa: "Hausa", igbo: "Igbo",
   };
+  const displayName = profile?.nickname || profile?.fullName || "NutriPadi user";
+  const email = profile?.email ?? "";
+  const initials = displayName
+    .split(" ")
+    .map((part) => part[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+  const daysStreak = getCurrentStreak(weeklyCalories);
+  const caloriesAvg = weeklyCalories.length
+    ? Math.round(weeklyCalories.reduce((sum, day) => sum + day.value, 0) / weeklyCalories.length)
+    : 0;
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -110,16 +158,28 @@ export default function ProfileTab() {
       <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
         <View style={styles.avatarRing}>
           <View style={styles.avatar}>
-            <Text style={styles.initials}>{PROFILE_DATA.initials}</Text>
+            {profile?.photoUri ? (
+              <Image contentFit="cover" source={{ uri: profile.photoUri }} style={styles.avatarImage} />
+            ) : (
+              <Text style={styles.initials}>{initials || "NP"}</Text>
+            )}
           </View>
         </View>
-        <Text style={styles.name}>{PROFILE_DATA.nickname}</Text>
-        <Text style={styles.email}>{PROFILE_DATA.email}</Text>
-        <View style={styles.goalBadge}>
-          <Target color={D.accent} size={11} />
-          <Text style={styles.goalBadgeText}>{PROFILE_DATA.goal}</Text>
-        </View>
+        <Text style={styles.name}>{displayName}</Text>
+        {email ? <Text style={styles.email}>{email}</Text> : null}
+        {profile?.nutritionGoal ? (
+          <View style={styles.goalBadge}>
+            <Target color={D.accent} size={11} />
+            <Text style={styles.goalBadgeText}>{profile.nutritionGoal}</Text>
+          </View>
+        ) : null}
       </Animated.View>
+
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
 
       {/* ── STATS ROW ─────────────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.statsRow}>
@@ -127,21 +187,21 @@ export default function ProfileTab() {
           <View style={[styles.statIcon, { backgroundColor: D.card }]}>
             <Activity color={D.accent} size={16} />
           </View>
-          <Text style={[styles.statNum, { color: D.accent }]}>{PROFILE_DATA.mealsLogged}</Text>
+          <Text style={[styles.statNum, { color: D.accent }]}>{meals.length}</Text>
           <Text style={styles.statLabel}>{t.mealsLogged}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: D.orangeDim }]}>
           <View style={[styles.statIcon, { backgroundColor: D.card }]}>
             <Flame color={D.orange} size={16} />
           </View>
-          <Text style={[styles.statNum, { color: D.orange }]}>{PROFILE_DATA.daysStreak}</Text>
+          <Text style={[styles.statNum, { color: D.orange }]}>{daysStreak}</Text>
           <Text style={styles.statLabel}>{t.daysStreak}</Text>
         </View>
         <View style={[styles.statCard, { backgroundColor: D.indigoDim }]}>
           <View style={[styles.statIcon, { backgroundColor: D.card }]}>
             <Award color={D.indigo} size={16} />
           </View>
-          <Text style={[styles.statNum, { color: D.indigo }]}>{PROFILE_DATA.caloriesAvg}</Text>
+          <Text style={[styles.statNum, { color: D.indigo }]}>{caloriesAvg}</Text>
           <Text style={styles.statLabel}>Avg kcal</Text>
         </View>
       </Animated.View>
@@ -150,53 +210,61 @@ export default function ProfileTab() {
       <Animated.View entering={FadeInDown.delay(100).duration(320)} style={styles.section}>
         <Text style={styles.sectionTitle}>{t.healthInfo}</Text>
         <View style={styles.sectionCard}>
+          {profile?.lifeStage && profile.lifeStage !== "general" ? (
+            <MenuRow
+              icon={<Baby color="#E05D8B" size={16} />}
+              iconBg="rgba(224,93,139,0.09)"
+              label={t.lifeStageLabel}
+              value={describeMaternalStage(profile.lifeStage, profile.trimester, profile.babyAgeMonths) ?? "—"}
+            />
+          ) : null}
           <MenuRow
             icon={<Calendar color={D.accent} size={16} />}
             iconBg={D.accentDim}
             label={t.age}
-            value={`${PROFILE_DATA.age} yrs`}
+            value={profile?.age ? `${profile.age} yrs` : "Not set"}
           />
           <MenuRow
             icon={<Scale color={D.indigo} size={16} />}
             iconBg={D.indigoDim}
             label={t.weight}
-            value={`${PROFILE_DATA.weight} kg`}
+            value={profile?.weight ? `${profile.weight} kg` : "Not set"}
           />
           <MenuRow
             icon={<Ruler color={D.orange} size={16} />}
             iconBg={D.orangeDim}
             label={t.height}
-            value={`${PROFILE_DATA.height} cm`}
+            value={profile?.height ? `${profile.height} cm` : "Not set"}
           />
           <MenuRow
             icon={<Heart color="#E05D8B" size={16} />}
             iconBg="rgba(224,93,139,0.09)"
             label={t.nutritionGoal}
-            value={PROFILE_DATA.goal}
+            value={profile?.nutritionGoal ?? "Not set"}
           />
           <MenuRow
             icon={<Utensils color={D.amber} size={16} />}
             iconBg={D.amberDim}
             label={t.eatingLifestyle}
-            value={PROFILE_DATA.eatingLifestyle}
+            value={profile?.eatingLifestyle ?? "Not set"}
           />
           <MenuRow
             icon={<Shield color={D.indigo} size={16} />}
             iconBg={D.indigoDim}
             label={t.healthAwareness}
-            value={PROFILE_DATA.healthAwareness}
+            value={profile?.healthAwareness ?? "Not set"}
           />
           <MenuRow
             icon={<Globe color={D.accent} size={16} />}
             iconBg={D.accentDim}
             label={t.language}
-            value={langDisplay[language]}
+            value={profile?.language ? langDisplay[profile.language] ?? profile.language : langDisplay[language]}
           />
           <MenuRow
             icon={<SlidersHorizontal color={D.orange} size={16} />}
             iconBg={D.orangeDim}
             label={t.aiAdviceTone}
-            value={PROFILE_DATA.aiTone}
+            value={profile?.aiTone ?? "Not set"}
             last
           />
         </View>
@@ -282,6 +350,12 @@ const styles = StyleSheet.create({
     backgroundColor: D.accentDim,
     alignItems:      "center",
     justifyContent:  "center",
+    overflow:        "hidden",
+  },
+  avatarImage: {
+    width:        100,
+    height:       100,
+    borderRadius: 50,
   },
   initials: {
     color:      D.accent,
@@ -298,6 +372,19 @@ const styles = StyleSheet.create({
     fontSize:   14,
     fontFamily: FONTS.medium,
     marginTop:  4,
+  },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 14,
+    padding: 12,
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: FONTS.medium,
   },
   goalBadge: {
     flexDirection:     "row",

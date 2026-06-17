@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View, Pressable } from "react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
@@ -5,17 +6,53 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { LEARN_SECTIONS, NUTRITION_TIPS } from "@/data/tips";
+import {
+  getLearnSections,
+  getNutritionTips,
+  type LearnSection,
+} from "@/src/services/contentService";
+import type { NutritionTip } from "@/types";
 import { getLucideIcon } from "@/utils/icons";
 
 export default function NutritionLessonsScreen() {
+  const [sections, setSections] = useState<LearnSection[]>([]);
+  const [tips, setTips] = useState<NutritionTip[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadLessons = async () => {
+      try {
+        const [sectionItems, tipItems] = await Promise.all([
+          getLearnSections(),
+          getNutritionTips(),
+        ]);
+
+        if (!mounted) return;
+        setSections(sectionItems);
+        setTips(tipItems);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load lessons.");
+      }
+    };
+
+    void loadLessons();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <ScreenWrapper scroll>
       <AppHeader showBack title="Nutrition Lessons" subtitle="Learn practical food lessons" />
 
       {/* Lesson Sections */}
       <Animated.View entering={FadeInUp.duration(400)} style={styles.sections}>
-        {LEARN_SECTIONS.map((section) => {
+        {sections.map((section) => {
           const Icon = getLucideIcon(section.iconName);
           return (
             <Pressable key={section.id} style={styles.sectionCard}>
@@ -34,9 +71,11 @@ export default function NutritionLessonsScreen() {
         })}
       </Animated.View>
 
+      {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
+
       {/* Featured Tips */}
       <Text style={styles.featuredLabel}>Featured Tips</Text>
-      {NUTRITION_TIPS.slice(0, 4).map((tip) => {
+      {tips.slice(0, 4).map((tip) => {
         const TipIcon = getLucideIcon(tip.iconName);
         return (
           <View key={tip.id} style={styles.tipCard}>
@@ -104,6 +143,13 @@ const styles = StyleSheet.create({
     color: COLORS.text,
     fontSize: 13,
     fontFamily: FONTS.bold,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    marginBottom: 12,
+    textAlign: "center",
   },
   featuredLabel: {
     color: COLORS.text,

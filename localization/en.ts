@@ -4,7 +4,7 @@
 export const en = {
   // Common
   appName: "NutriPadi",
-  tagline: "Your African AI Nutritionist",
+  tagline: "Your African Nutritionist",
   slogan: "Know your food. Eat smarter.",
   continue: "Continue",
   skip: "Skip",
@@ -18,17 +18,17 @@ export const en = {
     "NutriPadi gives food estimates and helpful tips. If you have a medical condition, please speak with a qualified health professional.",
 
   // Splash
-  splashSubtitle: "Your African AI Nutritionist",
+  splashSubtitle: "Your African Nutritionist",
 
   // Onboarding
-  onboarding1Title: "Meet Your AI Nutritionist",
+  onboarding1Title: "Meet Your Nutritionist",
   onboarding1Desc: "NutriPadi helps you understand African meals using smart food analysis.",
   onboarding2Title: "Scan, Learn, Improve",
   onboarding2Desc: "Take a photo of your meal and get nutrition insights instantly.",
   onboarding3Title: "Eat Better With Guidance",
   onboarding3Desc: "Get friendly tips based on your meals, goals, and eating habits.",
-  onboardingHintTitle: "Next: Meet your AI Nutritionist",
-  onboardingHintText: "After signup, your AI Nutritionist will ask a few questions to personalize your food guidance.",
+  onboardingHintTitle: "Next: Meet your Nutritionist",
+  onboardingHintText: "After signup, NutriPadi will ask a few questions to personalize your food guidance.",
 
   // Language
   chooseLanguage: "Choose Your Language",
@@ -53,9 +53,9 @@ export const en = {
   loginSubtitle: "Log in to continue eating smarter.",
   signupKicker: "Welcome to NutriPadi",
   signupTitle: "Create your account",
-  signupSubtitle: "Meet your AI food companion.",
-  signupNote: "AI Nutritionist setup comes next",
-  signupNoteText: "Your AI Nutritionist will ask about your goals and food habits.",
+  signupSubtitle: "Meet your food companion.",
+  signupNote: "Nutrition setup comes next",
+  signupNoteText: "NutriPadi will ask about your goals and food habits.",
   forgotPasswordTitle: "Forgot password?",
   forgotPasswordSubtitle: "We will send you a reset link.",
   email: "Email",
@@ -69,13 +69,13 @@ export const en = {
   signUp: "Sign Up",
 
   // Setup
-  setupEyebrow: "AI Nutritionist Setup",
+  setupEyebrow: "Nutrition Setup",
   step1Title: "Tell us about yourself",
   step1Subtitle: "These help NutriPadi give you better guidance.",
   step2Title: "What is your food goal?",
   step2Subtitle: "Choose the goal that matters most. You can change it later.",
   step3Title: "What are your eating habits?",
-  step3Subtitle: "This helps your AI Food Coach give you useful advice.",
+  step3Subtitle: "This helps NutriPadi give you useful advice.",
   step4Title: "Any health concerns?",
   step4Subtitle: "This helps personalize your food tips.",
   step5Title: "What should we call you?",
@@ -87,7 +87,29 @@ export const en = {
   height: "Height (cm)",
   nickname: "Nickname",
   addPhotoLater: "Add photo later",
+  changePhoto: "Change photo",
   finishSetup: "Finish Setup",
+
+  // Life stage (maternal focus)
+  lifeStageTitle: "Who are we supporting?",
+  lifeStageSubtitle: "NutriPadi tailors your nutrition targets and advice to your stage of life.",
+  lifeStageGeneral: "Just me",
+  lifeStageGeneralDesc: "Everyday nutrition tracking and healthier African meals.",
+  lifeStagePregnant: "I'm pregnant",
+  lifeStagePregnantDesc: "Protect you and your baby during pregnancy.",
+  lifeStageNursing: "I'm a nursing mother",
+  lifeStageNursingDesc: "Stay nourished while breastfeeding your baby (0–2 yrs).",
+  lifeStageRequired: "Please choose one.",
+  trimesterLabel: "Which trimester are you in?",
+  trimesterFirst: "1st\nWeeks 1–12",
+  trimesterSecond: "2nd\nWeeks 13–27",
+  trimesterThird: "3rd\nWeeks 28–40",
+  trimesterRequired: "Please select your trimester.",
+  babyAgeLabel: "How old is your baby? (months)",
+  babyAgePlaceholder: "e.g. 6",
+  babyAgeRequired: "Please enter your baby's age in months.",
+  maternalNote: "NutriPadi will watch your iron, folic acid, and protein closely — the nutrients that matter most for the first 1,000 days.",
+  lifeStageLabel: "Life stage",
 
   // Goals
   goalEatHealthier: "Eat healthier",

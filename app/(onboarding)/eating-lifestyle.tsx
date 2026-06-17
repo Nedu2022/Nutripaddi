@@ -10,14 +10,16 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { en } from "@/localization";
+import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
 const lifestyles = [
-  { key: "lifestyleSwallow" as const, iconName: "restaurant" },
-  { key: "lifestyleRice" as const, iconName: "fast-food" },
-  { key: "lifestyleLateNight" as const, iconName: "moon" },
-  { key: "lifestyleSnack" as const, iconName: "pizza" },
-  { key: "lifestylePortion" as const, iconName: "resize" },
-  { key: "lifestyleHealthier" as const, iconName: "leaf" },
+  { key: "lifestyleSwallow" as const },
+  { key: "lifestyleRice" as const },
+  { key: "lifestyleLateNight" as const },
+  { key: "lifestyleSnack" as const },
+  { key: "lifestylePortion" as const },
+  { key: "lifestyleHealthier" as const },
 ];
 
 export default function EatingLifestyleScreen() {
@@ -33,16 +35,19 @@ export default function EatingLifestyleScreen() {
   const handleContinue = () => {
     if (selected.length === 0) { setError("Select at least one."); return; }
     setError("");
+    updateOnboardingDraft({
+      eatingLifestyle: selected.map((key) => en[key as keyof typeof en]),
+    });
     router.push(ROUTES.healthAwareness);
   };
 
   return (
     <ScreenWrapper scroll>
-      <QuestionHeader eyebrow={t.setupEyebrow} step={4} subtitle={t.step3Subtitle} title={t.step3Title} totalSteps={5} />
+      <QuestionHeader eyebrow={t.setupEyebrow} step={5} subtitle={t.step3Subtitle} title={t.step3Title} totalSteps={6} />
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
         {lifestyles.map((l) => (
-          <OptionCard key={l.key} label={t[l.key]} iconName={l.iconName}
+          <OptionCard key={l.key} label={t[l.key]}
             onPress={() => toggle(l.key)} selected={selected.includes(l.key)} />
         ))}
       </Animated.View>

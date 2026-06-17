@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import {
   Activity,
@@ -12,11 +13,37 @@ import AppHeader from "@/components/AppHeader";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { RESEARCH_METRICS } from "@/data/research";
+import { getResearchMetrics } from "@/src/services/contentService";
+import type { ResearchMetric } from "@/types";
 
 const metricIcons = [Activity, Gauge, HardDrive, ShieldCheck, Star, Star];
 
 export default function ResearchSummaryScreen() {
+  const [metrics, setMetrics] = useState<ResearchMetric[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMetrics = async () => {
+      try {
+        const items = await getResearchMetrics();
+        if (!mounted) return;
+        setMetrics(items);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load metrics.");
+      }
+    };
+
+    void loadMetrics();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   return (
     <ScreenWrapper scroll>
       <AppHeader
@@ -37,8 +64,10 @@ export default function ResearchSummaryScreen() {
         </Text>
       </View>
 
+      {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
+
       <View style={styles.metricGrid}>
-        {RESEARCH_METRICS.map((metric, index) => {
+        {metrics.map((metric, index) => {
           const Icon = metricIcons[index] ?? Activity;
           return (
             <View key={metric.label} style={styles.metricCard}>
@@ -51,14 +80,6 @@ export default function ResearchSummaryScreen() {
             </View>
           );
         })}
-      </View>
-
-      <View style={styles.noteCard}>
-        <Text style={styles.noteTitle}>Research note</Text>
-        <Text style={styles.noteText}>
-          These values are placeholders for the current prototype. Replace them
-          with measured results after model testing and user evaluation.
-        </Text>
       </View>
 
     </ScreenWrapper>
@@ -97,6 +118,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     gap: 10,
+  },
+  errorText: {
+    color: COLORS.error,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    marginBottom: 12,
+    textAlign: "center",
   },
   metricCard: {
     width: "48%",

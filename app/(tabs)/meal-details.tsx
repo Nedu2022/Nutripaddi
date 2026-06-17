@@ -1,4 +1,6 @@
+import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { router, useLocalSearchParams } from "expo-router";
 import {
   Flame,
   Droplets,
@@ -18,12 +20,12 @@ import CustomButton from "@/components/CustomButton";
 import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { DUMMY_MEALS } from "@/data/meals";
-import { AFRICAN_FOODS } from "@/data/foods";
 import {
-  getLocalMealDescription,
-  getNutritionEstimate,
-} from "@/data/foodComposition";
+  deleteMeal,
+  getMealById,
+  getSavedMeals,
+  type SavedMeal,
+} from "@/src/services/mealHistoryService";
 import { getLucideIcon } from "@/utils/icons";
 
 const D = {
@@ -50,16 +52,56 @@ const SHADOW = {
   elevation:     2,
 };
 
-const MEAL     = DUMMY_MEALS[0];
-const FOOD     = AFRICAN_FOODS.find((f) => f.id === MEAL.foodId);
-const ESTIMATE = getNutritionEstimate(MEAL.foodId, MEAL.portionSize ?? "Medium");
-const LOCAL_MEAL = FOOD
-  ? getLocalMealDescription(FOOD, MEAL.portionSize ?? "Medium")
-  : MEAL.foodName;
-
 export default function MealDetailsScreen() {
-  const Icon           = getLucideIcon(MEAL.iconName);
-  const freshnessColor = (MEAL.freshnessScore ?? 0) >= 72 ? D.accent : D.amber;
+  const params = useLocalSearchParams();
+  const mealId = Array.isArray(params.id) ? params.id[0] : params.id;
+  const [meal, setMeal] = useState<SavedMeal | null>(null);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMeal = async () => {
+      try {
+        const selected = mealId
+          ? await getMealById(mealId)
+          : (await getSavedMeals({ limit: 1 }))[0] ?? null;
+
+        if (!mounted) return;
+        setMeal(selected);
+        setLoadError(selected ? "" : "Meal not found.");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load meal.");
+      }
+    };
+
+    void loadMeal();
+
+    return () => {
+      mounted = false;
+    };
+  }, [mealId]);
+
+  const handleDelete = async () => {
+    if (!meal) return;
+    await deleteMeal(meal.id);
+    router.back();
+  };
+
+  if (!meal) {
+    return (
+      <ScreenWrapper scroll bg={D.bg}>
+        <AppHeader showBack title="Meal Details" />
+        <View style={styles.card}>
+          <Text style={styles.infoText}>{loadError || "Loading meal..."}</Text>
+        </View>
+      </ScreenWrapper>
+    );
+  }
+
+  const Icon           = getLucideIcon(meal.iconName);
+  const freshnessColor = (meal.freshnessScore ?? 0) >= 72 ? D.accent : D.amber;
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -70,14 +112,14 @@ export default function MealDetailsScreen() {
         <View style={styles.iconWrap}>
           <Icon color={D.orange} size={32} strokeWidth={1.7} />
         </View>
-        <Text style={styles.mealName}>{LOCAL_MEAL}</Text>
+        <Text style={styles.mealName}>{meal.foodName}</Text>
         <View style={styles.metaRow}>
           <View style={[styles.metaBadge, { backgroundColor: D.accentDim }]}>
-            <Text style={[styles.metaText, { color: D.accent }]}>{MEAL.mealType}</Text>
+            <Text style={[styles.metaText, { color: D.accent }]}>{meal.mealType}</Text>
           </View>
           <View style={[styles.metaBadge, { backgroundColor: "#F0F0F0" }]}>
             <Clock color={D.muted} size={13} />
-            <Text style={[styles.metaText, { color: D.muted }]}>{MEAL.timeLogged}</Text>
+            <Text style={[styles.metaText, { color: D.muted }]}>{meal.timeLogged}</Text>
           </View>
         </View>
       </Animated.View>
@@ -90,14 +132,14 @@ export default function MealDetailsScreen() {
         <View>
           <Text style={styles.calorieLabel}>Total calories</Text>
           <Text style={styles.calorieValue}>
-            {MEAL.calories}{" "}
+            {meal.calories}{" "}
             <Text style={styles.calorieUnit}>kcal</Text>
           </Text>
         </View>
       </Animated.View>
 
       {/* ── FRESHNESS ─────────────────────────────────────────────── */}
-      {typeof MEAL.freshnessScore === "number" && (
+      {typeof meal.freshnessScore === "number" && (
         <Animated.View
           entering={FadeInDown.delay(100).duration(320)}
           style={[styles.infoRow, { backgroundColor: freshnessColor + "15" }]}
@@ -107,10 +149,10 @@ export default function MealDetailsScreen() {
           </View>
           <View style={{ flex: 1 }}>
             <Text style={[styles.infoTitle, { color: freshnessColor }]}>
-              Freshness score — {MEAL.freshnessScore}/100
+              Freshness score - {meal.freshnessScore}/100
             </Text>
             <Text style={styles.infoText}>
-              {MEAL.freshnessLabel ?? "Freshness estimate"}. Check smell and storage time before eating.
+              {meal.freshnessLabel ?? "Freshness estimate"}. Check smell and storage time before eating.
             </Text>
           </View>
         </Animated.View>
@@ -126,7 +168,7 @@ export default function MealDetailsScreen() {
             icon={<Flame color={D.orange} size={20} />}
             label="Carbs"
             unit="g"
-            value={MEAL.carbs}
+            value={meal.carbs}
           />
           <MacroCard
             bgColor={D.accentDim}
@@ -134,7 +176,7 @@ export default function MealDetailsScreen() {
             icon={<Droplets color={D.accent} size={20} />}
             label="Protein"
             unit="g"
-            value={MEAL.protein}
+            value={meal.protein}
           />
           <MacroCard
             bgColor={D.amberDim}
@@ -142,49 +184,35 @@ export default function MealDetailsScreen() {
             icon={<Wheat color={D.amber} size={20} />}
             label="Fat"
             unit="g"
-            value={MEAL.fat}
+            value={meal.fat}
           />
         </View>
       </Animated.View>
 
-      {/* ── FOOD INFO ─────────────────────────────────────────────── */}
-      {FOOD && (
+      {(meal.aiObservation || meal.source) && (
         <Animated.View entering={FadeInDown.delay(160).duration(320)}>
-          <Text style={styles.sectionLabel}>About this food</Text>
-          <View style={styles.card}>
-            <Text style={styles.aboutText}>{FOOD.description}</Text>
-          </View>
-
-          <Text style={styles.sectionLabel}>Ingredients</Text>
-          <View style={styles.chipWrap}>
-            {FOOD.ingredients.map((ing) => (
-              <View key={ing} style={styles.chip}>
-                <Text style={styles.chipText}>{ing}</Text>
+          {meal.aiObservation && (
+            <View style={[styles.infoRow, { backgroundColor: D.accentDim }]}>
+              <View style={[styles.infoIconCircle, { backgroundColor: D.card }]}>
+                <Heart color={D.accent} size={17} />
               </View>
-            ))}
-          </View>
+              <View style={{ flex: 1 }}>
+                <Text style={[styles.infoTitle, { color: D.accent }]}>NutriPadi note</Text>
+                <Text style={styles.infoText}>{meal.aiObservation}</Text>
+              </View>
+            </View>
+          )}
 
-          <View style={[styles.infoRow, { backgroundColor: D.accentDim }]}>
-            <View style={[styles.infoIconCircle, { backgroundColor: D.card }]}>
-              <Heart color={D.accent} size={17} />
+          {meal.source && (
+            <View style={[styles.infoRow, { backgroundColor: D.amberDim }]}>
+              <View style={[styles.infoIconCircle, { backgroundColor: "rgba(255,255,255,0.6)" }]}>
+                <ShieldCheck color={D.amber} size={17} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.sourceText}>{meal.source}</Text>
+              </View>
             </View>
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.infoTitle, { color: D.accent }]}>Health note</Text>
-              <Text style={styles.infoText}>{FOOD.healthNote}</Text>
-            </View>
-          </View>
-
-          <View style={[styles.infoRow, { backgroundColor: D.amberDim }]}>
-            <View style={[styles.infoIconCircle, { backgroundColor: "rgba(255,255,255,0.6)" }]}>
-              <ShieldCheck color={D.amber} size={17} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Text style={styles.sourceText}>
-                Nutrition values are estimates based on local African food composition references.
-                Source: {ESTIMATE.source}.
-              </Text>
-            </View>
-          </View>
+          )}
         </Animated.View>
       )}
 
@@ -199,7 +227,7 @@ export default function MealDetailsScreen() {
         />
         <CustomButton
           icon={<Trash2 color="#FFFFFF" size={17} />}
-          onPress={() => undefined}
+          onPress={handleDelete}
           title="Delete"
           variant="danger"
           style={styles.halfBtn}

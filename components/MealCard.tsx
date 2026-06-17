@@ -1,10 +1,9 @@
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { Leaf } from "lucide-react-native";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { getFoodById, getLocalMealDescription } from "@/data/foodComposition";
-import { getLucideIcon } from "@/utils/icons";
 import type { LoggedMeal } from "@/types";
 
 type MealCardProps = {
@@ -12,11 +11,35 @@ type MealCardProps = {
   onPress?: () => void;
 };
 
+const MEAL_COLORS: Record<string, { bg: string; text: string }> = {
+  Breakfast: { bg: "#FFF0E6", text: "#FF8C42" },
+  Lunch:     { bg: COLORS.softGreen, text: COLORS.primary },
+  Dinner:    { bg: "#EEEBFF", text: "#6366F1" },
+  Snack:     { bg: "#FEF3C7", text: "#F59E0B" },
+};
+
+function FoodThumbnail({ meal }: { meal: LoggedMeal }) {
+  if (meal.imageUri) {
+    return (
+      <Image
+        source={{ uri: meal.imageUri }}
+        style={styles.foodImage}
+        contentFit="cover"
+      />
+    );
+  }
+
+  const palette = MEAL_COLORS[meal.mealType] ?? MEAL_COLORS.Lunch;
+  const initial = meal.foodName.trim()[0]?.toUpperCase() ?? "?";
+
+  return (
+    <View style={[styles.initialBox, { backgroundColor: palette.bg }]}>
+      <Text style={[styles.initialText, { color: palette.text }]}>{initial}</Text>
+    </View>
+  );
+}
+
 export default function MealCard({ meal, onPress }: MealCardProps) {
-  const Icon          = getLucideIcon(meal.iconName);
-  const food          = getFoodById(meal.foodId);
-  const localMealName = getLocalMealDescription(food, meal.portionSize ?? "Medium");
-  const displayName   = meal.foodName === food.name ? localMealName : meal.foodName;
   const freshnessColor =
     (meal.freshnessScore ?? 0) >= 72 ? COLORS.primary : COLORS.warning;
 
@@ -25,18 +48,16 @@ export default function MealCard({ meal, onPress }: MealCardProps) {
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
     >
-      <View style={styles.iconWrap}>
-        <Icon color={COLORS.primary} size={20} />
-      </View>
+      <FoodThumbnail meal={meal} />
 
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{displayName}</Text>
+        <Text style={styles.name} numberOfLines={1}>{meal.foodName}</Text>
         <Text style={styles.time}>{meal.mealType} · {meal.timeLogged}</Text>
         {typeof meal.freshnessScore === "number" && (
           <View style={styles.freshnessBadge}>
             <Leaf color={freshnessColor} size={11} />
             <Text style={[styles.freshnessText, { color: freshnessColor }]}>
-              {meal.freshnessScore}% fresh
+              {meal.freshnessScore}%
             </Text>
           </View>
         )}
@@ -69,13 +90,21 @@ const styles = StyleSheet.create({
     opacity:   0.88,
     transform: [{ scale: 0.985 }],
   },
-  iconWrap: {
-    width:           42,
-    height:          42,
+  foodImage: {
+    width:        48,
+    height:       48,
+    borderRadius: 13,
+  },
+  initialBox: {
+    width:           48,
+    height:          48,
     borderRadius:    13,
-    backgroundColor: COLORS.softGreen,
     alignItems:      "center",
     justifyContent:  "center",
+  },
+  initialText: {
+    fontSize:   20,
+    fontFamily: FONTS.extraBold,
   },
   info: {
     flex: 1,
@@ -107,9 +136,9 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.bold,
   },
   calBadge: {
-    alignItems:      "center",
-    backgroundColor: "#F5F5F5",
-    borderRadius:    12,
+    alignItems:        "center",
+    backgroundColor:   "#F5F5F5",
+    borderRadius:      12,
     paddingHorizontal: 12,
     paddingVertical:   8,
   },

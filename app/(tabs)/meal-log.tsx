@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -10,9 +11,15 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import MealCard from "@/components/MealCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { DUMMY_MEALS, DAILY_TOTALS } from "@/data/meals";
 import { useLanguage } from "@/hooks/useLanguage";
 import { ROUTES } from "@/constants/routes";
+import {
+  getDailyTotals,
+  getTodayMeals,
+  type DailyTotals,
+  type SavedMeal,
+} from "@/src/services/mealHistoryService";
+import { getProfile } from "@/src/services/profileService";
 
 const D = {
   bg:        "#F5F6FA",
@@ -39,10 +46,50 @@ const MACROS = [
   { label: "Fat",     key: "fat"     as const, dot: "#6366F1" },
 ];
 
+const EMPTY_TOTALS: DailyTotals = {
+  calories: 0,
+  carbs: 0,
+  fat: 0,
+  protein: 0,
+  target: 0,
+};
+
 export default function MealLogTab() {
   const { t } = useLanguage();
+  const [meals, setMeals] = useState<SavedMeal[]>([]);
+  const [dailyTotals, setDailyTotals] = useState<DailyTotals>(EMPTY_TOTALS);
+  const [loadError, setLoadError] = useState("");
 
-  const getMealsByType  = (type: string) => DUMMY_MEALS.filter((m) => m.mealType === type);
+  useEffect(() => {
+    let mounted = true;
+
+    const loadMeals = async () => {
+      try {
+        const profile = await getProfile();
+        const target = profile.dailyCalorieTarget ?? 0;
+        const [todayMeals, totals] = await Promise.all([
+          getTodayMeals(),
+          getDailyTotals(new Date(), target),
+        ]);
+
+        if (!mounted) return;
+        setMeals(todayMeals);
+        setDailyTotals(totals);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load meals.");
+      }
+    };
+
+    void loadMeals();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const getMealsByType  = (type: string) => meals.filter((m) => m.mealType === type);
   const getTypeCalories = (type: string) =>
     getMealsByType(type).reduce((sum, m) => sum + m.calories, 0);
 
@@ -50,8 +97,10 @@ export default function MealLogTab() {
     weekday: "long", month: "short", day: "numeric",
   });
 
-  const progressPct = Math.min(DAILY_TOTALS.calories / DAILY_TOTALS.target, 1);
-  const remaining   = Math.max(DAILY_TOTALS.target - DAILY_TOTALS.calories, 0);
+  const progressPct = dailyTotals.target > 0
+    ? Math.min(dailyTotals.calories / dailyTotals.target, 1)
+    : 0;
+  const remaining   = Math.max(dailyTotals.target - dailyTotals.calories, 0);
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -63,15 +112,21 @@ export default function MealLogTab() {
           <Text style={styles.subtitle}>{todayDate}</Text>
         </View>
         <View style={styles.countBadge}>
-          <Text style={styles.countText}>{DUMMY_MEALS.length} logged</Text>
+          <Text style={styles.countText}>{meals.length} logged</Text>
         </View>
       </Animated.View>
 
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
+
       {/* ── SUMMARY CARD ────────────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.summaryCard}>
-        <Text style={styles.summaryEyebrow}>{"TODAY'S INTAKE"}</Text>
+          <Text style={styles.summaryEyebrow}>{"TODAY'S INTAKE"}</Text>
         <View style={styles.summaryRow}>
-          <Text style={styles.summaryNum}>{DAILY_TOTALS.calories.toLocaleString()}</Text>
+          <Text style={styles.summaryNum}>{dailyTotals.calories.toLocaleString()}</Text>
           <Text style={styles.summaryUnit}>kcal</Text>
         </View>
 
@@ -84,7 +139,7 @@ export default function MealLogTab() {
           <View style={styles.summaryFooterItem}>
             <TrendingUp color={D.accent} size={12} />
             <Text style={styles.summaryFooterText}>
-              {Math.round(progressPct * 100)}% of {DAILY_TOTALS.target.toLocaleString()} goal
+              {Math.round(progressPct * 100)}% of {dailyTotals.target.toLocaleString()} goal
             </Text>
           </View>
           <Text style={styles.summaryDivider}>·</Text>
@@ -101,7 +156,7 @@ export default function MealLogTab() {
               <Text style={styles.macroCellLabel}>{m.label}</Text>
             </View>
             <Text style={styles.macroCellVal}>
-              {DAILY_TOTALS[m.key]}
+              {dailyTotals[m.key]}
               <Text style={styles.macroCellG}>g</Text>
             </Text>
           </View>
@@ -204,6 +259,19 @@ const styles = StyleSheet.create({
     color:      D.accent,
     fontSize:   12,
     fontFamily: FONTS.bold,
+  },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12,
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: FONTS.medium,
   },
 
   // Summary card

@@ -1,3 +1,4 @@
+import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
@@ -23,8 +24,16 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
-import { DAILY_TOTALS, DUMMY_MEALS, WEEKLY_CALORIES } from "@/data/meals";
 import { useLanguage } from "@/hooks/useLanguage";
+import {
+  getDailyTotals,
+  getTodayMeals,
+  getWeeklyCalories,
+  type DailyTotals,
+  type SavedMeal,
+  type WeeklyCalories,
+} from "@/src/services/mealHistoryService";
+import { getProfile, type ProfileData } from "@/src/services/profileService";
 
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
 
@@ -52,10 +61,15 @@ const D = {
 const MACRO_TARGETS = { carbs: 275, protein: 90, fat: 73 };
 const TODAY_INDEX   = 6;
 
-const INSIGHT =
-  "You've logged meals heavy in carbs today. Try adding egg, fish, beans, or chicken to your next meal for a better macro balance.";
-
 const MEAL_TYPE_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
+
+const EMPTY_TOTALS: DailyTotals = {
+  calories: 0,
+  carbs: 0,
+  fat: 0,
+  protein: 0,
+  target: 0,
+};
 
 const MEAL_META = {
   Breakfast: { Icon: Coffee,   color: D.orange,  bg: D.orangeDim  },
@@ -71,6 +85,15 @@ const QUICK_ACTIONS = [
   { Icon: BookOpen,      label: "Lessons",    route: ROUTES.nutritionLessons, color: D.purple, bg: D.purpleDim },
 ] as const;
 
+function getCurrentStreak(days: WeeklyCalories[]) {
+  let count = 0;
+  for (const day of days.slice().reverse()) {
+    if (day.value <= 0) break;
+    count += 1;
+  }
+  return count;
+}
+
 // ── Calorie Ring ────────────────────────────────────────────────────────────
 const RING_SIZE    = 200;
 const RING_STROKE  = 20;
@@ -78,9 +101,9 @@ const RING_RADIUS  = (RING_SIZE - RING_STROKE) / 2;
 const RING_CIRCUM  = 2 * Math.PI * RING_RADIUS;
 
 function CalorieRing({ calories, target }: { calories: number; target: number }) {
-  const pct       = Math.min(calories / target, 1);
+  const pct       = target > 0 ? Math.min(calories / target, 1) : 0;
   const filled    = pct * RING_CIRCUM;
-  const remaining = Math.max(DAILY_TOTALS.target - calories, 0);
+  const remaining = Math.max(target - calories, 0);
 
   return (
     <View style={ringStyles.container}>
@@ -245,14 +268,54 @@ const macroStyles = StyleSheet.create({
 // ── Main Screen ─────────────────────────────────────────────────────────────
 export default function DashboardTab() {
   const { t } = useLanguage();
+  const [profile, setProfile] = useState<ProfileData | null>(null);
+  const [dailyTotals, setDailyTotals] = useState<DailyTotals>(EMPTY_TOTALS);
+  const [todayMeals, setTodayMeals] = useState<SavedMeal[]>([]);
+  const [weeklyCalories, setWeeklyCalories] = useState<WeeklyCalories[]>([]);
+  const [loadError, setLoadError] = useState("");
 
-  const caloriePercent = Math.min(
-    Math.round((DAILY_TOTALS.calories / DAILY_TOTALS.target) * 100),
-    100
-  );
-  const maxWeekly = Math.max(...WEEKLY_CALORIES.map((d) => d.value));
+  useEffect(() => {
+    let mounted = true;
+
+    const loadDashboard = async () => {
+      try {
+        const profileData = await getProfile();
+        const target = profileData.dailyCalorieTarget ?? 0;
+        const [meals, totals, weekly] = await Promise.all([
+          getTodayMeals(),
+          getDailyTotals(new Date(), target),
+          getWeeklyCalories(),
+        ]);
+
+        if (!mounted) return;
+        setProfile(profileData);
+        setTodayMeals(meals);
+        setDailyTotals(totals);
+        setWeeklyCalories(weekly);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load dashboard data.");
+      }
+    };
+
+    void loadDashboard();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const caloriePercent = dailyTotals.target > 0
+    ? Math.min(Math.round((dailyTotals.calories / dailyTotals.target) * 100), 100)
+    : 0;
+  const maxWeekly = Math.max(1, ...weeklyCalories.map((d) => d.value));
   const hour      = new Date().getHours();
   const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
+  const displayName = profile?.nickname || profile?.fullName || "there";
+  const avatarInitial = displayName.trim()[0]?.toUpperCase() ?? "N";
+  const streak = getCurrentStreak(weeklyCalories);
+  const insight = todayMeals[0]?.aiObservation ?? "Scan or log a meal to get a personalized NutriPadi insight.";
 
   const todayDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -262,7 +325,7 @@ export default function DashboardTab() {
 
   const loggedMeals = MEAL_TYPE_ORDER.map((type) => ({
     type,
-    meal: DUMMY_MEALS.find((m) => m.mealType === type) ?? null,
+    meal: todayMeals.find((m) => m.mealType === type) ?? null,
   }));
 
   const loggedCount = loggedMeals.filter((m) => m.meal).length;
@@ -274,27 +337,33 @@ export default function DashboardTab() {
       <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
         <View>
           <Text style={styles.greeting}>{greeting},</Text>
-          <Text style={styles.name}>Nnedu</Text>
+          <Text style={styles.name}>{displayName}</Text>
           <Text style={styles.date}>{todayDate}</Text>
         </View>
         <View style={styles.headerRight}>
           <View style={styles.streakBadge}>
             <Flame color={D.orange} size={13} />
-            <Text style={styles.streakText}>3-day streak</Text>
+            <Text style={styles.streakText}>{streak}-day streak</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>N</Text>
+            <Text style={styles.avatarText}>{avatarInitial}</Text>
           </View>
         </View>
       </Animated.View>
+
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
 
       {/* ── HERO – CALORIE RING ───────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.delay(50).duration(320)} style={styles.heroCard}>
         <Text style={styles.heroEyebrow}>CALORIES TODAY</Text>
 
         <CalorieRing
-          calories={DAILY_TOTALS.calories}
-          target={DAILY_TOTALS.target}
+          calories={dailyTotals.calories}
+          target={dailyTotals.target}
         />
 
         <Text style={styles.heroPct}>{caloriePercent}% of daily goal</Text>
@@ -305,19 +374,19 @@ export default function DashboardTab() {
         <Text style={styles.cardTitle}>Macros</Text>
         <MacroBar
           label="Carbs"
-          value={DAILY_TOTALS.carbs}
+          value={dailyTotals.carbs}
           target={MACRO_TARGETS.carbs}
           color={D.orange}
         />
         <MacroBar
           label="Protein"
-          value={DAILY_TOTALS.protein}
+          value={dailyTotals.protein}
           target={MACRO_TARGETS.protein}
           color={D.accent}
         />
         <MacroBar
           label="Fat"
-          value={DAILY_TOTALS.fat}
+          value={dailyTotals.fat}
           target={MACRO_TARGETS.fat}
           color={D.indigo}
         />
@@ -358,7 +427,7 @@ export default function DashboardTab() {
                 {i > 0 && <View style={styles.divider} />}
                 {meal ? (
                   <Pressable
-                    onPress={() => router.push(ROUTES.mealDetails)}
+                    onPress={() => router.push({ pathname: "/(tabs)/meal-details", params: { id: meal.id } })}
                     style={styles.mealRow}
                   >
                     <View style={[styles.mealIcon, { backgroundColor: bg }]}>
@@ -412,7 +481,7 @@ export default function DashboardTab() {
         </View>
         <View style={styles.insightBody}>
           <Text style={styles.insightTitle}>NutriPadi says</Text>
-          <Text style={styles.insightText}>{INSIGHT}</Text>
+                      <Text style={styles.insightText}>{insight}</Text>
         </View>
       </Animated.View>
 
@@ -430,7 +499,7 @@ export default function DashboardTab() {
         </View>
 
         <View style={[styles.glassCard, styles.weeklyCard]}>
-          {WEEKLY_CALORIES.map((day, i) => {
+          {weeklyCalories.map((day, i) => {
             const isToday = i === TODAY_INDEX;
             const barH    = Math.max(8, (day.value / maxWeekly) * 72);
             return (
@@ -547,6 +616,19 @@ const styles = StyleSheet.create({
     color:      D.accent,
     fontSize:   16,
     fontFamily: FONTS.extraBold,
+  },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12,
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: FONTS.medium,
   },
 
   // Hero calorie ring card

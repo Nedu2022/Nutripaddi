@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
 import * as ImagePicker from "expo-image-picker";
 import {
@@ -13,17 +13,44 @@ import CustomButton from "@/components/CustomButton";
 import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { FOOD_CATEGORIES } from "@/data/foods";
+import { getFoodCategories } from "@/src/services/contentService";
+import { submitDatasetContribution } from "@/src/services/datasetContributionService";
 
 export default function DatasetContributionScreen() {
   const [imageName, setImageName] = useState("");
+  const [imageUri, setImageUri] = useState("");
   const [foodName, setFoodName] = useState("");
-  const [category, setCategory] = useState("Rice Meals");
+  const [category, setCategory] = useState("");
+  const [categories, setCategories] = useState<string[]>([]);
   const [note, setNote] = useState("");
   const [consent, setConsent] = useState(false);
   const [submitted, setSubmitted] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit = Boolean(imageName && foodName.trim() && consent);
+  const canSubmit = Boolean(imageUri && foodName.trim() && consent);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadCategories = async () => {
+      try {
+        const items = await getFoodCategories();
+        if (!mounted) return;
+        setCategories(items);
+        setCategory((current) => current || items[0] || "");
+      } catch (error) {
+        if (!mounted) return;
+        setStatusMessage(error instanceof Error ? error.message : "Could not load categories.");
+      }
+    };
+
+    void loadCategories();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -34,7 +61,33 @@ export default function DatasetContributionScreen() {
 
     if (!result.canceled) {
       setSubmitted(false);
+      setImageUri(result.assets[0]?.uri ?? "");
       setImageName(result.assets[0]?.fileName ?? "Food image selected");
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+
+    setIsSubmitting(true);
+    setStatusMessage("");
+
+    try {
+      await submitDatasetContribution({
+        category,
+        consent,
+        foodName: foodName.trim(),
+        imageName,
+        imageUri,
+        note: note.trim() || undefined,
+      });
+      setSubmitted(true);
+      setStatusMessage("Contribution submitted.");
+    } catch (error) {
+      setSubmitted(false);
+      setStatusMessage(error instanceof Error ? error.message : "Could not submit contribution.");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -88,7 +141,7 @@ export default function DatasetContributionScreen() {
       <View style={styles.fieldGroup}>
         <Text style={styles.label}>Food category</Text>
         <View style={styles.categoryGrid}>
-          {FOOD_CATEGORIES.filter((item) => item !== "All").map((item) => (
+          {categories.map((item) => (
             <Pressable
               key={item}
               onPress={() => {
@@ -142,7 +195,7 @@ export default function DatasetContributionScreen() {
         <View style={styles.successCard}>
           <Check color={COLORS.success} size={18} />
           <Text style={styles.successText}>
-            Contribution saved locally for this prototype.
+            {statusMessage}
           </Text>
         </View>
       )}
@@ -150,14 +203,19 @@ export default function DatasetContributionScreen() {
       <View style={styles.privacyCard}>
         <ShieldCheck color={COLORS.warning} size={18} />
         <Text style={styles.privacyText}>
-          Prototype note: image upload is simulated locally until a secure
-          research storage workflow is connected.
+          Images are uploaded through the secure Supabase upload function before
+          they are stored for dataset review.
         </Text>
       </View>
 
+      {statusMessage && !submitted ? (
+        <Text style={styles.statusText}>{statusMessage}</Text>
+      ) : null}
+
       <CustomButton
         disabled={!canSubmit}
-        onPress={() => setSubmitted(true)}
+        loading={isSubmitting}
+        onPress={handleSubmit}
         title="Submit Contribution"
       />
     </ScreenWrapper>
@@ -336,5 +394,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: FONTS.medium,
     lineHeight: 19,
+  },
+  statusText: {
+    color: COLORS.error,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    marginBottom: 12,
+    textAlign: "center",
   },
 });

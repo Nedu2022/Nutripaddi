@@ -23,11 +23,10 @@ import LiveNutritionSheet from "@/components/scan/LiveNutritionSheet";
 import { FONTS } from "@/constants/fonts";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
-  detectFoodFromFrame,
   detectFoodFromImage,
-  enrichSummaryWithItems,
 } from "@/src/services/foodDetectionService";
 import { saveMeal } from "@/src/services/mealHistoryService";
+import { uploadImage } from "@/src/services/uploadService";
 import type {
   DetectedFoodItem,
   DetectedMealSummary,
@@ -82,59 +81,20 @@ export default function ScanTab() {
         setSheetSnap("half");
         return result.summary;
       }
-      const updated = enrichSummaryWithItems(prev, result.summary!.detectedItems);
-      return { ...updated, portion: prev.portion };
+      return {
+        ...prev,
+        detectedItems: result.summary!.detectedItems,
+        mealName: result.summary!.mealName,
+      };
     });
   }, []);
 
-  const freezeCameraFrame = useCallback(async () => {
-    if (capturedUri) return;
-    try {
-      const photo = await cameraRef.current?.takePictureAsync({
-        quality: 0.88,
-        skipProcessing: true,
-      });
-      if (photo?.uri) setCapturedUri(photo.uri);
-    } catch {
-      // Keep live preview if capture fails
-    }
-  }, [capturedUri]);
-
-  // ── LIVE DETECTION LOOP ───────────────────────────────────────────────────
+  // ── LIVE SCANNING STATE ───────────────────────────────────────────────────
   const isSaved = scanState === "saved";
   useEffect(() => {
     if (!permission?.granted || isPaused || capturedUri || isSaved) return;
-
     setScanState("scanning");
-    let cancelled = false;
-    let tick = 1;
-
-    const firstDetect = setTimeout(async () => {
-      setIsDetecting(true);
-      setScanState("detecting");
-      const result = await detectFoodFromFrame({ tick });
-      if (!cancelled) {
-        if (result.imageQuality === "good" && result.summary) await freezeCameraFrame();
-        if (!cancelled) { applyDetectionResult(result); setIsDetecting(false); }
-      }
-    }, 2200);
-
-    const liveLoop = setInterval(async () => {
-      if (cancelled) return;
-      tick += 1;
-      const result = await detectFoodFromFrame({ tick });
-      if (!cancelled) {
-        if (result.imageQuality === "good" && result.summary) await freezeCameraFrame();
-        if (!cancelled) applyDetectionResult(result);
-      }
-    }, 5600);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(firstDetect);
-      clearInterval(liveLoop);
-    };
-  }, [applyDetectionResult, capturedUri, freezeCameraFrame, isPaused, isSaved, permission?.granted]);
+  }, [capturedUri, isPaused, isSaved, permission?.granted]);
 
   // ── MANUAL CAPTURE ────────────────────────────────────────────────────────
   const captureImage = async () => {
@@ -191,7 +151,7 @@ export default function ScanTab() {
     const updatedItems: DetectedFoodItem[] = summary.detectedItems.map((item) =>
       item.type === "swallow" ? { ...item, label, confidence: 95 } : item
     );
-    setSummary(enrichSummaryWithItems(summary, updatedItems));
+    setSummary({ ...summary, detectedItems: updatedItems });
     setScanState("good_match");
   };
 
@@ -199,6 +159,10 @@ export default function ScanTab() {
   const handleSave = async () => {
     if (!summary) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    const uploadedImage =
+      capturedUri && !capturedUri.includes("preview")
+        ? await uploadImage({ folder: "meals", uri: capturedUri })
+        : null;
     const saved = await saveMeal({
       mealName:       summary.mealName,
       calories:       summary.nutrition.calories,
@@ -209,6 +173,8 @@ export default function ScanTab() {
       freshnessScore: summary.freshness.score,
       freshnessLabel: summary.freshness.label,
       portionLabel:   summary.localPortionLabel,
+      imageUri:       uploadedImage?.secureUrl ?? uploadedImage?.url,
+      aiObservation:  summary.advice,
     });
     setSavedTime(saved.timeLogged);
     setScanState("saved");

@@ -1,4 +1,5 @@
-import { Tabs } from "expo-router";
+import { useEffect, useState } from "react";
+import { Redirect, Tabs } from "expo-router";
 import {
   House,
   ScanLine,
@@ -11,6 +12,8 @@ import { View, Text, StyleSheet, Platform } from "react-native";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
+import { ROUTES } from "@/constants/routes";
+import { hasAuthSession } from "@/src/services/authSessionService";
 
 const ACTIVE_COLOR   = COLORS.primary;
 const INACTIVE_COLOR = "#8A8F9A";
@@ -49,6 +52,26 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">("checking");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const checkSession = async () => {
+      const signedIn = await hasAuthSession().catch(() => false);
+      if (mounted) setAuthState(signedIn ? "signed-in" : "signed-out");
+    };
+
+    void checkSession();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  if (authState === "checking") return null;
+  if (authState === "signed-out") return <Redirect href={ROUTES.login} />;
+
   return (
     <Tabs
       screenOptions={{

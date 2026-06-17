@@ -11,9 +11,11 @@ import {
   PlusJakartaSans_800ExtraBold,
 } from "@expo-google-fonts/plus-jakarta-sans";
 
+import { COLORS } from "@/constants/colors";
 import { LanguageProvider } from "@/hooks/useLanguage";
+import { subscribeToAuthDeepLinks } from "@/src/services/authDeepLinkService";
 
-SplashScreen.preventAutoHideAsync();
+void SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -26,9 +28,11 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (fontsLoaded) {
-      SplashScreen.hideAsync();
+      void SplashScreen.hideAsync();
     }
   }, [fontsLoaded]);
+
+  useEffect(() => subscribeToAuthDeepLinks(), []);
 
   if (!fontsLoaded) {
     return null;
@@ -36,7 +40,12 @@ export default function RootLayout() {
 
   return (
     <LanguageProvider>
-      <Stack screenOptions={{ headerShown: false }} />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: COLORS.background },
+        }}
+      />
       <StatusBar style="dark" />
     </LanguageProvider>
   );

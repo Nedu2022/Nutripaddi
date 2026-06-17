@@ -11,6 +11,7 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
 type HealthErrors = Partial<{ age: string; height: string; weight: string; gender: string }>;
 
@@ -35,12 +36,19 @@ export default function HealthInfoScreen() {
   };
 
   const handleContinue = () => {
-    if (validate()) router.push(ROUTES.goals);
+    if (!validate()) return;
+    updateOnboardingDraft({
+      age: Number(age),
+      gender,
+      weight: Number(weight),
+      height: Number(height),
+    });
+    router.push(ROUTES.goals);
   };
 
   return (
     <ScreenWrapper scroll>
-      <QuestionHeader eyebrow={t.setupEyebrow} step={2} subtitle={t.step1Subtitle} title={t.step1Title} totalSteps={5} />
+      <QuestionHeader eyebrow={t.setupEyebrow} step={3} subtitle={t.step1Subtitle} title={t.step1Title} totalSteps={6} />
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.form}>
         <Text style={styles.sectionTitle}>{t.personalDetails}</Text>

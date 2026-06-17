@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import {
   Flame,
@@ -16,19 +16,78 @@ import MealCard from "@/components/MealCard";
 import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import { DUMMY_MEALS, DAILY_TOTALS, WEEKLY_CALORIES } from "@/data/meals";
+import {
+  getDailyTotals,
+  getSavedMeals,
+  getWeeklyCalories,
+  type DailyTotals,
+  type SavedMeal,
+  type WeeklyCalories,
+} from "@/src/services/mealHistoryService";
+import { getProfile } from "@/src/services/profileService";
 
 const PERIODS = ["Today", "This Week", "This Month"] as const;
 
+const EMPTY_TOTALS: DailyTotals = {
+  calories: 0,
+  carbs: 0,
+  fat: 0,
+  protein: 0,
+  target: 0,
+};
+
 export default function NutritionHistoryScreen() {
   const [activePeriod, setActivePeriod] = useState<string>("Today");
+  const [meals, setMeals] = useState<SavedMeal[]>([]);
+  const [dailyTotals, setDailyTotals] = useState<DailyTotals>(EMPTY_TOTALS);
+  const [weeklyCalories, setWeeklyCalories] = useState<WeeklyCalories[]>([]);
+  const [loadError, setLoadError] = useState("");
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadHistory = async () => {
+      try {
+        const profile = await getProfile();
+        const target = profile.dailyCalorieTarget ?? 0;
+        const [allMeals, totals, weekly] = await Promise.all([
+          getSavedMeals({ limit: 50 }),
+          getDailyTotals(new Date(), target),
+          getWeeklyCalories(),
+        ]);
+
+        if (!mounted) return;
+        setMeals(allMeals);
+        setDailyTotals(totals);
+        setWeeklyCalories(weekly);
+        setLoadError("");
+      } catch (error) {
+        if (!mounted) return;
+        setLoadError(error instanceof Error ? error.message : "Could not load nutrition history.");
+      }
+    };
+
+    void loadHistory();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const avgCalories = Math.round(
-    WEEKLY_CALORIES.reduce((sum, d) => sum + d.value, 0) / WEEKLY_CALORIES.length
+    weeklyCalories.length
+      ? weeklyCalories.reduce((sum, d) => sum + d.value, 0) / weeklyCalories.length
+      : 0
   );
-  const maxDay = WEEKLY_CALORIES.reduce((max, d) => (d.value > max.value ? d : max));
-  const minDay = WEEKLY_CALORIES.reduce((min, d) => (d.value < min.value ? d : min));
-  const maxCal = Math.max(...WEEKLY_CALORIES.map((d) => d.value));
+  const maxDay = weeklyCalories.reduce(
+    (max, d) => (d.value > max.value ? d : max),
+    weeklyCalories[0] ?? { day: "-", value: 0, date: "" }
+  );
+  const minDay = weeklyCalories.reduce(
+    (min, d) => (d.value < min.value ? d : min),
+    weeklyCalories[0] ?? { day: "-", value: 0, date: "" }
+  );
+  const maxCal = Math.max(1, ...weeklyCalories.map((d) => d.value));
 
   return (
     <ScreenWrapper scroll>
@@ -37,6 +96,12 @@ export default function NutritionHistoryScreen() {
         title="Nutrition History"
         subtitle="Track your progress"
       />
+
+      {loadError ? (
+        <View style={styles.errorCard}>
+          <Text style={styles.errorText}>{loadError}</Text>
+        </View>
+      ) : null}
 
       {/* Period Selector */}
       <ScrollView
@@ -91,7 +156,7 @@ export default function NutritionHistoryScreen() {
           <Text style={styles.chartTitle}>Weekly calories</Text>
         </View>
         <View style={styles.chartBars}>
-          {WEEKLY_CALORIES.map((day) => {
+          {weeklyCalories.map((day) => {
             const height = (day.value / maxCal) * 110;
             return (
               <View key={day.day} style={styles.barCol}>
@@ -102,7 +167,7 @@ export default function NutritionHistoryScreen() {
                     {
                       height,
                       backgroundColor:
-                        day.value >= DAILY_TOTALS.target
+                        day.value >= dailyTotals.target
                           ? COLORS.primary
                           : COLORS.softGreen,
                     },
@@ -124,7 +189,7 @@ export default function NutritionHistoryScreen() {
           icon={<Flame color={COLORS.secondary} size={20} />}
           label="Carbs"
           unit="g"
-          value={DAILY_TOTALS.carbs}
+          value={dailyTotals.carbs}
         />
         <MacroCard
           bgColor={COLORS.softGreen}
@@ -132,7 +197,7 @@ export default function NutritionHistoryScreen() {
           icon={<Droplets color={COLORS.primary} size={20} />}
           label="Protein"
           unit="g"
-          value={DAILY_TOTALS.protein}
+          value={dailyTotals.protein}
         />
         <MacroCard
           bgColor={COLORS.softYellow}
@@ -140,13 +205,13 @@ export default function NutritionHistoryScreen() {
           icon={<Wheat color={COLORS.warning} size={20} />}
           label="Fat"
           unit="g"
-          value={DAILY_TOTALS.fat}
+          value={dailyTotals.fat}
         />
       </View>
 
       {/* Meal History */}
       <Text style={styles.sectionLabel}>Meal history</Text>
-      {DUMMY_MEALS.map((meal) => (
+      {meals.map((meal) => (
         <MealCard key={meal.id} meal={meal} />
       ))}
 
@@ -178,6 +243,19 @@ const styles = StyleSheet.create({
   },
   periodTextActive: {
     color: COLORS.white,
+  },
+  errorCard: {
+    backgroundColor: "#FEF2F2",
+    borderColor: "#FECACA",
+    borderRadius: 14,
+    borderWidth: 1,
+    marginBottom: 12,
+    padding: 12,
+  },
+  errorText: {
+    color: "#B91C1C",
+    fontSize: 12,
+    fontFamily: FONTS.medium,
   },
   statsRow: {
     flexDirection: "row",

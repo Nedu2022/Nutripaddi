@@ -51,6 +51,10 @@ Follow these steps to set up the project locally.
    npm start
    ```
 
+### Supabase Integration
+
+Authentication and app data now use Supabase. Copy `.env.example` to `.env`, set your Supabase URL/key, then run the SQL files in `supabase/`. Cloudinary uploads go through the `upload-image` Supabase Edge Function described in `docs/backend-setup.md`.
+
 ### Running on a Device/Emulator
 
 - **Physical Device:** Download the **Expo Go** app from the App Store (iOS) or Google Play (Android) and scan the QR code displayed in your terminal.

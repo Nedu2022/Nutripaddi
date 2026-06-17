@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { CheckCircle2, MessageSquareText } from "lucide-react-native";
 
@@ -8,19 +8,72 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import {
-  FEEDBACK_OPTIONS,
-  STUDY_FEEDBACK_QUESTIONS,
-} from "@/data/research";
+  getFeedbackOptions,
+  getFeedbackQuestions,
+  submitStudyFeedback,
+} from "@/src/services/contentService";
+import type { FeedbackQuestion } from "@/types";
 
 export default function StudyFeedbackScreen() {
   const [ratings, setRatings] = useState<Record<string, string>>({});
+  const [questions, setQuestions] = useState<FeedbackQuestion[]>([]);
+  const [options, setOptions] = useState<string[]>([]);
   const [submitted, setSubmitted] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    let mounted = true;
+
+    const loadFeedbackForm = async () => {
+      try {
+        const [questionItems, optionItems] = await Promise.all([
+          getFeedbackQuestions(),
+          getFeedbackOptions(),
+        ]);
+
+        if (!mounted) return;
+        setQuestions(questionItems);
+        setOptions(optionItems);
+        setStatusMessage("");
+      } catch (error) {
+        if (!mounted) return;
+        setStatusMessage(error instanceof Error ? error.message : "Could not load feedback form.");
+      }
+    };
+
+    void loadFeedbackForm();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const isComplete = useMemo(
     () =>
-      STUDY_FEEDBACK_QUESTIONS.every((question) => Boolean(ratings[question.id])),
-    [ratings]
+      questions.length > 0 &&
+      options.length > 0 &&
+      questions.every((question) => Boolean(ratings[question.id])),
+    [options.length, questions, ratings]
   );
+
+  const handleSubmit = async () => {
+    if (!isComplete) return;
+
+    setIsSubmitting(true);
+    setStatusMessage("");
+
+    try {
+      await submitStudyFeedback(ratings);
+      setSubmitted(true);
+      setStatusMessage("Thank you. Your feedback has been recorded.");
+    } catch (error) {
+      setSubmitted(false);
+      setStatusMessage(error instanceof Error ? error.message : "Could not submit feedback.");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   return (
     <ScreenWrapper scroll>
@@ -43,12 +96,12 @@ export default function StudyFeedbackScreen() {
         </View>
       </View>
 
-      {STUDY_FEEDBACK_QUESTIONS.map((question, index) => (
+      {questions.map((question, index) => (
         <View key={question.id} style={styles.questionCard}>
           <Text style={styles.questionNumber}>Question {index + 1}</Text>
           <Text style={styles.questionText}>{question.text}</Text>
           <View style={styles.optionStack}>
-            {FEEDBACK_OPTIONS.map((option) => {
+            {options.map((option) => {
               const selected = ratings[question.id] === option;
               return (
                 <Pressable
@@ -85,15 +138,19 @@ export default function StudyFeedbackScreen() {
         <View style={styles.successCard}>
           <CheckCircle2 color={COLORS.success} size={18} />
           <Text style={styles.successText}>
-            Thank you. Your feedback has been recorded locally for the study
-            prototype.
+            {statusMessage}
           </Text>
         </View>
       )}
 
+      {statusMessage && !submitted ? (
+        <Text style={styles.statusText}>{statusMessage}</Text>
+      ) : null}
+
       <CustomButton
         disabled={!isComplete}
-        onPress={() => setSubmitted(true)}
+        loading={isSubmitting}
+        onPress={handleSubmit}
         title="Submit Feedback"
       />
     </ScreenWrapper>
@@ -194,5 +251,12 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontFamily: FONTS.medium,
     lineHeight: 19,
+  },
+  statusText: {
+    color: COLORS.error,
+    fontSize: 13,
+    fontFamily: FONTS.medium,
+    marginBottom: 12,
+    textAlign: "center",
   },
 });

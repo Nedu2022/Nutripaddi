@@ -10,14 +10,16 @@ import ScreenWrapper from "@/components/ScreenWrapper";
 import { COLORS } from "@/constants/colors";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
+import { en } from "@/localization";
+import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
 const goals = [
-  { key: "goalEatHealthier" as const, iconName: "nutrition" },
-  { key: "goalTrackCalories" as const, iconName: "calculator" },
-  { key: "goalManageWeight" as const, iconName: "fitness" },
-  { key: "goalReduceCarbs" as const, iconName: "trending-down" },
-  { key: "goalUnderstandMeals" as const, iconName: "restaurant" },
-  { key: "goalBetterHabits" as const, iconName: "heart" },
+  { key: "goalEatHealthier" as const },
+  { key: "goalTrackCalories" as const },
+  { key: "goalManageWeight" as const },
+  { key: "goalReduceCarbs" as const },
+  { key: "goalUnderstandMeals" as const },
+  { key: "goalBetterHabits" as const },
 ];
 
 export default function GoalsScreen() {
@@ -28,16 +30,17 @@ export default function GoalsScreen() {
   const handleContinue = () => {
     if (!selectedGoal) { setError("Required"); return; }
     setError("");
+    updateOnboardingDraft({ nutritionGoal: en[selectedGoal as keyof typeof en] });
     router.push(ROUTES.eatingLifestyle);
   };
 
   return (
     <ScreenWrapper scroll>
-      <QuestionHeader eyebrow={t.setupEyebrow} step={3} subtitle={t.step2Subtitle} title={t.step2Title} totalSteps={5} />
+      <QuestionHeader eyebrow={t.setupEyebrow} step={4} subtitle={t.step2Subtitle} title={t.step2Title} totalSteps={6} />
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
         {goals.map((goal) => (
-          <OptionCard key={goal.key} label={t[goal.key]} iconName={goal.iconName}
+          <OptionCard key={goal.key} label={t[goal.key]}
             onPress={() => { setSelectedGoal(goal.key); setError(""); }}
             selected={selectedGoal === goal.key} />
         ))}

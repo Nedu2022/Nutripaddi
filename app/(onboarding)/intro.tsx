@@ -1,6 +1,7 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
+import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 
 import CustomButton from "@/components/CustomButton";
 import OnboardingSlide from "@/components/OnboardingSlide";
@@ -27,23 +28,33 @@ export default function IntroScreen() {
 
   return (
     <ScreenWrapper contentStyle={styles.container}>
-      <View style={styles.skipRow}>
+      <Animated.View
+        entering={FadeInDown.delay(80).duration(440)}
+        style={styles.skipRow}
+      >
         <Text style={styles.brand}>NutriPadi</Text>
         <Pressable onPress={() => router.replace(ROUTES.signup)} hitSlop={10}>
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
-      </View>
+      </Animated.View>
 
-      <View style={styles.slideArea}>
+      <Animated.View
+        entering={FadeIn.delay(140).duration(520)}
+        style={styles.slideArea}
+      >
         <OnboardingSlide
+          key={currentSlide.id}
           description={currentSlide.description}
           image={currentSlide.image}
           index={currentIndex}
           title={currentSlide.title}
         />
-      </View>
+      </Animated.View>
 
-      <View style={styles.footer}>
+      <Animated.View
+        entering={FadeInUp.delay(220).duration(460)}
+        style={styles.footer}
+      >
         <ProgressDots
           currentIndex={currentIndex}
           total={onboardingData.length}
@@ -53,7 +64,7 @@ export default function IntroScreen() {
           style={styles.button}
           title={isLastSlide ? "Get Started" : "Continue"}
         />
-      </View>
+      </Animated.View>
     </ScreenWrapper>
   );
 }

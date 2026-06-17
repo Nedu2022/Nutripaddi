@@ -53,6 +53,7 @@ export type LoggedMeal = {
   source?: string;
   timeLogged: string;
   iconName: string;
+  imageUri?: string;
   aiObservation?: string;
 };
 
@@ -122,6 +123,14 @@ export type HealthAwareness =
 
 export type AIAdviceTone = "gentle" | "direct" | "motivational" | "simple";
 
+/**
+ * Who NutriPadi is supporting. Drives the maternal nutrition focus
+ * (HelpMum's "First 1,000 Days": pregnancy through a nursing baby's first 2 years).
+ */
+export type LifeStage = "general" | "pregnant" | "nursing";
+
+export type PregnancyTrimester = "first" | "second" | "third";
+
 export type UserProfile = {
   nickname: string;
   email: string;
@@ -134,6 +143,9 @@ export type UserProfile = {
   healthAwareness: HealthAwareness;
   language: SupportedLanguage;
   aiTone: AIAdviceTone;
+  lifeStage: LifeStage;
+  trimester?: PregnancyTrimester | null;
+  babyAgeMonths?: number | null;
   mealsLogged: number;
   daysStreak: number;
 };

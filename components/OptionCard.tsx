@@ -7,19 +7,16 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 
-import Ionicons from "react-native-vector-icons/Ionicons";
-
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 
 type OptionCardProps = {
   label: string;
-  iconName?: string;
   selected: boolean;
   onPress: () => void;
 };
 
-export default function OptionCard({ label, iconName, selected, onPress }: OptionCardProps) {
+export default function OptionCard({ label, selected, onPress }: OptionCardProps) {
   const progress = useSharedValue(selected ? 1 : 0);
 
   useEffect(() => {
@@ -29,6 +26,11 @@ export default function OptionCard({ label, iconName, selected, onPress }: Optio
   const checkStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
     transform: [{ scale: 0.82 + progress.value * 0.18 }],
+  }));
+
+  const radioInnerStyle = useAnimatedStyle(() => ({
+    transform: [{ scale: progress.value }],
+    opacity: progress.value,
   }));
 
   return (
@@ -42,27 +44,11 @@ export default function OptionCard({ label, iconName, selected, onPress }: Optio
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.iconBox, selected && styles.selectedIconBox]}>
-        {iconName ? (
-          <Ionicons name={iconName} size={22} color={selected ? COLORS.white : COLORS.primary} />
-        ) : (
-          <Text style={[styles.codeText, selected && styles.selectedCodeText]}>
-            {label
-              .split(" ")
-              .map((w) => w[0])
-              .join("")
-              .slice(0, 2)
-              .toUpperCase()}
-          </Text>
-        )}
+      <View style={[styles.radio, selected && styles.radioSelected]}>
+        <Animated.View style={[styles.radioInner, radioInnerStyle]} />
       </View>
       <View style={styles.textBlock}>
-        <Text style={[styles.label, selected && styles.selectedLabel]}>
-          {label}
-        </Text>
-        <Text style={styles.caption}>
-          {selected ? "Selected" : "Tap to choose"}
-        </Text>
+        <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
       </View>
       <Animated.View style={[styles.check, checkStyle]}>
         <Check color={COLORS.white} size={13} strokeWidth={3} />
@@ -74,12 +60,12 @@ export default function OptionCard({ label, iconName, selected, onPress }: Optio
 const styles = StyleSheet.create({
   card: {
     minHeight: 64,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: COLORS.border,
-    borderRadius: 12,
+    borderRadius: 14,
     backgroundColor: COLORS.card,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    paddingHorizontal: 18,
+    paddingVertical: 16,
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
@@ -87,33 +73,29 @@ const styles = StyleSheet.create({
   selected: {
     borderColor: COLORS.primary,
     backgroundColor: COLORS.softGreen,
-    borderWidth: 1.5,
   },
   pressed: {
     opacity: 0.86,
     transform: [{ scale: 0.985 }],
   },
-  iconBox: {
-    width: 44,
-    height: 44,
-    borderRadius: 10,
+  radio: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    borderWidth: 2,
+    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: COLORS.softOrange,
+    flexShrink: 0,
   },
-  selectedIconBox: {
+  radioSelected: {
+    borderColor: COLORS.primary,
+  },
+  radioInner: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
     backgroundColor: COLORS.primary,
-  },
-  emoji: {
-    fontSize: 22,
-  },
-  codeText: {
-    color: COLORS.textMuted,
-    fontSize: 13,
-    fontFamily: FONTS.extraBold,
-  },
-  selectedCodeText: {
-    color: COLORS.white,
   },
   textBlock: {
     flex: 1,
@@ -125,12 +107,6 @@ const styles = StyleSheet.create({
   },
   selectedLabel: {
     color: COLORS.primaryDark,
-  },
-  caption: {
-    color: COLORS.textMuted,
-    fontSize: 12,
-    fontFamily: FONTS.medium,
-    marginTop: 3,
   },
   check: {
     width: 24,

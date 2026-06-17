@@ -15,6 +15,7 @@ export const ROUTES = {
 
   // AI Nutritionist Setup (after signup)
   languageSelect: route("/(onboarding)/language-select"),
+  lifeStage: route("/(onboarding)/life-stage"),
   healthInfo: route("/(onboarding)/health-info"),
   goals: route("/(onboarding)/goals"),
   eatingLifestyle: route("/(onboarding)/eating-lifestyle"),
