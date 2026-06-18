@@ -60,8 +60,6 @@ export async function login(payload: LoginPayload) {
 export async function register(payload: RegisterPayload) {
   assertSupabaseConfigured();
 
-  const emailRedirectTo = Linking.createURL(ROUTES.authConfirmed.toString());
-
   const { data, error } = await supabase.auth.signUp({
     email: payload.email,
     options: {
@@ -69,7 +67,6 @@ export async function register(payload: RegisterPayload) {
         fullName: payload.fullName,
         name: payload.fullName,
       },
-      emailRedirectTo,
     },
     password: payload.password,
   });
