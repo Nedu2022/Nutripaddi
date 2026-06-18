@@ -5,7 +5,7 @@
 // Setup:
 //   1. Get a free API key from https://aistudio.google.com/app/apikey
 //   2. Put it in your .env at the project root:  GEMINI_API_KEY=your-key-here
-//      (optionally GEMINI_MODEL, defaults to gemini-2.0-flash)
+//      (optionally GEMINI_MODEL, defaults to gemini-2.5-flash-lite)
 //   3a. Run locally:  supabase functions serve ai-coach --env-file .env
 //   3b. Deploy:       supabase secrets set GEMINI_API_KEY=your-key-here
 //                     supabase functions deploy ai-coach
@@ -48,7 +48,7 @@ Deno.serve(async (request) => {
       Deno.env.get("GEMINI_API_KEY") ?? Deno.env.get("GOOGLE_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured.");
 
-    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.0-flash";
+    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash-lite";
 
     const payload = await request.json().catch(() => ({}));
     const message = typeof payload.message === "string" ? payload.message.trim() : "";
