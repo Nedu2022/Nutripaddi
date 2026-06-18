@@ -1,0 +1,8 @@
+{
+  "buildCommand": "npm run build:web",
+  "cleanUrls": true,
+  "framework": null,
+  "installCommand": "npm ci",
+  "outputDirectory": "dist",
+  "trailingSlash": false
+}

@@ -45,7 +45,6 @@
       ]
     ],
     "experiments": {
-      "baseUrl": "/Nutripaddi",
       "typedRoutes": true,
       "reactCompiler": true
     }
