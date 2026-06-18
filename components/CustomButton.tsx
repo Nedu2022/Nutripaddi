@@ -75,10 +75,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   primary: {
-    backgroundColor: COLORS.secondary,
+    backgroundColor: COLORS.primary,
   },
   secondary: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: COLORS.secondary,
   },
   outline: {
     backgroundColor: "transparent",

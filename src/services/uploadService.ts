@@ -1,4 +1,5 @@
 import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
+import { prepareImageForUpload } from "@/src/services/imageService";
 
 export type UploadedImage = {
   id?: string;
@@ -57,22 +58,16 @@ export async function uploadImage({
   uri,
   folder = "meals",
   fileName,
-  mimeType = "image/jpeg",
 }: UploadImageOptions) {
   assertSupabaseConfigured();
 
-  const formData = new FormData();
-  formData.append("folder", folder);
-  formData.append("file", {
-    name: getFileName(uri, fileName),
-    type: mimeType,
-    uri,
-  } as unknown as Blob);
+  const name = getFileName(uri, fileName);
+  const { base64, mimeType } = await prepareImageForUpload(uri, 1280);
 
   const { data, error } = await supabase.functions.invoke<UploadResponse>(
     "upload-image",
     {
-      body: formData,
+      body: { fileName: name, folder, image: base64, mimeType },
     }
   );
 

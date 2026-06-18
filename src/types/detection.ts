@@ -30,6 +30,7 @@ export type ScanState =
   | "good_match"
   | "low_confidence"
   | "poor_image"
+  | "no_food"
   | "nutrition_ready"
   | "saved"
   | "offline";

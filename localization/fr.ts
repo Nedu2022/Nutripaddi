@@ -16,5 +16,5 @@ export const fr: typeof en = {
   lifeStagePregnant: "Je suis enceinte", lifeStagePregnantDesc: "Protégez-vous, vous et votre bébé, pendant la grossesse.",
   lifeStageNursing: "J'allaite mon bébé", lifeStageNursingDesc: "Restez bien nourrie pendant l'allaitement (0–2 ans).",
   trimesterLabel: "Dans quel trimestre êtes-vous ?", babyAgeLabel: "Quel âge a votre bébé ? (mois)",
-  maternalNote: "NutriPadi surveillera de près votre fer, acide folique et protéines — essentiels pour les 1 000 premiers jours.",
+  maternalNote: "NutriPadi surveillera de près votre fer, acide folique et protéines, essentiels pour les 1 000 premiers jours.",
 };

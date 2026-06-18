@@ -26,7 +26,6 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import type { DetectedMealSummary } from "@/src/types/detection";
 
-// Glassmorphism color tokens
 const G = {
   bg: "rgba(8, 8, 12, 0.72)",
   border: "rgba(255, 255, 255, 0.13)",
@@ -129,22 +128,22 @@ export default function DetectedMealBottomSheet({
         sheetStyle,
       ]}
     >
-      {/* Frosted glass backdrop */}
+      
       <BlurView
         intensity={78}
         tint="dark"
         style={StyleSheet.absoluteFill}
       />
-      {/* Tinted overlay on top of blur */}
+      
       <View style={styles.tintOverlay} />
 
-      {/* Drag area */}
+      
       <View {...panResponder.panHandlers} style={styles.dragArea}>
         <View style={styles.handle} />
         <ChevronUp color={G.textLight} size={16} />
       </View>
 
-      {/* Header */}
+      
       <View style={styles.topRow}>
         <View style={styles.titleIcon}>
           <ScanLine color={G.accent} size={18} />
@@ -157,7 +156,7 @@ export default function DetectedMealBottomSheet({
         </View>
       </View>
 
-      {/* Confidence + quick action */}
+      
       <View style={styles.collapsedActionRow}>
         <View style={[styles.matchPill, isLowConfidence && styles.matchPillWarn]}>
           <CheckCircle2
@@ -245,7 +244,7 @@ export default function DetectedMealBottomSheet({
         </View>
       )}
 
-      {/* Action buttons */}
+      
       <View style={styles.actionRow}>
         <Pressable onPress={onAnalyze} style={styles.analyzeButton}>
           <ScanLine color="#FFFFFF" size={18} />

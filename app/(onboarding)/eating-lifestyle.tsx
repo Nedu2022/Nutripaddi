@@ -1,6 +1,14 @@
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
+import {
+  Cookie,
+  Leaf,
+  Moon,
+  Scale,
+  Soup,
+  Wheat,
+} from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
 import CustomButton from "@/components/CustomButton";
@@ -14,12 +22,12 @@ import { en } from "@/localization";
 import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
 const lifestyles = [
-  { key: "lifestyleSwallow" as const },
-  { key: "lifestyleRice" as const },
-  { key: "lifestyleLateNight" as const },
-  { key: "lifestyleSnack" as const },
-  { key: "lifestylePortion" as const },
-  { key: "lifestyleHealthier" as const },
+  { key: "lifestyleSwallow" as const, Icon: Soup },
+  { key: "lifestyleRice" as const, Icon: Wheat },
+  { key: "lifestyleLateNight" as const, Icon: Moon },
+  { key: "lifestyleSnack" as const, Icon: Cookie },
+  { key: "lifestylePortion" as const, Icon: Scale },
+  { key: "lifestyleHealthier" as const, Icon: Leaf },
 ];
 
 export default function EatingLifestyleScreen() {
@@ -47,8 +55,14 @@ export default function EatingLifestyleScreen() {
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
         {lifestyles.map((l) => (
-          <OptionCard key={l.key} label={t[l.key]}
-            onPress={() => toggle(l.key)} selected={selected.includes(l.key)} />
+          <OptionCard
+            key={l.key}
+            label={t[l.key]}
+            icon={<l.Icon color={COLORS.primary} size={20} />}
+            multiSelect
+            onPress={() => toggle(l.key)}
+            selected={selected.includes(l.key)}
+          />
         ))}
       </Animated.View>
 

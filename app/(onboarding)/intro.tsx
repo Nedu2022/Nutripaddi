@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Pressable, StyleSheet, Text } from "react-native";
+import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import Animated, { FadeIn, FadeInDown, FadeInUp } from "react-native-reanimated";
 
@@ -32,7 +32,10 @@ export default function IntroScreen() {
         entering={FadeInDown.delay(80).duration(440)}
         style={styles.skipRow}
       >
-        <Text style={styles.brand}>NutriPadi</Text>
+        <View style={styles.brandContainer}>
+          <Image source={require("@/assets/images/logo-mark.png")} style={styles.brandLogo} resizeMode="contain" />
+          <Text style={styles.brand}>NutriPadi</Text>
+        </View>
         <Pressable onPress={() => router.replace(ROUTES.signup)} hitSlop={10}>
           <Text style={styles.skipText}>Skip</Text>
         </Pressable>
@@ -79,10 +82,20 @@ const styles = StyleSheet.create({
     alignItems: "flex-start",
     marginBottom: 10,
   },
+  brandContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  brandLogo: {
+    width: 28,
+    height: 28,
+  },
   brand: {
-    color: COLORS.text,
-    fontSize: 16,
+    color: COLORS.primary,
+    fontSize: 22,
     fontFamily: FONTS.extraBold,
+    marginTop: 2,
   },
   skipText: {
     color: COLORS.primary,

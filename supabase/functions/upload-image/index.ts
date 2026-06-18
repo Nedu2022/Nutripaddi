@@ -1,22 +1,44 @@
 // @ts-nocheck
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Origin": "*",
 };
 
-function getEnv(name: string) {
-  const value = Deno.env.get(name);
-  if (!value) throw new Error(`${name} is not configured.`);
-  return value;
+const BUCKET = "uploads";
+
+function fileExtension(name: string, mimeType: string) {
+  const fromName = name.includes(".") ? name.split(".").pop() : "";
+  if (fromName) return fromName.toLowerCase();
+  if (mimeType.includes("png")) return "png";
+  if (mimeType.includes("webp")) return "webp";
+  return "jpg";
 }
 
-async function sha1(value: string) {
-  const bytes = new TextEncoder().encode(value);
-  const digest = await crypto.subtle.digest("SHA-1", bytes);
-  return Array.from(new Uint8Array(digest))
-    .map((byte) => byte.toString(16).padStart(2, "0"))
-    .join("");
+function base64ToBytes(b64: string) {
+  const binary = atob(b64);
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+  return bytes;
+}
+
+async function readUpload(request: Request) {
+  const contentType = request.headers.get("content-type") || "";
+  if (contentType.includes("application/json")) {
+    const body = await request.json().catch(() => ({}));
+    const image = typeof body.image === "string" ? body.image : "";
+    const folder = typeof body.folder === "string" ? body.folder : "meals";
+    if (!image) return { file: null, folder };
+    const mimeType = typeof body.mimeType === "string" ? body.mimeType : "image/jpeg";
+    const fileName = typeof body.fileName === "string" ? body.fileName : "upload.jpg";
+    const file = new File([base64ToBytes(image)], fileName, { type: mimeType });
+    return { file, folder };
+  }
+  const form = await request.formData();
+  const f = form.get("file");
+  return { file: f instanceof File ? f : null, folder: String(form.get("folder") || "meals") };
 }
 
 Deno.serve(async (request) => {
@@ -25,57 +47,50 @@ Deno.serve(async (request) => {
   }
 
   try {
-    const cloudName = getEnv("CLOUDINARY_CLOUD_NAME");
-    const apiKey = getEnv("CLOUDINARY_API_KEY");
-    const apiSecret = getEnv("CLOUDINARY_API_SECRET");
-    const incoming = await request.formData();
-    const file = incoming.get("file");
-    const folder = String(incoming.get("folder") || "meals");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !serviceKey) {
+      throw new Error("Supabase environment is not configured.");
+    }
 
-    if (!file) {
+    const supabase = createClient(supabaseUrl, serviceKey);
+
+    const { file, folder } = await readUpload(request);
+
+    if (!(file instanceof File)) {
       return Response.json(
         { message: "Missing file." },
         { headers: corsHeaders, status: 400 }
       );
     }
 
-    const timestamp = Math.floor(Date.now() / 1000).toString();
-    const cloudinaryFolder = `nutripaddi/${folder}`;
-    const signature = await sha1(
-      `folder=${cloudinaryFolder}&timestamp=${timestamp}${apiSecret}`
-    );
+    await supabase.storage.createBucket(BUCKET, { public: true });
 
-    const body = new FormData();
-    body.append("file", file);
-    body.append("api_key", apiKey);
-    body.append("timestamp", timestamp);
-    body.append("folder", cloudinaryFolder);
-    body.append("signature", signature);
+    const ext = fileExtension(file.name, file.type);
+    const path = `${folder}/${Date.now()}-${crypto.randomUUID()}.${ext}`;
 
-    const upload = await fetch(
-      `https://api.cloudinary.com/v1_1/${cloudName}/image/upload`,
-      {
-        body,
-        method: "POST",
-      }
-    );
-    const result = await upload.json();
-
-    if (!upload.ok) {
-      return Response.json(result, {
-        headers: corsHeaders,
-        status: upload.status,
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(path, file, {
+        contentType: file.type || "image/jpeg",
+        upsert: true,
       });
+
+    if (uploadError) {
+      return Response.json(
+        { message: uploadError.message },
+        { headers: corsHeaders, status: 500 }
+      );
     }
+
+    const { data: publicUrl } = supabase.storage.from(BUCKET).getPublicUrl(path);
 
     return Response.json(
       {
         image: {
-          height: result.height,
-          publicId: result.public_id,
-          secureUrl: result.secure_url,
-          url: result.url,
-          width: result.width,
+          publicId: path,
+          secureUrl: publicUrl.publicUrl,
+          url: publicUrl.publicUrl,
         },
       },
       { headers: corsHeaders }

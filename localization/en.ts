@@ -72,12 +72,12 @@ export const en = {
   setupEyebrow: "Nutrition Setup",
   step1Title: "Tell us about yourself",
   step1Subtitle: "These help NutriPadi give you better guidance.",
-  step2Title: "What is your food goal?",
-  step2Subtitle: "Choose the goal that matters most. You can change it later.",
+  step2Title: "What are your food goals?",
+  step2Subtitle: "Pick all that apply, you can change these later.",
   step3Title: "What are your eating habits?",
-  step3Subtitle: "This helps NutriPadi give you useful advice.",
+  step3Subtitle: "Pick all that apply. This helps NutriPadi give useful advice.",
   step4Title: "Any health concerns?",
-  step4Subtitle: "This helps personalize your food tips.",
+  step4Subtitle: "Pick all that apply, or choose none. This personalises your tips.",
   step5Title: "What should we call you?",
   step5Subtitle: "This keeps the app personal.",
   personalDetails: "Personal details",
@@ -110,7 +110,7 @@ export const en = {
   babyAgeLabel: "How old is your baby? (months)",
   babyAgePlaceholder: "e.g. 6",
   babyAgeRequired: "Please enter your baby's age in months.",
-  maternalNote: "NutriPadi will watch your iron, folic acid, and protein closely — the nutrients that matter most for the first 1,000 days.",
+  maternalNote: "NutriPadi will watch your iron, folic acid, and protein closely, the nutrients that matter most for the first 1,000 days.",
   lifeStageLabel: "Life stage",
 
   // Goals
@@ -120,6 +120,11 @@ export const en = {
   goalReduceCarbs: "Reduce excess carbs",
   goalUnderstandMeals: "Understand African meals",
   goalBetterHabits: "Build better food habits",
+  goalMoreProtein: "Eat more protein",
+  goalBoostEnergy: "Boost my energy",
+  goalEatForBaby: "Eat well for my baby",
+  goalEatForBabyDesc: "Pregnancy & nursing nutrition",
+  goalsHint: "Pick all that apply.",
 
   // Eating lifestyle
   lifestyleSwallow: "I eat swallow often",
@@ -128,13 +133,19 @@ export const en = {
   lifestyleSnack: "I snack a lot",
   lifestylePortion: "I want to control how much I eat",
   lifestyleHealthier: "I want healthier African meals",
+  lifestyleHint: "Pick all that apply.",
 
   // Health awareness
   healthGeneral: "General wellness",
   healthWeight: "Weight management",
-  healthDiabetes: "Diabetes concerns",
-  healthHeart: "Heart health concerns",
+  healthDiabetes: "Diabetes",
+  healthHeart: "Heart health",
+  healthBloodPressure: "Blood pressure",
+  healthAnaemia: "Low iron / anaemia",
+  healthGut: "Gut & digestion",
+  healthPregnancy: "Pregnancy & baby nutrition",
   healthNone: "No specific concern",
+  healthHint: "Pick all that apply, or choose none.",
   healthDisclaimer: "NutriPadi gives food estimates and tips. If you have a medical condition, please speak with a qualified health professional.",
 
   // Dashboard

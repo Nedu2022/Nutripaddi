@@ -46,47 +46,66 @@ export default function NutritionLessonsScreen() {
     };
   }, []);
 
+  const getDailyRotated = <T,>(items: T[]): T[] => {
+    if (!items.length) return [];
+    const now = new Date();
+    const start = new Date(now.getFullYear(), 0, 0);
+    const diff = now.getTime() - start.getTime();
+    const oneDay = 1000 * 60 * 60 * 24;
+    const dayOfYear = Math.floor(diff / oneDay);
+    
+    const offset = dayOfYear % items.length;
+    return [...items.slice(offset), ...items.slice(0, offset)];
+  };
+
+  const dailySections = getDailyRotated(sections);
+  const dailyTips = getDailyRotated(tips).slice(0, 4);
+
   return (
     <ScreenWrapper scroll>
       <AppHeader showBack title="Nutrition Lessons" subtitle="Learn practical food lessons" />
 
       {/* Lesson Sections */}
-      <Animated.View entering={FadeInUp.duration(400)} style={styles.sections}>
-        {sections.map((section) => {
+      <View style={styles.sections}>
+        {dailySections.map((section, index) => {
           const Icon = getLucideIcon(section.iconName);
           return (
-            <Pressable key={section.id} style={styles.sectionCard}>
-              <View style={styles.sectionIcon}>
-                <Icon color={COLORS.primary} size={22} />
-              </View>
-              <View style={styles.sectionContent}>
-                <Text style={styles.sectionTitle}>{section.title}</Text>
-                <Text style={styles.sectionDesc}>{section.description}</Text>
-              </View>
-              <View style={styles.countBadge}>
-                <Text style={styles.countText}>{section.tipCount}</Text>
-              </View>
-            </Pressable>
+            <Animated.View key={section.id} entering={FadeInUp.delay(index * 120).duration(400)}>
+              <Pressable style={styles.sectionCard}>
+                <View style={styles.sectionIcon}>
+                  <Icon color={COLORS.primary} size={22} />
+                </View>
+                <View style={styles.sectionContent}>
+                  <Text style={styles.sectionTitle}>{section.title}</Text>
+                  <Text style={styles.sectionDesc}>{section.description}</Text>
+                </View>
+                <View style={styles.countBadge}>
+                  <Text style={styles.countText}>{section.tipCount}</Text>
+                </View>
+              </Pressable>
+            </Animated.View>
           );
         })}
-      </Animated.View>
+      </View>
 
       {loadError ? <Text style={styles.errorText}>{loadError}</Text> : null}
 
       {/* Featured Tips */}
       <Text style={styles.featuredLabel}>Featured Tips</Text>
-      {tips.slice(0, 4).map((tip) => {
+      {dailyTips.map((tip, index) => {
         const TipIcon = getLucideIcon(tip.iconName);
         return (
-          <View key={tip.id} style={styles.tipCard}>
-            <View style={styles.tipIcon}>
-              <TipIcon color={COLORS.primary} size={18} />
+          <Animated.View key={tip.id} entering={FadeInUp.delay((index + dailySections.length) * 120).duration(400)}>
+            <View style={styles.tipCard}>
+              <View style={styles.tipIcon}>
+                <TipIcon color={COLORS.primary} size={18} />
+              </View>
+              <View style={styles.tipContent}>
+                <Text style={styles.tipTitle}>{tip.title}</Text>
+                <Text style={styles.tipText}>{tip.content}</Text>
+              </View>
             </View>
-            <View style={styles.tipContent}>
-              <Text style={styles.tipTitle}>{tip.title}</Text>
-              <Text style={styles.tipText}>{tip.content}</Text>
-            </View>
-          </View>
+          </Animated.View>
         );
       })}
 

@@ -75,5 +75,5 @@ export const ha: typeof en = {
   lifeStagePregnant: "Ina da ciki", lifeStagePregnantDesc: "Kāre kanki da ɗanki lokacin ciki.",
   lifeStageNursing: "Ina shayar da jariri", lifeStageNursingDesc: "Ci gaba da samun isasshen abinci yayin shayarwa (shekara 0–2).",
   trimesterLabel: "A wane mataki na ciki kike?", babyAgeLabel: "Yaya jaririnki yake? (watanni)",
-  maternalNote: "NutriPadi zai sa ido sosai kan baƙin ƙarfe, folic acid, da furotin — masu muhimmanci ga kwanaki 1,000 na farko.",
+  maternalNote: "NutriPadi zai sa ido sosai kan baƙin ƙarfe, folic acid, da furotin, masu muhimmanci ga kwanaki 1,000 na farko.",
 };

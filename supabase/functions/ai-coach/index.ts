@@ -1,14 +1,4 @@
 // @ts-nocheck
-//
-// NutriPadi AI Coach — backed by Google AI Studio (Gemini).
-//
-// Setup:
-//   1. Get a free API key from https://aistudio.google.com/app/apikey
-//   2. Put it in your .env at the project root:  GEMINI_API_KEY=your-key-here
-//      (optionally GEMINI_MODEL, defaults to gemini-3.1-flash-lite)
-//   3a. Run locally:  supabase functions serve ai-coach --env-file .env
-//   3b. Deploy:       supabase secrets set GEMINI_API_KEY=your-key-here
-//                     supabase functions deploy ai-coach
 
 const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -112,8 +102,6 @@ Deno.serve(async (request) => {
       ? `${SYSTEM_PROMPT}\n\nUser profile:\n${profileContext}`
       : SYSTEM_PROMPT;
 
-    // Map the recent chat history into Gemini's content format (cap to keep
-    // token use — and cost — low).
     const contents = history
       .slice(-10)
       .filter((item) => typeof item.text === "string" && item.text.trim())
@@ -155,7 +143,6 @@ Deno.serve(async (request) => {
       .join("")
       .trim();
 
-    // Strip any markdown the model slips in so the chat shows clean human text.
     const reply = rawReply
       ?.replace(/\*\*(.*?)\*\*/g, "$1")
       .replace(/\*(.*?)\*/g, "$1")

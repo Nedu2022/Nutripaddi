@@ -16,9 +16,9 @@ export type OnboardingDraft = {
   gender?: string | null;
   weight?: number | null;
   height?: number | null;
-  nutritionGoal?: string | null;
+  nutritionGoal?: string[] | null;
   eatingLifestyle?: string[] | null;
-  healthAwareness?: string | null;
+  healthAwareness?: string[] | null;
   location?: string | null;
 };
 

@@ -1,7 +1,8 @@
 import { useEffect } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
-import { Baby } from "lucide-react-native";
+import { Baby, ScanLine } from "lucide-react-native";
+import { BlurView } from "expo-blur";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -145,16 +146,53 @@ export default function OnboardingSlide({
   }));
 
   const artwork = [
-    <MaternalArtwork key="maternal" />,
+    <MealTicketArtwork key="ticket" />,
     <ScanArtwork key="scan" />,
     <NutritionLabelArtwork key="label" />,
-    <MealTicketArtwork key="ticket" />,
-  ][index] ?? <MaternalArtwork key="maternal-fallback" />;
+    <MaternalArtwork key="maternal" />,
+  ][index] ?? <MealTicketArtwork key="ticket-fallback" />;
 
   return (
     <Animated.View style={[styles.container, animatedStyle]}>
       {image ? (
-        <Image fadeDuration={160} source={image} resizeMode="cover" style={styles.image} />
+        <View style={[styles.imageWrapper, styles.image]}>
+          <Image fadeDuration={160} source={image} resizeMode="cover" style={{ width: "100%", height: "100%" }} />
+          {index === 2 && (
+            <View style={styles.mockupSheet}>
+              <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
+              <View style={styles.mockupOverlay} />
+              
+              <View style={styles.mockupDragHandle} />
+              
+              <View style={styles.mockupHeader}>
+                <View style={styles.mockupIconWrap}>
+                  <ScanLine color={COLORS.primary} size={16} />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.mockupEyebrow}>We found your meal</Text>
+                  <Text style={styles.mockupMealName}>West African Plate</Text>
+                </View>
+              </View>
+
+              <View style={styles.mockupGrid}>
+                <View style={[styles.mockupCell, styles.mockupCellHighlight]}>
+                  <Text style={[styles.mockupValue, { color: COLORS.primaryDark }]}>
+                    ~645<Text style={styles.mockupUnit}>kcal</Text>
+                  </Text>
+                  <Text style={[styles.mockupLabel, { color: COLORS.primaryDark }]}>Energy</Text>
+                </View>
+                <View style={styles.mockupCell}>
+                  <Text style={styles.mockupValue}>~68<Text style={styles.mockupUnit}>g</Text></Text>
+                  <Text style={styles.mockupLabel}>Carbs</Text>
+                </View>
+                <View style={styles.mockupCell}>
+                  <Text style={styles.mockupValue}>~42<Text style={styles.mockupUnit}>g</Text></Text>
+                  <Text style={styles.mockupLabel}>Protein</Text>
+                </View>
+              </View>
+            </View>
+          )}
+        </View>
       ) : (
         <View style={styles.artBoard}>{artwork}</View>
       )}
@@ -170,12 +208,103 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
   },
+  imageWrapper: {
+    overflow: "hidden",
+  },
   image: {
     width: "100%",
     maxWidth: 340,
     height: 340,
     borderRadius: 24,
     marginBottom: 34,
+    backgroundColor: COLORS.softGreen,
+    borderColor: COLORS.primary,
+    borderWidth: 3,
+  },
+  mockupSheet: {
+    position: "absolute",
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: 160,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
+    borderTopWidth: 2,
+    borderColor: COLORS.primary,
+    overflow: "hidden",
+    paddingHorizontal: 16,
+    paddingTop: 12,
+  },
+  mockupOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.65)",
+  },
+  mockupDragHandle: {
+    width: 36,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: "rgba(17, 24, 39, 0.2)",
+    alignSelf: "center",
+    marginBottom: 12,
+  },
+  mockupHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 14,
+  },
+  mockupIconWrap: {
+    width: 36,
+    height: 36,
+    borderRadius: 12,
+    backgroundColor: "rgba(0, 128, 0, 0.08)",
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  mockupEyebrow: {
+    color: COLORS.primary,
+    fontSize: 10,
+    fontFamily: FONTS.extraBold,
+    textTransform: "uppercase",
+  },
+  mockupMealName: {
+    color: "#000",
+    fontSize: 15,
+    fontFamily: FONTS.extraBold,
+  },
+  mockupGrid: {
+    flexDirection: "row",
+    gap: 6,
+  },
+  mockupCell: {
+    flex: 1,
+    alignItems: "center",
+    paddingVertical: 10,
+    borderRadius: 12,
+    backgroundColor: "rgba(255, 255, 255, 0.52)",
+    borderWidth: 2,
+    borderColor: COLORS.primary,
+  },
+  mockupCellHighlight: {
+    backgroundColor: "rgba(255, 255, 255, 0.8)",
+  },
+  mockupValue: {
+    color: "#000",
+    fontSize: 14,
+    fontFamily: FONTS.extraBold,
+  },
+  mockupUnit: {
+    fontSize: 10,
+    fontFamily: FONTS.semiBold,
+  },
+  mockupLabel: {
+    color: "#545454",
+    fontSize: 9,
+    fontFamily: FONTS.extraBold,
+    textTransform: "uppercase",
+    marginTop: 2,
   },
   artBoard: {
     width: "88%",
@@ -185,36 +314,38 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     marginBottom: 34,
   },
-  // Maternal artwork (First 1,000 Days)
   maternalCard: {
     width: "92%",
     height: "88%",
     borderRadius: 24,
     backgroundColor: COLORS.softGreen,
-    borderColor: COLORS.border,
-    borderWidth: 1,
+    borderColor: "#000",
+    borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
     gap: 16,
     padding: 20,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   maternalRibbon: {
     position: "absolute",
-    top: 18,
+    top: -12,
     backgroundColor: COLORS.white,
-    borderColor: COLORS.border,
-    borderWidth: 1,
+    borderColor: "#000",
+    borderWidth: 2,
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 7,
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   maternalRibbonText: {
-    color: COLORS.primaryDark,
+    color: "#000",
     fontSize: 12,
     fontFamily: FONTS.extraBold,
     textTransform: "uppercase",
@@ -228,16 +359,17 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     marginTop: 18,
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.25,
-    shadowRadius: 16,
-    elevation: 4,
+    borderColor: "#000",
+    borderWidth: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   maternalHeading: {
-    color: COLORS.text,
+    color: "#000",
     fontSize: 18,
-    fontFamily: FONTS.bold,
+    fontFamily: FONTS.extraBold,
   },
   nutrientRow: {
     flexDirection: "row",
@@ -250,139 +382,158 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 6,
     backgroundColor: COLORS.white,
-    borderColor: COLORS.border,
-    borderWidth: 1,
+    borderColor: "#000",
+    borderWidth: 2,
     borderRadius: 999,
     paddingHorizontal: 12,
     paddingVertical: 7,
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
-  nutrientDot: { width: 8, height: 8, borderRadius: 4 },
-  nutrientPillText: { color: COLORS.text, fontSize: 12, fontFamily: FONTS.bold },
-  // Scan artwork
+  nutrientDot: { width: 8, height: 8, borderRadius: 4, borderColor: "#000", borderWidth: 1 },
+  nutrientPillText: { color: "#000", fontSize: 12, fontFamily: FONTS.extraBold },
   scanFrame: {
     width: "92%",
     height: "88%",
     borderRadius: 24,
     backgroundColor: COLORS.softGreen,
-    borderColor: COLORS.border,
-    borderWidth: 1,
+    borderColor: "#000",
+    borderWidth: 3,
     alignItems: "center",
     justifyContent: "center",
-    shadowColor: COLORS.primary,
-    shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.08,
-    shadowRadius: 24,
-    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   cornerTopLeft: {
     position: "absolute", left: 18, top: 18, width: 34, height: 34,
-    borderLeftWidth: 3, borderTopWidth: 3, borderColor: COLORS.primary, borderTopLeftRadius: 10,
+    borderLeftWidth: 4, borderTopWidth: 4, borderColor: "#000", borderTopLeftRadius: 10,
   },
   cornerTopRight: {
     position: "absolute", right: 18, top: 18, width: 34, height: 34,
-    borderRightWidth: 3, borderTopWidth: 3, borderColor: COLORS.primary, borderTopRightRadius: 10,
+    borderRightWidth: 4, borderTopWidth: 4, borderColor: "#000", borderTopRightRadius: 10,
   },
   cornerBottomLeft: {
     position: "absolute", left: 18, bottom: 18, width: 34, height: 34,
-    borderLeftWidth: 3, borderBottomWidth: 3, borderColor: COLORS.primary, borderBottomLeftRadius: 10,
+    borderLeftWidth: 4, borderBottomWidth: 4, borderColor: "#000", borderBottomLeftRadius: 10,
   },
   cornerBottomRight: {
     position: "absolute", right: 18, bottom: 18, width: 34, height: 34,
-    borderRightWidth: 3, borderBottomWidth: 3, borderColor: COLORS.primary, borderBottomRightRadius: 10,
+    borderRightWidth: 4, borderBottomWidth: 4, borderColor: "#000", borderBottomRightRadius: 10,
   },
   plateOuter: {
-    width: 150, height: 150, borderRadius: 75, borderWidth: 12,
-    borderColor: COLORS.softGreen, alignItems: "center", justifyContent: "center",
+    width: 150, height: 150, borderRadius: 75, borderWidth: 4,
+    borderColor: "#000", alignItems: "center", justifyContent: "center",
     backgroundColor: COLORS.white,
+    shadowColor: "#000",
+    shadowOffset: { width: 4, height: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   plateInner: {
     width: 100, height: 100, borderRadius: 50, alignItems: "center",
     justifyContent: "center", backgroundColor: COLORS.softOrange,
+    borderColor: "#000", borderWidth: 3,
   },
   foodCluster: { width: 66, height: 54 },
   foodLeaf: {
     position: "absolute", left: 2, top: 8, width: 40, height: 20,
     borderTopLeftRadius: 20, borderBottomRightRadius: 20,
     backgroundColor: COLORS.primary, transform: [{ rotate: "-18deg" }],
+    borderColor: "#000", borderWidth: 2,
   },
   foodDot: {
     position: "absolute", right: 6, top: 0, width: 24, height: 24,
     borderRadius: 12, backgroundColor: COLORS.secondary,
+    borderColor: "#000", borderWidth: 2,
   },
   foodBlock: {
     position: "absolute", right: 2, bottom: 4, width: 40, height: 22,
     borderRadius: 11, backgroundColor: "#F6D9A8",
+    borderColor: "#000", borderWidth: 2,
   },
   scanLabel: {
     position: "absolute", bottom: 28, flexDirection: "row", alignItems: "center", gap: 7,
-    borderRadius: 999, backgroundColor: COLORS.white, borderColor: COLORS.border,
-    borderWidth: 1, paddingHorizontal: 13, paddingVertical: 8,
+    borderRadius: 999, backgroundColor: COLORS.white, borderColor: "#000",
+    borderWidth: 2, paddingHorizontal: 13, paddingVertical: 8,
+    shadowColor: "#000",
+    shadowOffset: { width: 3, height: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
   scanLabelDot: {
-    width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary,
+    width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.primary, borderColor: "#000", borderWidth: 1,
   },
   scanLabelText: {
-    color: COLORS.primaryDark, fontSize: 12, fontFamily: FONTS.extraBold, textTransform: "uppercase",
+    color: "#000", fontSize: 12, fontFamily: FONTS.extraBold, textTransform: "uppercase",
   },
-  // Nutrition label
   labelSheet: {
     width: "84%", minHeight: "88%", borderRadius: 18, backgroundColor: COLORS.white,
-    borderColor: COLORS.text, borderWidth: 2, padding: 18,
-    shadowColor: COLORS.primary, shadowOffset: { width: 0, height: 16 },
-    shadowOpacity: 0.08, shadowRadius: 24, elevation: 3,
+    borderColor: "#000", borderWidth: 3, padding: 18,
+    shadowColor: "#000", shadowOffset: { width: 6, height: 6 },
+    shadowOpacity: 1, shadowRadius: 0,
   },
-  labelTitle: { color: COLORS.text, fontSize: 24, fontFamily: FONTS.extraBold },
-  thickRule: { height: 8, backgroundColor: COLORS.text, marginTop: 10, marginBottom: 12 },
+  labelTitle: { color: "#000", fontSize: 24, fontFamily: FONTS.extraBold },
+  thickRule: { height: 8, backgroundColor: "#000", marginTop: 10, marginBottom: 12 },
   metricRow: { alignItems: "flex-end", flexDirection: "row", justifyContent: "space-between" },
-  metricName: { color: COLORS.text, fontSize: 17, fontFamily: FONTS.bold },
-  metricValue: { color: COLORS.text, fontSize: 36, fontFamily: FONTS.extraBold },
-  thinRule: { height: 2, backgroundColor: COLORS.text, marginVertical: 12 },
+  metricName: { color: "#000", fontSize: 17, fontFamily: FONTS.extraBold },
+  metricValue: { color: "#000", fontSize: 36, fontFamily: FONTS.extraBold },
+  thinRule: { height: 3, backgroundColor: "#000", marginVertical: 12 },
   barRow: { marginBottom: 13 },
-  barLabel: { color: COLORS.textMuted, fontSize: 12, fontFamily: FONTS.bold, marginBottom: 5 },
-  barTrack: { height: 8, borderRadius: 8, backgroundColor: COLORS.softGreen, overflow: "hidden" },
-  barFill: { height: "100%", borderRadius: 8, backgroundColor: COLORS.primary },
+  barLabel: { color: "#000", fontSize: 12, fontFamily: FONTS.extraBold, marginBottom: 5 },
+  barTrack: { height: 12, borderRadius: 6, backgroundColor: COLORS.white, borderColor: "#000", borderWidth: 2, overflow: "hidden" },
+  barFill: { height: "100%", borderRadius: 0, backgroundColor: COLORS.primary, borderRightWidth: 2, borderColor: "#000" },
   chartSeal: {
     position: "absolute", right: 16, bottom: 14, width: 42, height: 42,
     borderRadius: 21, alignItems: "flex-end", justifyContent: "flex-end",
-    backgroundColor: COLORS.softGreen, flexDirection: "row", gap: 3,
+    backgroundColor: COLORS.white, flexDirection: "row", gap: 3,
     paddingHorizontal: 8, paddingBottom: 10,
+    borderColor: "#000", borderWidth: 2,
+    shadowColor: "#000", shadowOffset: { width: 3, height: 3 }, shadowOpacity: 1, shadowRadius: 0,
   },
   chartSealBar: {
-    width: 5, height: 18, borderRadius: 3, backgroundColor: COLORS.primary,
+    width: 5, height: 18, borderRadius: 3, backgroundColor: COLORS.primary, borderColor: "#000", borderWidth: 1,
   },
-  // Meal ticket
   ticketStack: { width: "88%", height: "86%", justifyContent: "center" },
   backTicket: {
     position: "absolute", left: 18, right: 0, top: 18, bottom: 0,
     borderRadius: 24, backgroundColor: COLORS.softGreen, transform: [{ rotate: "5deg" }],
+    borderColor: "#000", borderWidth: 3,
   },
   frontTicket: {
-    borderRadius: 24, backgroundColor: COLORS.text, padding: 22,
+    borderRadius: 24, backgroundColor: COLORS.softOrange, padding: 22,
     minHeight: 230, justifyContent: "space-between", transform: [{ rotate: "-3deg" }],
+    borderColor: "#000", borderWidth: 3,
+    shadowColor: "#000", shadowOffset: { width: 6, height: 6 }, shadowOpacity: 1, shadowRadius: 0,
   },
   ticketHeader: { alignItems: "center", flexDirection: "row", gap: 10 },
   ticketLeafMark: {
     width: 22, height: 22, borderRadius: 11,
     backgroundColor: COLORS.primary,
+    borderColor: "#000", borderWidth: 2,
   },
   ticketTitle: {
-    color: COLORS.white, fontSize: 13, fontFamily: FONTS.extraBold, textTransform: "uppercase",
+    color: "#000", fontSize: 13, fontFamily: FONTS.extraBold, textTransform: "uppercase",
   },
   ticketMeal: {
-    color: COLORS.white, fontSize: 34, fontFamily: FONTS.extraBold, lineHeight: 39, marginTop: 26,
+    color: "#000", fontSize: 34, fontFamily: FONTS.extraBold, lineHeight: 39, marginTop: 26,
   },
-  ticketMeta: { color: "#9CA3AF", fontSize: 14, fontFamily: FONTS.semiBold, marginTop: 7 },
+  ticketMeta: { color: "#000", fontSize: 14, fontFamily: FONTS.extraBold, marginTop: 7 },
   ticketFooter: {
     alignItems: "center", alignSelf: "flex-start", flexDirection: "row", gap: 8,
-    borderRadius: 999, backgroundColor: "rgba(255,255,255,0.1)", paddingHorizontal: 12, paddingVertical: 8,
+    borderRadius: 999, backgroundColor: COLORS.white, paddingHorizontal: 12, paddingVertical: 8,
+    borderColor: "#000", borderWidth: 2,
+    shadowColor: "#000", shadowOffset: { width: 2, height: 2 }, shadowOpacity: 1, shadowRadius: 0,
   },
   ticketFooterDot: {
-    width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.secondary,
+    width: 10, height: 10, borderRadius: 5, backgroundColor: COLORS.secondary, borderColor: "#000", borderWidth: 1,
   },
-  ticketFooterText: { color: COLORS.white, fontSize: 12, fontFamily: FONTS.semiBold },
-  // Typography
+  ticketFooterText: { color: "#000", fontSize: 12, fontFamily: FONTS.extraBold },
   title: {
-    color: COLORS.text, fontSize: 30, fontFamily: FONTS.extraBold, lineHeight: 37, textAlign: "center",
+    color: COLORS.primary, fontSize: 30, fontFamily: FONTS.extraBold, lineHeight: 37, textAlign: "center",
   },
   description: {
     color: COLORS.textMuted,

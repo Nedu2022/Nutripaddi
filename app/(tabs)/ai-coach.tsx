@@ -13,23 +13,21 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
-import { Send, Zap } from "lucide-react-native";
+import { RotateCcw, Send, Zap } from "lucide-react-native";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
-
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
+import StreamingText from "@/components/chat/StreamingText";
+import TypingIndicator from "@/components/chat/TypingIndicator";
 import { askCoach } from "@/src/services/coachService";
 import { getQuickQuestions } from "@/src/services/contentService";
 import type { ChatMessage, QuickQuestion } from "@/types";
 import { useLanguage } from "@/hooks/useLanguage";
-
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
-
 type WebTextInputKeyEvent = TextInputKeyPressEventData & {
   isComposing?: boolean;
   shiftKey?: boolean;
 };
-
 const D = {
   bg:       "#F5F6FA",
   card:     "#FFFFFF",
@@ -40,7 +38,6 @@ const D = {
   light:    "#B0B8C4",
   border:   "#F0F0F0",
 };
-
 export default function AICoachTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -49,13 +46,17 @@ export default function AICoachTab() {
   const [quickQuestions, setQuickQuestions] = useState<QuickQuestion[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const [streamingId, setStreamingId] = useState<string | null>(null);
+  const [errorText, setErrorText] = useState<string | null>(null);
+  const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const isSendingRef = useRef(false);
+  const scrollToEnd = () =>
+    flatListRef.current?.scrollToEnd({ animated: true });
   const inputBottomClearance = isWeb ? 96 : Math.max(98, insets.bottom + 72);
-
   useEffect(() => {
     let mounted = true;
-
     const loadQuickQuestions = async () => {
       try {
         const items = await getQuickQuestions();
@@ -64,72 +65,70 @@ export default function AICoachTab() {
         if (mounted) setQuickQuestions([]);
       }
     };
-
     void loadQuickQuestions();
-
     return () => {
       mounted = false;
     };
   }, []);
-
   const createMessage = (text: string, isUser: boolean): ChatMessage => ({
       id:        `msg-${Date.now()}-${isUser ? "u" : "ai"}`,
       text,
       isUser,
       timestamp: "Just now",
   });
-
-  const handleSend = async (text?: string) => {
-    const msg = (text ?? inputText).trim();
-    if (!msg || isSendingRef.current) return;
-
-    const userMessage = createMessage(msg, true);
-    const nextMessages = [...messages, userMessage];
+  const runCoach = async (msg: string, history: ChatMessage[]) => {
     isSendingRef.current = true;
-    setMessages(nextMessages);
-    setInputText("");
     setIsSending(true);
-
+    setIsTyping(true);
+    setErrorText(null);
+    setFailedMessage(null);
+    setTimeout(scrollToEnd, 60);
     try {
-      const reply = await askCoach(msg, messages);
-      setMessages((prev) => [...prev, createMessage(reply, false)]);
-      setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+      const reply = await askCoach(msg, history);
+      const aiMessage = createMessage(reply, false);
+      setIsTyping(false);
+      setStreamingId(aiMessage.id);
+      setMessages((prev) => [...prev, aiMessage]);
     } catch (error) {
-      setMessages((prev) => [
-        ...prev,
-        createMessage(getCoachErrorMessage(error), false),
-      ]);
+      setIsTyping(false);
+      setErrorText(getCoachErrorMessage(error));
+      setFailedMessage(msg);
     } finally {
       isSendingRef.current = false;
       setIsSending(false);
+      setTimeout(scrollToEnd, 100);
     }
-
-    setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
   };
-
+  const handleSend = (text?: string) => {
+    const msg = (text ?? inputText).trim();
+    if (!msg || isSendingRef.current) return;
+    const history = messages;
+    setMessages((prev) => [...prev, createMessage(msg, true)]);
+    setInputText("");
+    void runCoach(msg, history);
+  };
+  const handleRetry = () => {
+    if (!failedMessage || isSendingRef.current) return;
+    void runCoach(failedMessage, messages.slice(0, -1));
+  };
   const getCoachErrorMessage = (error: unknown) => {
     const message = error instanceof Error ? error.message : "";
     if (/edge function|failed to send|network request/i.test(message)) {
       return "I couldn't reach the coach right now. Please check your connection and try again.";
     }
-
     return message || "The coach could not respond right now. Please try again.";
   };
-
   const handleInputKeyPress = (
     event: NativeSyntheticEvent<TextInputKeyPressEventData>
   ) => {
     if (Platform.OS !== "web") return;
-
     const nativeEvent = event.nativeEvent as WebTextInputKeyEvent;
     if (nativeEvent.key !== "Enter" || nativeEvent.shiftKey || nativeEvent.isComposing) {
       return;
     }
-
     event.preventDefault();
     void handleSend();
   };
-
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => (
     <Animated.View
       entering={FadeInUp.delay(index < 3 ? 0 : 80).duration(280)}
@@ -144,18 +143,52 @@ export default function AICoachTab() {
         {!item.isUser && (
           <Text style={styles.aiLabel}>NutriPadi</Text>
         )}
-        <Text style={[styles.bubbleText, item.isUser && styles.bubbleTextUser]}>
-          {item.text}
-        </Text>
+        {!item.isUser && item.id === streamingId ? (
+          <StreamingText
+            text={item.text}
+            style={styles.bubbleText}
+            onTick={scrollToEnd}
+            onDone={() => setStreamingId((id) => (id === item.id ? null : id))}
+          />
+        ) : (
+          <Text style={[styles.bubbleText, item.isUser && styles.bubbleTextUser]}>
+            {item.text}
+          </Text>
+        )}
         <Text style={[styles.timestamp, item.isUser && styles.timestampUser]}>
           {item.timestamp}
         </Text>
       </View>
     </Animated.View>
   );
-
+  const ListFooter = isTyping ? (
+    <Animated.View
+      entering={FadeInUp.duration(220)}
+      style={[styles.msgRow, styles.msgRowAI]}
+    >
+      <View style={styles.aiAvatar}>
+        <Image resizeMode="contain" source={LOGO_MARK} style={styles.messageLogo} />
+      </View>
+      <View style={[styles.bubble, styles.bubbleAI, styles.typingBubble]}>
+        <TypingIndicator color={D.muted} />
+      </View>
+    </Animated.View>
+  ) : null;
+  const isEmpty = messages.length === 0;
   const ListHeader = (
     <Animated.View entering={FadeInDown.duration(300)} style={styles.quickSection}>
+      {isEmpty && (
+        <View style={styles.welcomeCard}>
+          <View style={styles.welcomeAvatar}>
+            <Image resizeMode="contain" source={LOGO_MARK} style={styles.welcomeLogo} />
+          </View>
+          <Text style={styles.welcomeTitle}>Hi, I&apos;m NutriPadi</Text>
+          <Text style={styles.welcomeSub}>
+            Ask me about any African meal, your nutrition goal, or what to cook
+            today. Tap a question below to start.
+          </Text>
+        </View>
+      )}
       <View style={styles.quickLabelRow}>
         <Zap color={D.accent} size={13} fill={D.accent} />
         <Text style={styles.quickLabel}>Suggested Questions</Text>
@@ -173,7 +206,6 @@ export default function AICoachTab() {
       </View>
     </Animated.View>
   );
-
   return (
     <SafeAreaView style={styles.safe} edges={["top"]}>
       <KeyboardAvoidingView
@@ -182,7 +214,6 @@ export default function AICoachTab() {
         keyboardVerticalOffset={0}
       >
         <View style={[styles.contentRail, isWeb && styles.contentRailWeb]}>
-          {/* ── HEADER ─────────────────────────────────────────────── */}
           <Animated.View
             entering={FadeInDown.duration(320)}
             style={[styles.header, isWeb && styles.headerWeb]}
@@ -201,8 +232,6 @@ export default function AICoachTab() {
               <Text style={styles.onlineBadgeText}>Online</Text>
             </View>
           </Animated.View>
-
-          {/* ── CHAT ────────────────────────────────────────────────── */}
           <FlatList
             ref={flatListRef}
             data={messages}
@@ -215,12 +244,27 @@ export default function AICoachTab() {
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={ListHeader}
+            ListFooterComponent={ListFooter}
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
             }
           />
-
-          {/* ── INPUT BAR ───────────────────────────────────────────── */}
+          {errorText && (
+            <Animated.View
+              entering={FadeInUp.duration(220)}
+              style={[styles.errorBar, isWeb && styles.errorBarWeb]}
+            >
+              <Text style={styles.errorText} numberOfLines={2}>
+                {errorText}
+              </Text>
+              {failedMessage && (
+                <Pressable onPress={handleRetry} style={styles.retryBtn}>
+                  <RotateCcw color={COLORS.error} size={14} />
+                  <Text style={styles.retryText}>Retry</Text>
+                </Pressable>
+              )}
+            </Animated.View>
+          )}
           <Animated.View
             entering={FadeInDown.delay(150).duration(320)}
             style={[
@@ -261,7 +305,6 @@ export default function AICoachTab() {
     </SafeAreaView>
   );
 }
-
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: D.bg },
   flex: { flex: 1 },
@@ -274,8 +317,6 @@ const styles = StyleSheet.create({
     maxWidth:  740,
     paddingHorizontal: 18,
   },
-
-  // Header
   header: {
     flexDirection:  "row",
     alignItems:     "center",
@@ -350,8 +391,6 @@ const styles = StyleSheet.create({
     fontSize:   11,
     fontFamily: FONTS.bold,
   },
-
-  // Chat
   chatContent: {
     paddingHorizontal: 18,
     paddingTop:        18,
@@ -362,8 +401,87 @@ const styles = StyleSheet.create({
     paddingTop:        20,
     paddingBottom:     18,
   },
-
-  // Quick questions
+  welcomeCard: {
+    alignItems:      "center",
+    backgroundColor: D.card,
+    borderRadius:    22,
+    paddingHorizontal: 22,
+    paddingVertical:   26,
+    marginBottom:    22,
+    borderWidth:     1,
+    borderColor:     D.border,
+    shadowColor:     "#000",
+    shadowOpacity:   0.05,
+    shadowRadius:    14,
+    shadowOffset:    { width: 0, height: 4 },
+    elevation:       2,
+  },
+  welcomeAvatar: {
+    width:           58,
+    height:          58,
+    borderRadius:    19,
+    backgroundColor: D.accentDim,
+    alignItems:      "center",
+    justifyContent:  "center",
+    marginBottom:    14,
+  },
+  welcomeLogo: {
+    width:  38,
+    height: 38,
+  },
+  welcomeTitle: {
+    color:      D.text,
+    fontSize:   19,
+    fontFamily: FONTS.extraBold,
+    marginBottom: 6,
+  },
+  welcomeSub: {
+    color:      D.muted,
+    fontSize:   14,
+    fontFamily: FONTS.regular,
+    lineHeight: 21,
+    textAlign:  "center",
+  },
+  errorBar: {
+    flexDirection:   "row",
+    alignItems:      "center",
+    justifyContent:  "space-between",
+    gap:             12,
+    marginHorizontal: 18,
+    marginBottom:    8,
+    paddingHorizontal: 14,
+    paddingVertical:   12,
+    borderRadius:    14,
+    backgroundColor: COLORS.softRed,
+    borderWidth:     1,
+    borderColor:     "rgba(226,54,54,0.18)",
+  },
+  errorBarWeb: {
+    marginHorizontal: 0,
+  },
+  errorText: {
+    flex:       1,
+    color:      COLORS.error,
+    fontSize:   13,
+    fontFamily: FONTS.medium,
+    lineHeight: 18,
+  },
+  retryBtn: {
+    flexDirection:   "row",
+    alignItems:      "center",
+    gap:             5,
+    paddingHorizontal: 12,
+    paddingVertical:   7,
+    borderRadius:    999,
+    backgroundColor: COLORS.white,
+    borderWidth:     1,
+    borderColor:     "rgba(226,54,54,0.22)",
+  },
+  retryText: {
+    color:      COLORS.error,
+    fontSize:   12,
+    fontFamily: FONTS.bold,
+  },
   quickSection: {
     marginBottom: 22,
   },
@@ -399,8 +517,6 @@ const styles = StyleSheet.create({
     fontSize:   13,
     fontFamily: FONTS.semiBold,
   },
-
-  // Messages
   msgRow: {
     flexDirection: "row",
     marginBottom:  14,
@@ -451,6 +567,10 @@ const styles = StyleSheet.create({
     shadowOffset:      { width: 0, height: 3 },
     elevation:         2,
   },
+  typingBubble: {
+    paddingVertical:   16,
+    paddingHorizontal: 16,
+  },
   aiLabel: {
     color:      D.accent,
     fontSize:   10,
@@ -478,8 +598,6 @@ const styles = StyleSheet.create({
     color:     "rgba(255,255,255,0.55)",
     textAlign: "right",
   },
-
-  // Input
   inputBar: {
     paddingHorizontal: 18,
     paddingTop:        10,

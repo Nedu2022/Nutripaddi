@@ -8,19 +8,16 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import ScanFrame from "@/components/ScanFrame";
 import DetectionArrow from "@/components/scan/DetectionArrow";
 import { FONTS } from "@/constants/fonts";
 import type { DetectedFoodItem, ScanState } from "@/src/types/detection";
-
 type CameraOverlayProps = {
   detections:  DetectedFoodItem[];
   isPaused:    boolean;
   isDetecting: boolean;
   scanState:   ScanState;
 };
-
 const TIPS = [
   "Place your food inside the frame",
   "Good lighting gives better results",
@@ -28,23 +25,21 @@ const TIPS = [
   "Hold the phone steady for a moment",
   "Works best with clear, well-lit food",
 ];
-
 const DETECTING_MSGS = [
   "Identifying food items…",
   "Analysing ingredients…",
   "Preparing nutrition estimate…",
   "Almost there…",
 ];
-
 const STATE_TEXT: Partial<Record<ScanState, string>> = {
   scanning:       "Hold steady for better detection",
   good_match:     "Food detected",
   low_confidence: "Confirm the food below",
-  poor_image:     "Couldn't see clearly — try again",
+  poor_image:     "Couldn't see clearly. Try again",
+  no_food:        "No food detected. Try again",
   saved:          "Meal saved!",
   offline:        "Working with local data",
 };
-
 export default function CameraOverlay({
   detections,
   isPaused,
@@ -53,28 +48,20 @@ export default function CameraOverlay({
 }: CameraOverlayProps) {
   const { width, height } = useWindowDimensions();
   const insets             = useSafeAreaInsets();
-
   const pulse    = useSharedValue(1);
   const scanLine = useSharedValue(0);
-
   const [tipIdx, setTipIdx]           = useState(0);
   const [detectMsgIdx, setDetectMsgIdx] = useState(0);
-
-  // Rotate tip text while idle
   useEffect(() => {
     if (isPaused || detections.length > 0) return;
     const t = setInterval(() => setTipIdx((i) => (i + 1) % TIPS.length), 3200);
     return () => clearInterval(t);
   }, [isPaused, detections.length]);
-
-  // Rotate detecting messages while scanning
   useEffect(() => {
     if (!isDetecting) return;
     const t = setInterval(() => setDetectMsgIdx((i) => (i + 1) % DETECTING_MSGS.length), 1100);
     return () => clearInterval(t);
   }, [isDetecting]);
-
-  // Pulse frame + animate scan line
   useEffect(() => {
     pulse.value = withRepeat(
       withSequence(withTiming(1.025, { duration: 1400 }), withTiming(1, { duration: 1400 })),
@@ -85,54 +72,36 @@ export default function CameraOverlay({
       -1, false,
     );
   }, [pulse, scanLine]);
-
   const frameStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
   }));
-
-  // Scan line travels within the 280-frame: 0 = top (-130), 1 = bottom (+130)
   const lineStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: scanLine.value * 260 - 130 }],
     opacity:   isPaused ? 0 : 0.85,
   }));
-
   const visibleDetections = detections
     .filter((item, i, arr) => arr.findIndex((c) => c.id === item.id) === i)
     .slice(0, 4);
   const hasResult = visibleDetections.length > 0;
-
-  // Frame corner colour
   const frameColor = isDetecting
     ? "#00D26A"
     : isPaused
     ? "rgba(255,255,255,0.45)"
     : "rgba(255,255,255,0.90)";
-
-  // Single guidance text replacing both old tip-pill and status-pill
   const guidanceText = isDetecting
     ? DETECTING_MSGS[detectMsgIdx]
     : STATE_TEXT[scanState] ?? TIPS[tipIdx];
-
-  // Center frame between top bar (~insets.top+88) and capture dock (~insets.bottom+150)
   const topPad = insets.top + 88;
   const botPad = insets.bottom + 158;
-
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-
-      {/* Subtle vignette — only when no detections */}
       {!hasResult && <View style={styles.vignette} />}
-
-      {/* Scan frame — centered in available camera area */}
       {!hasResult && (
         <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
           <Animated.View style={frameStyle}>
             <ScanFrame color={frameColor} glowing={isDetecting && !isPaused} />
-            {/* Scanning line inside the frame */}
             <Animated.View style={[styles.scanLine, lineStyle]} />
           </Animated.View>
-
-          {/* Guidance text below frame */}
           <Text
             style={[
               styles.guidanceText,
@@ -143,8 +112,6 @@ export default function CameraOverlay({
           </Text>
         </View>
       )}
-
-      {/* Detection annotation arrows */}
       {visibleDetections.map((item, index) => (
         <DetectionArrow
           key={`${item.id}-${item.confidence}`}
@@ -157,7 +124,6 @@ export default function CameraOverlay({
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   vignette: {
     ...StyleSheet.absoluteFillObject,

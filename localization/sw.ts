@@ -16,5 +16,5 @@ export const sw: typeof en = {
   lifeStagePregnant: "Nina mimba", lifeStagePregnantDesc: "Jilinde wewe na mtoto wako wakati wa ujauzito.",
   lifeStageNursing: "Mama ananyonyesha", lifeStageNursingDesc: "Endelea kupata lishe bora unaponyonyesha (miaka 0–2).",
   trimesterLabel: "Uko katika robo gani ya ujauzito?", babyAgeLabel: "Mtoto wako ana umri gani? (miezi)",
-  maternalNote: "NutriPadi itafuatilia kwa karibu madini ya chuma, asidi ya foliki na protini — muhimu kwa siku 1,000 za kwanza.",
+  maternalNote: "NutriPadi itafuatilia kwa karibu madini ya chuma, asidi ya foliki na protini, muhimu kwa siku 1,000 za kwanza.",
 };

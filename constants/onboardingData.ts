@@ -4,37 +4,43 @@ export type OnboardingItem = {
   id: string;
   title: string;
   description: string;
-  // Set to a require(...) to use a photo; null uses the built-in vector artwork.
   image: ImageSourcePropType | null;
 };
 
+const SLIDE_IMAGES = {
+  ticket: require("@/assets/images/onboarding_nutritionist.png"),
+  scan: require("@/assets/images/onboarding_scan_new.png"),
+  nutrition: require("@/assets/images/onboarding_nutrition_info.png"),
+  maternal: require("@/assets/images/onboarding_maternal_new.png"),
+} as const;
+
 export const onboardingData: OnboardingItem[] = [
   {
-    id: "welcome",
-    title: "Nutrition for Two",
+    id: "ticket",
+    title: "Meet Your Nutritionist",
     description:
-      "Pregnant or nursing? NutriPadi guides you through the first 1,000 days with food advice made for the African plate.",
-    image: null,
+      "NutriPadi helps you understand African meals using smart food analysis.",
+    image: SLIDE_IMAGES.ticket,
   },
   {
     id: "scan",
-    title: "Just Snap Your Plate",
+    title: "Snap your meal. Know your food.",
     description:
-      "Point your camera at eba, amala, rice or any local dish. No typing, no calorie counting.",
-    image: null,
+      "Point your camera at jollof, eba, egusi or any local dish. NutriPadi recognises 40+ indigenous African dishes in seconds.",
+    image: SLIDE_IMAGES.scan,
   },
   {
     id: "nutrition",
-    title: "Spot the Hidden Hunger",
+    title: "Get instant nutrition info.",
     description:
-      "Instantly see iron, folate and protein — the nutrients that keep mother and baby strong.",
-    image: null,
+      "See calories, protein, iron and fibre for your plate right away. No typing, no calorie counting.",
+    image: SLIDE_IMAGES.nutrition,
   },
   {
-    id: "coach",
-    title: "Your Pocket Coach",
+    id: "maternal",
+    title: "Nutrition for two.",
     description:
-      "Get friendly, affordable food swaps in your own language, any time of day.",
-    image: null,
+      "Pregnant or nursing? Get gentle, affordable food guidance for the first 1,000 days, in your own language.",
+    image: SLIDE_IMAGES.maternal,
   },
 ];

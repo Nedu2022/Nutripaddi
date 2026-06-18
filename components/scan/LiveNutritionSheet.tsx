@@ -27,15 +27,11 @@ import Animated, {
   withTiming,
 } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import type { DetectedMealSummary, ScanState } from "@/src/types/detection";
 import type { FreshnessTone } from "@/src/types/freshness";
-
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
-
-// Glassmorphism color tokens
 const G = {
   bg: "rgba(255, 255, 255, 0.72)",
   border: "rgba(255, 255, 255, 0.72)",
@@ -57,9 +53,7 @@ const G = {
   chipBg: "rgba(255, 255, 255, 0.50)",
   actionBorder: "rgba(17, 24, 39, 0.10)",
 };
-
 export type SheetSnap = "hidden" | "collapsed" | "half" | "full";
-
 type Props = {
   summary: DetectedMealSummary | null;
   scanState: ScanState;
@@ -70,7 +64,6 @@ type Props = {
   onClear: () => void;
   savedMealTime?: string;
 };
-
 const SWALLOW_OPTIONS = [
   "Pounded Yam",
   "Amala",
@@ -79,17 +72,15 @@ const SWALLOW_OPTIONS = [
   "Fufu",
   "Not listed",
 ];
-
+const LOW_ITEM_CONFIDENCE = 60;
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), hi);
 }
-
 function getFreshnessColor(tone: FreshnessTone) {
   if (tone === "good") return G.accent;
   if (tone === "caution") return "#FFBB33";
   return "#FF5555";
 }
-
 function getFoodOriginCopy(summary: DetectedMealSummary) {
   const swallow = summary.detectedItems.find((item) => item.type === "swallow");
   const soup = summary.detectedItems.find((item) => item.type === "soup");
@@ -98,7 +89,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
   const beans = summary.detectedItems.find((item) => item.type === "beans");
   const yam = summary.detectedItems.find((item) => item.type === "yam");
   const plantain = summary.detectedItems.find((item) => item.type === "plantain");
-
   if (swallow && soup) {
     return {
       title: "West African swallow meal",
@@ -108,7 +98,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
       pattern: `Swallow + soup${protein ? " + protein" : ""}`,
     };
   }
-
   if (rice) {
     return {
       title: "Rice-based meal",
@@ -118,7 +107,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
       pattern: `Rice${protein ? " + protein" : ""}`,
     };
   }
-
   if (beans) {
     return {
       title: "Legume-based meal",
@@ -126,7 +114,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
       pattern: `Beans${protein ? " + protein" : ""}`,
     };
   }
-
   if (yam || plantain) {
     const staple = yam ?? plantain;
     return {
@@ -135,7 +122,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
       pattern: staple?.label ?? "Staple food",
     };
   }
-
   return {
     title: "Mixed local meal",
     description:
@@ -143,7 +129,6 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
     pattern: "Mixed plate",
   };
 }
-
 export default function LiveNutritionSheet({
   summary,
   scanState,
@@ -157,25 +142,20 @@ export default function LiveNutritionSheet({
   const { height } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const [correcting, setCorrecting] = useState(false);
-
   const FULL_Y      = insets.top + 54;
   const HALF_Y      = height * 0.44;
   const COLLAPSED_Y = height - 152;
   const HIDDEN_Y    = height + 24;
-
   const snapToY: Record<SheetSnap, number> = {
     full:      FULL_Y,
     half:      HALF_Y,
     collapsed: COLLAPSED_Y,
     hidden:    HIDDEN_Y,
   };
-
   const translateY = useSharedValue(HIDDEN_Y);
   const startY = useRef(HIDDEN_Y);
-
   const targetY = snapToY[snap];
   translateY.value = withTiming(targetY, { duration: 420 });
-
   const panResponder = useMemo(
     () =>
       PanResponder.create({
@@ -206,17 +186,12 @@ export default function LiveNutritionSheet({
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [FULL_Y, HALF_Y, COLLAPSED_Y, HIDDEN_Y]
   );
-
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
-
   if (!summary && scanState !== "saved") return null;
-
   const isLowConfidence = (summary?.confidence ?? 100) < 80;
   const { nutrition } = summary ?? {};
-
-  // ── SAVED STATE ────────────────────────────────────────────────────────────
   if (scanState === "saved") {
     return (
       <Animated.View
@@ -250,13 +225,10 @@ export default function LiveNutritionSheet({
       </Animated.View>
     );
   }
-
   if (!summary) return null;
-
   const sheetH = height - FULL_Y;
   const origin = getFoodOriginCopy(summary);
   const freshnessColor = getFreshnessColor(summary.freshness.tone);
-
   return (
     <Animated.View
       style={[
@@ -265,23 +237,18 @@ export default function LiveNutritionSheet({
         sheetStyle,
       ]}
     >
-      {/* Frosted glass backdrop */}
       <BlurView intensity={78} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.tintOverlay} />
-
-      {/* Drag handle */}
       <View {...panResponder.panHandlers} style={styles.dragArea}>
         <View style={styles.handle} />
         <ChevronUp color={G.textLight} size={15} />
       </View>
-
       <ScrollView
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
         contentContainerStyle={styles.scrollContent}
       >
-        {/* ── HEADER ────────────────────────────────────────────────────── */}
         <View style={styles.headerRow}>
           <View style={styles.headerIcon}>
             <ScanLine color={G.accent} size={18} />
@@ -298,8 +265,6 @@ export default function LiveNutritionSheet({
             <X color={G.textMuted} size={16} />
           </Pressable>
         </View>
-
-        {/* Confidence + serving */}
         <View style={styles.confidenceRow}>
           <View
             style={[
@@ -317,7 +282,7 @@ export default function LiveNutritionSheet({
                 isLowConfidence && styles.confidenceTextLow,
               ]}
             >
-              {isLowConfidence ? "Needs review" : "Good match"} ·{" "}
+              {isLowConfidence ? "Not sure" : "Good match"} ·{" "}
               {summary.confidence}%
             </Text>
           </View>
@@ -328,10 +293,7 @@ export default function LiveNutritionSheet({
             </Text>
           </View>
         </View>
-
         <View style={styles.divider} />
-
-        {/* ── LOW CONFIDENCE FOOD SELECTION ─────────────────────────────── */}
         {isLowConfidence && (
           <View style={styles.lowConfCard}>
             <Text style={styles.lowConfTitle}>
@@ -365,23 +327,29 @@ export default function LiveNutritionSheet({
             </View>
           </View>
         )}
-
-        {/* ── DETECTED ITEMS ────────────────────────────────────────────── */}
         {!isLowConfidence && (
           <>
             <Text style={styles.sectionLabel}>What we see</Text>
             <View style={styles.itemRow}>
-              {summary.detectedItems.slice(0, 4).map((item) => (
-                <View key={item.id} style={styles.itemChip}>
-                  <Text style={styles.itemLabel}>{item.label}</Text>
-                  <Text style={styles.itemConf}>{item.confidence}%</Text>
-                </View>
-              ))}
+              {summary.detectedItems.slice(0, 4).map((item) => {
+                const unsure = item.confidence < LOW_ITEM_CONFIDENCE;
+                return (
+                  <View
+                    key={item.id}
+                    style={[styles.itemChip, unsure && styles.itemChipUnsure]}
+                  >
+                    <Text style={styles.itemLabel}>{item.label}</Text>
+                    <Text
+                      style={[styles.itemConf, unsure && styles.itemConfUnsure]}
+                    >
+                      {unsure ? "Not sure" : `${item.confidence}%`}
+                    </Text>
+                  </View>
+                );
+              })}
             </View>
           </>
         )}
-
-        {/* ── FOOD ORIGIN ───────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Food origin</Text>
         <View style={styles.originCard}>
           <View style={styles.originIntro}>
@@ -407,10 +375,7 @@ export default function LiveNutritionSheet({
             </View>
           </View>
         </View>
-
         <View style={styles.divider} />
-
-        {/* ── FRESHNESS SCORE ───────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Freshness score</Text>
         <View style={styles.freshnessCard}>
           <View style={styles.freshnessTop}>
@@ -470,10 +435,7 @@ export default function LiveNutritionSheet({
             </>
           )}
         </View>
-
         <View style={styles.divider} />
-
-        {/* ── NUTRITION GRID ────────────────────────────────────────────── */}
         <Text style={styles.sectionLabel}>Estimated nutrition</Text>
         {nutrition && (
           <View style={styles.nutritionGrid}>
@@ -486,10 +448,7 @@ export default function LiveNutritionSheet({
         {nutrition && (
           <Text style={styles.disclaimer}>{nutrition.disclaimer}</Text>
         )}
-
         <View style={styles.divider} />
-
-        {/* ── NUTRIPADI ADVICE ──────────────────────────────────────────── */}
         <View style={styles.adviceCard}>
           <View style={styles.adviceIconWrap}>
             <Image resizeMode="contain" source={LOGO_MARK} style={styles.adviceLogo} />
@@ -499,8 +458,6 @@ export default function LiveNutritionSheet({
             <Text style={styles.adviceText}>{summary.advice}</Text>
           </View>
         </View>
-
-        {/* ── CORRECTION (FULL STATE) ───────────────────────────────────── */}
         {snap === "full" && !isLowConfidence && (
           <>
             <View style={styles.divider} />
@@ -533,21 +490,16 @@ export default function LiveNutritionSheet({
             )}
           </>
         )}
-
-        {/* ── FIBRE (FULL STATE) ────────────────────────────────────────── */}
         {snap === "full" && nutrition && (
           <View style={styles.fibreRow}>
             <Text style={styles.fibreLabel}>Dietary fibre</Text>
             <Text style={styles.fibreValue}>{nutrition.fibre}g</Text>
           </View>
         )}
-
         {snap === "full" && nutrition && (
           <Text style={styles.sourceLabel}>{nutrition.sourceLabel}</Text>
         )}
       </ScrollView>
-
-      {/* ── ACTION BUTTONS ────────────────────────────────────────────────── */}
       <View style={styles.actions}>
         <Pressable onPress={onSave} style={styles.saveButton}>
           <Save color={COLORS.white} size={18} />
@@ -569,7 +521,6 @@ export default function LiveNutritionSheet({
     </Animated.View>
   );
 }
-
 function NutriCell({
   label,
   value,
@@ -593,7 +544,6 @@ function NutriCell({
     </View>
   );
 }
-
 const nutStyles = StyleSheet.create({
   cell: {
     flex: 1,
@@ -635,7 +585,6 @@ const nutStyles = StyleSheet.create({
     color: G.accentDark,
   },
 });
-
 const styles = StyleSheet.create({
   sheet: {
     position: "absolute",
@@ -802,6 +751,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
   },
+  itemChipUnsure: {
+    backgroundColor: G.warnBg,
+    borderColor: G.warnBorder,
+  },
   itemLabel: {
     color: G.text,
     fontSize: 12,
@@ -811,6 +764,9 @@ const styles = StyleSheet.create({
     color: G.accent,
     fontSize: 12,
     fontFamily: FONTS.extraBold,
+  },
+  itemConfUnsure: {
+    color: G.warnText,
   },
   originCard: {
     backgroundColor: G.cardBg,
@@ -1134,7 +1090,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: FONTS.bold,
   },
-  // Saved state
   savedContainer: {
     flex: 1,
     alignItems: "center",

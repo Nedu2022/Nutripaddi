@@ -59,8 +59,10 @@ export default function DetectionArrow({
   }, [index, opacity, pulse, translateY]);
 
   const labelWidth = Math.min(LABEL_WIDTH, frameWidth - SIDE_PADDING * 2);
-  const dotX = clamp((item.x / BASE_WIDTH) * frameWidth, 28, frameWidth - 28);
-  const dotY = clamp((item.y / BASE_HEIGHT) * frameHeight, 132, frameHeight - 210);
+  const fracX = item.x <= 1 ? item.x : item.x / BASE_WIDTH;
+  const fracY = item.y <= 1 ? item.y : item.y / BASE_HEIGHT;
+  const dotX = clamp(fracX * frameWidth, 28, frameWidth - 28);
+  const dotY = clamp(fracY * frameHeight, 132, frameHeight - 210);
   const labelOnLeft = dotX > frameWidth / 2;
   const labelAbove = dotY > frameHeight * 0.44;
   const labelOffset = STACK_OFFSETS[index] ?? 0;

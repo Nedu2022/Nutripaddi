@@ -16,7 +16,6 @@ import * as ImagePicker from "expo-image-picker";
 import * as Haptics from "expo-haptics";
 import Animated, { FadeInDown, FadeInUp } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-
 import CustomButton from "@/components/CustomButton";
 import CameraOverlay from "@/components/scan/CameraOverlay";
 import LiveNutritionSheet from "@/components/scan/LiveNutritionSheet";
@@ -26,6 +25,7 @@ import {
   detectFoodFromImage,
 } from "@/src/services/foodDetectionService";
 import { saveMeal } from "@/src/services/mealHistoryService";
+import { speak } from "@/src/services/speechService";
 import { uploadImage } from "@/src/services/uploadService";
 import type {
   DetectedFoodItem,
@@ -34,42 +34,54 @@ import type {
   ScanState,
 } from "@/src/types/detection";
 import type { SheetSnap } from "@/components/scan/LiveNutritionSheet";
-
+const DETECT_TIMEOUT_MS = 5000;
+class DetectTimeoutError extends Error {}
+function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
+  return new Promise((resolve, reject) => {
+    const timer = setTimeout(() => reject(new DetectTimeoutError("timeout")), ms);
+    promise.then(
+      (value) => {
+        clearTimeout(timer);
+        resolve(value);
+      },
+      (error) => {
+        clearTimeout(timer);
+        reject(error);
+      }
+    );
+  });
+}
 export default function ScanTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
   const cameraRef = useRef<CameraView | null>(null);
-
   const [flashOn, setFlashOn]         = useState(false);
   const [facing, setFacing]           = useState<"back" | "front">("back");
   const [isPaused, setIsPaused]       = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
-
   const [scanState, setScanState]   = useState<ScanState>("idle");
   const [detections, setDetections] = useState<DetectedFoodItem[]>([]);
   const [summary, setSummary]       = useState<DetectedMealSummary | null>(null);
   const [sheetSnap, setSheetSnap]   = useState<SheetSnap>("hidden");
   const [savedTime, setSavedTime]   = useState<string | undefined>();
-
-  // ── PERMISSIONS ──────────────────────────────────────────────────────────
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) requestPermission();
   }, [permission, requestPermission]);
-
-  // ── APPLY DETECTION RESULT ────────────────────────────────────────────────
+  const reportNoFood = useCallback(() => {
+    setDetections([]);
+    setSummary(null);
+    setSheetSnap("hidden");
+    setScanState((prev) => (prev === "saved" ? prev : "no_food"));
+    speak("No food detected");
+  }, []);
   const applyDetectionResult = useCallback((result: FoodDetectionResult) => {
-    if (result.imageQuality === "poor") {
-      setScanState("poor_image");
-      setDetections([]);
-      setSummary(null);
-      setSheetSnap("hidden");
+    if (result.imageQuality === "poor" || !result.summary) {
+      reportNoFood();
       return;
     }
-    if (!result.summary) return;
-
     setIsPaused(true);
     setScanState((prev) => {
       if (prev === "saved") return prev;
@@ -87,40 +99,41 @@ export default function ScanTab() {
         mealName: result.summary!.mealName,
       };
     });
-  }, []);
-
-  // ── LIVE SCANNING STATE ───────────────────────────────────────────────────
+  }, [reportNoFood]);
   const isSaved = scanState === "saved";
   useEffect(() => {
     if (!permission?.granted || isPaused || capturedUri || isSaved) return;
     setScanState("scanning");
   }, [capturedUri, isPaused, isSaved, permission?.granted]);
-
-  // ── MANUAL CAPTURE ────────────────────────────────────────────────────────
   const captureImage = async () => {
     setIsCapturing(true);
     setIsPaused(true);
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    let uri: string;
     try {
       const photo = await cameraRef.current?.takePictureAsync({
         quality: 0.88,
         skipProcessing: true,
       });
-      const uri = photo?.uri ?? "camera-preview";
-      setCapturedUri(uri);
-      setIsDetecting(true);
-      setScanState("detecting");
-      const result = await detectFoodFromImage(uri);
+      uri = photo?.uri ?? "camera-preview";
+    } catch {
+      setIsCapturing(false);
+      setScanState("poor_image");
+      return;
+    }
+    setCapturedUri(uri);
+    setIsDetecting(true);
+    setScanState("detecting");
+    try {
+      const result = await withTimeout(detectFoodFromImage(uri), DETECT_TIMEOUT_MS);
       applyDetectionResult(result);
     } catch {
-      setScanState("poor_image");
+      reportNoFood();
     } finally {
       setIsCapturing(false);
       setIsDetecting(false);
     }
   };
-
-  // ── GALLERY ───────────────────────────────────────────────────────────────
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
@@ -133,19 +146,23 @@ export default function ScanTab() {
       setIsPaused(true);
       setIsDetecting(true);
       setScanState("detecting");
-      const detection = await detectFoodFromImage(uri);
-      applyDetectionResult(detection);
-      setIsDetecting(false);
+      try {
+        const detection = await withTimeout(
+          detectFoodFromImage(uri),
+          DETECT_TIMEOUT_MS
+        );
+        applyDetectionResult(detection);
+      } catch {
+        reportNoFood();
+      } finally {
+        setIsDetecting(false);
+      }
     }
   };
-
-  // ── FLIP CAMERA ───────────────────────────────────────────────────────────
   const flipCamera = () => {
     if (capturedUri) return;
     setFacing((f) => (f === "back" ? "front" : "back"));
   };
-
-  // ── FOOD CORRECTION ───────────────────────────────────────────────────────
   const handleFoodCorrection = (label: string) => {
     if (!summary) return;
     const updatedItems: DetectedFoodItem[] = summary.detectedItems.map((item) =>
@@ -154,8 +171,6 @@ export default function ScanTab() {
     setSummary({ ...summary, detectedItems: updatedItems });
     setScanState("good_match");
   };
-
-  // ── SAVE MEAL ─────────────────────────────────────────────────────────────
   const handleSave = async () => {
     if (!summary) return;
     Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -180,8 +195,6 @@ export default function ScanTab() {
     setScanState("saved");
     setSheetSnap("collapsed");
   };
-
-  // ── RESET ─────────────────────────────────────────────────────────────────
   const resetScan = () => {
     setCapturedUri(null);
     setDetections([]);
@@ -192,8 +205,6 @@ export default function ScanTab() {
     setIsDetecting(false);
     setSavedTime(undefined);
   };
-
-  // ── PERMISSION DENIED ─────────────────────────────────────────────────────
   if (!permission?.granted) {
     return (
       <View style={styles.fallback}>
@@ -208,15 +219,11 @@ export default function ScanTab() {
       </View>
     );
   }
-
   const cameraActive    = !capturedUri || capturedUri.includes("preview");
   const showCaptureDock = (sheetSnap === "hidden" || sheetSnap === "collapsed") && scanState !== "saved";
   const hasCapture      = !!(summary || capturedUri);
-
   return (
     <View style={styles.container}>
-
-      {/* ── CAMERA / FROZEN FRAME ─────────────────────────────────────── */}
       {!cameraActive ? (
         <Image
           contentFit="cover"
@@ -231,16 +238,12 @@ export default function ScanTab() {
           style={StyleSheet.absoluteFillObject}
         />
       )}
-
-      {/* ── CAMERA OVERLAY (frame + guidance + arrows) ────────────────── */}
       <CameraOverlay
         detections={detections}
         isDetecting={isDetecting || isCapturing}
         isPaused={isPaused}
         scanState={scanState}
       />
-
-      {/* ── TOP BAR ───────────────────────────────────────────────────── */}
       <Animated.View
         entering={FadeInDown.duration(380)}
         style={[styles.topBar, { paddingTop: insets.top + 12 }]}
@@ -248,9 +251,7 @@ export default function ScanTab() {
         <Pressable onPress={() => router.back()} style={styles.topBtn}>
           <ArrowLeft color="rgba(255,255,255,0.92)" size={20} />
         </Pressable>
-
         <Text style={styles.topTitle}>Scan your meal</Text>
-
         <Pressable
           onPress={() => setFlashOn((f) => !f)}
           style={[styles.topBtn, flashOn && styles.topBtnFlashOn]}
@@ -260,30 +261,33 @@ export default function ScanTab() {
             : <Flashlight    color="rgba(255,255,255,0.92)" size={20} />}
         </Pressable>
       </Animated.View>
-
-      {/* ── POOR IMAGE CARD ───────────────────────────────────────────── */}
-      {scanState === "poor_image" && (
+      {(scanState === "poor_image" || scanState === "no_food") && (
         <View style={[styles.poorCard, { bottom: insets.bottom + 162 }]}>
           <View style={styles.poorIconCircle}>
             <ScanLine color="#FFBB33" size={18} />
           </View>
           <View style={styles.poorBody}>
-            <Text style={styles.poorTitle}>{"Can't see the food clearly"}</Text>
-            <Text style={styles.poorSub}>Try better lighting or move closer.</Text>
+            <Text style={styles.poorTitle}>
+              {scanState === "no_food"
+                ? "No food detected"
+                : "Can't see the food clearly"}
+            </Text>
+            <Text style={styles.poorSub}>
+              {scanState === "no_food"
+                ? "Point the camera at a meal and try again."
+                : "Try better lighting or move closer."}
+            </Text>
           </View>
           <Pressable onPress={resetScan} style={styles.poorRetryBtn}>
             <RotateCcw color="#FFFFFF" size={16} />
           </Pressable>
         </View>
       )}
-
-      {/* ── CAPTURE DOCK ──────────────────────────────────────────────── */}
       {showCaptureDock && (
         <Animated.View
           entering={FadeInUp.delay(220).duration(400)}
           style={[styles.captureDock, { bottom: insets.bottom + 28 }]}
         >
-          {/* Left: Gallery or Retake */}
           <Pressable
             onPress={hasCapture ? resetScan : pickImage}
             style={styles.sideBtn}
@@ -292,8 +296,6 @@ export default function ScanTab() {
               ? <RotateCcw color="rgba(255,255,255,0.92)" size={22} />
               : <ImagePlus  color="rgba(255,255,255,0.92)" size={22} />}
           </Pressable>
-
-          {/* Centre: iOS-style shutter button */}
           <Pressable
             disabled={isCapturing}
             onPress={captureImage}
@@ -308,8 +310,6 @@ export default function ScanTab() {
               />
             )}
           </Pressable>
-
-          {/* Right: Flip camera */}
           <Pressable
             onPress={flipCamera}
             disabled={!!capturedUri}
@@ -322,8 +322,6 @@ export default function ScanTab() {
           </Pressable>
         </Animated.View>
       )}
-
-      {/* ── LIVE NUTRITION SHEET ──────────────────────────────────────── */}
       <LiveNutritionSheet
         summary={summary}
         scanState={scanState}
@@ -337,14 +335,11 @@ export default function ScanTab() {
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: "#000",
   },
-
-  // Permission screen
   fallback: {
     flex:            1,
     alignItems:      "center",
@@ -376,8 +371,6 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     textAlign:    "center",
   },
-
-  // Top bar
   topBar: {
     position:       "absolute",
     left:           18,
@@ -406,8 +399,6 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 0, height: 1 },
     textShadowRadius: 4,
   },
-
-  // Poor image card
   poorCard: {
     position:        "absolute",
     left:            22,
@@ -458,8 +449,6 @@ const styles = StyleSheet.create({
     shadowOffset:    { width: 0, height: 3 },
     elevation:       4,
   },
-
-  // Capture dock
   captureDock: {
     position:       "absolute",
     left:           0,
@@ -481,8 +470,6 @@ const styles = StyleSheet.create({
   sideBtnOff: {
     opacity: 0.45,
   },
-
-  // iOS-style shutter button
   captureRing: {
     width:           90,
     height:          90,

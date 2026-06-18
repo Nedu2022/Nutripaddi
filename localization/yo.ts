@@ -75,5 +75,5 @@ export const yo: typeof en = {
   lifeStagePregnant: "Mo lóyún", lifeStagePregnantDesc: "Dáàbò bo ìwọ àti ọmọ rẹ nígbà oyún.",
   lifeStageNursing: "Mo ń fún ọmọ lọ́mú", lifeStageNursingDesc: "Jẹ oúnjẹ tó pé nígbà tó o ń fún ọmọ lọ́mú (ọdún 0–2).",
   trimesterLabel: "Oṣù mẹ́ta wo ni oyún rẹ wà?", babyAgeLabel: "Ọmọ rẹ ti pé oṣù mélòó?",
-  maternalNote: "NutriPadi yóò máa ṣọ́ irin, folic acid, àti protein rẹ — èyí tó ṣe pàtàkì jù fún ọjọ́ 1,000 àkọ́kọ́.",
+  maternalNote: "NutriPadi yóò máa ṣọ́ irin, folic acid, àti protein rẹ, èyí tó ṣe pàtàkì jù fún ọjọ́ 1,000 àkọ́kọ́.",
 };

@@ -75,5 +75,5 @@ export const ig: typeof en = {
   lifeStagePregnant: "Adị m ime", lifeStagePregnantDesc: "Chebe gị na nwa gị n'oge ịdị ime.",
   lifeStageNursing: "Ana m enye nwa ara", lifeStageNursingDesc: "Nweta nri zuru oke mgbe ị na-enye nwa ara (afọ 0–2).",
   trimesterLabel: "Ị nọ n'ọnọdụ ọmụmụ nke ole?", babyAgeLabel: "Nwa gị dị afọ ole? (ọnwa)",
-  maternalNote: "NutriPadi ga-elebara ígwè, folic acid, na protein gị anya — ndị kacha mkpa maka ụbọchị 1,000 mbụ.",
+  maternalNote: "NutriPadi ga-elebara ígwè, folic acid, na protein gị anya, ndị kacha mkpa maka ụbọchị 1,000 mbụ.",
 };

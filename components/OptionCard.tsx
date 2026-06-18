@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { Check } from "lucide-react-native";
 import Animated, {
@@ -14,9 +14,19 @@ type OptionCardProps = {
   label: string;
   selected: boolean;
   onPress: () => void;
+  icon?: ReactNode;
+  description?: string;
+  multiSelect?: boolean;
 };
 
-export default function OptionCard({ label, selected, onPress }: OptionCardProps) {
+export default function OptionCard({
+  label,
+  selected,
+  onPress,
+  icon,
+  description,
+  multiSelect = false,
+}: OptionCardProps) {
   const progress = useSharedValue(selected ? 1 : 0);
 
   useEffect(() => {
@@ -25,18 +35,13 @@ export default function OptionCard({ label, selected, onPress }: OptionCardProps
 
   const checkStyle = useAnimatedStyle(() => ({
     opacity: progress.value,
-    transform: [{ scale: 0.82 + progress.value * 0.18 }],
-  }));
-
-  const radioInnerStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: progress.value }],
-    opacity: progress.value,
+    transform: [{ scale: 0.7 + progress.value * 0.3 }],
   }));
 
   return (
     <Pressable
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
+      accessibilityRole={multiSelect ? "checkbox" : "radio"}
+      accessibilityState={{ checked: selected, selected }}
       onPress={onPress}
       style={({ pressed }) => [
         styles.card,
@@ -44,15 +49,32 @@ export default function OptionCard({ label, selected, onPress }: OptionCardProps
         pressed && styles.pressed,
       ]}
     >
-      <View style={[styles.radio, selected && styles.radioSelected]}>
-        <Animated.View style={[styles.radioInner, radioInnerStyle]} />
-      </View>
+      {icon ? (
+        <View style={[styles.iconWrap, selected && styles.iconWrapSelected]}>
+          {icon}
+        </View>
+      ) : null}
+
       <View style={styles.textBlock}>
         <Text style={[styles.label, selected && styles.selectedLabel]}>{label}</Text>
+        {description ? (
+          <Text style={styles.description} numberOfLines={2}>
+            {description}
+          </Text>
+        ) : null}
       </View>
-      <Animated.View style={[styles.check, checkStyle]}>
-        <Check color={COLORS.white} size={13} strokeWidth={3} />
-      </Animated.View>
+
+      <View
+        style={[
+          styles.indicator,
+          multiSelect ? styles.square : styles.round,
+          selected && styles.indicatorSelected,
+        ]}
+      >
+        <Animated.View style={checkStyle}>
+          <Check color={COLORS.white} size={13} strokeWidth={3} />
+        </Animated.View>
+      </View>
     </Pressable>
   );
 }
@@ -64,8 +86,8 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
     borderRadius: 14,
     backgroundColor: COLORS.card,
-    paddingHorizontal: 18,
-    paddingVertical: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
     flexDirection: "row",
     alignItems: "center",
     gap: 14,
@@ -78,24 +100,17 @@ const styles = StyleSheet.create({
     opacity: 0.86,
     transform: [{ scale: 0.985 }],
   },
-  radio: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
-    borderWidth: 2,
-    borderColor: COLORS.border,
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: COLORS.softGray,
     alignItems: "center",
     justifyContent: "center",
     flexShrink: 0,
   },
-  radioSelected: {
-    borderColor: COLORS.primary,
-  },
-  radioInner: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
-    backgroundColor: COLORS.primary,
+  iconWrapSelected: {
+    backgroundColor: COLORS.white,
   },
   textBlock: {
     flex: 1,
@@ -108,12 +123,30 @@ const styles = StyleSheet.create({
   selectedLabel: {
     color: COLORS.primaryDark,
   },
-  check: {
+  description: {
+    color: COLORS.textMuted,
+    fontSize: 12,
+    fontFamily: FONTS.medium,
+    lineHeight: 17,
+    marginTop: 2,
+  },
+  indicator: {
     width: 24,
     height: 24,
-    borderRadius: 12,
-    backgroundColor: COLORS.primary,
+    borderWidth: 2,
+    borderColor: COLORS.border,
     alignItems: "center",
     justifyContent: "center",
+    flexShrink: 0,
+  },
+  round: {
+    borderRadius: 12,
+  },
+  square: {
+    borderRadius: 7,
+  },
+  indicatorSelected: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
   },
 });

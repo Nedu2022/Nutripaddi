@@ -71,9 +71,9 @@ export default function ProfileSetupScreen() {
         gender: draft.gender ?? null,
         weight: draft.weight ?? null,
         height: draft.height ?? null,
-        nutritionGoal: draft.nutritionGoal ?? null,
+        nutritionGoal: draft.nutritionGoal?.join(", ") ?? null,
         eatingLifestyle: draft.eatingLifestyle?.join(", ") ?? null,
-        healthAwareness: draft.healthAwareness ?? null,
+        healthAwareness: draft.healthAwareness?.join(", ") ?? null,
         dailyCalorieTarget: getDailyCalorieTarget(draft.lifeStage, draft.trimester),
       });
       resetOnboardingDraft();

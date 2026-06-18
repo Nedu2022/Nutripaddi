@@ -215,7 +215,7 @@ export default function ProfileTab() {
               icon={<Baby color="#E05D8B" size={16} />}
               iconBg="rgba(224,93,139,0.09)"
               label={t.lifeStageLabel}
-              value={describeMaternalStage(profile.lifeStage, profile.trimester, profile.babyAgeMonths) ?? "—"}
+              value={describeMaternalStage(profile.lifeStage, profile.trimester, profile.babyAgeMonths) ?? "Not set"}
             />
           ) : null}
           <MenuRow

@@ -1,6 +1,17 @@
 import { useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
+import {
+  Baby,
+  Egg,
+  Flame,
+  Salad,
+  Scale,
+  Sparkles,
+  Utensils,
+  Wheat,
+  Zap,
+} from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
 
 import CustomButton from "@/components/CustomButton";
@@ -14,23 +25,33 @@ import { en } from "@/localization";
 import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
 
 const goals = [
-  { key: "goalEatHealthier" as const },
-  { key: "goalTrackCalories" as const },
-  { key: "goalManageWeight" as const },
-  { key: "goalReduceCarbs" as const },
-  { key: "goalUnderstandMeals" as const },
-  { key: "goalBetterHabits" as const },
+  { key: "goalEatHealthier" as const, Icon: Salad },
+  { key: "goalMoreProtein" as const, Icon: Egg },
+  { key: "goalTrackCalories" as const, Icon: Flame },
+  { key: "goalManageWeight" as const, Icon: Scale },
+  { key: "goalReduceCarbs" as const, Icon: Wheat },
+  { key: "goalBoostEnergy" as const, Icon: Zap },
+  { key: "goalUnderstandMeals" as const, Icon: Utensils },
+  { key: "goalBetterHabits" as const, Icon: Sparkles },
+  { key: "goalEatForBaby" as const, Icon: Baby, descKey: "goalEatForBabyDesc" as const },
 ];
 
 export default function GoalsScreen() {
   const { t } = useLanguage();
-  const [selectedGoal, setSelectedGoal] = useState("");
+  const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
 
-  const handleContinue = () => {
-    if (!selectedGoal) { setError("Required"); return; }
+  const toggle = (key: string) => {
     setError("");
-    updateOnboardingDraft({ nutritionGoal: en[selectedGoal as keyof typeof en] });
+    setSelected((c) => (c.includes(key) ? c.filter((k) => k !== key) : [...c, key]));
+  };
+
+  const handleContinue = () => {
+    if (selected.length === 0) { setError("Select at least one."); return; }
+    setError("");
+    updateOnboardingDraft({
+      nutritionGoal: selected.map((key) => en[key as keyof typeof en]),
+    });
     router.push(ROUTES.eatingLifestyle);
   };
 
@@ -40,9 +61,15 @@ export default function GoalsScreen() {
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
         {goals.map((goal) => (
-          <OptionCard key={goal.key} label={t[goal.key]}
-            onPress={() => { setSelectedGoal(goal.key); setError(""); }}
-            selected={selectedGoal === goal.key} />
+          <OptionCard
+            key={goal.key}
+            label={t[goal.key]}
+            description={goal.descKey ? t[goal.descKey] : undefined}
+            icon={<goal.Icon color={COLORS.primary} size={20} />}
+            multiSelect
+            onPress={() => toggle(goal.key)}
+            selected={selected.includes(goal.key)}
+          />
         ))}
       </Animated.View>
 
