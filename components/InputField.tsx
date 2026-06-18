@@ -28,9 +28,8 @@ type InputFieldProps = {
 const webInputReset =
   Platform.OS === "web"
     ? ({
-        outlineColor: "transparent",
-        outlineWidth: 0,
-      } as const)
+        outlineStyle: "none",
+      } as any)
     : null;
 
 export default function InputField({
