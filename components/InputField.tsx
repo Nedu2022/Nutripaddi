@@ -1,6 +1,7 @@
 import { useState } from "react";
 import {
   KeyboardTypeOptions,
+  Platform,
   Pressable,
   StyleSheet,
   Text,
@@ -23,6 +24,14 @@ type InputFieldProps = {
   error?: string;
   autoCapitalize?: TextInputProps["autoCapitalize"];
 };
+
+const webInputReset =
+  Platform.OS === "web"
+    ? ({
+        outlineColor: "transparent",
+        outlineWidth: 0,
+      } as const)
+    : null;
 
 export default function InputField({
   label,
@@ -47,7 +56,7 @@ export default function InputField({
           placeholder={placeholder}
           placeholderTextColor={COLORS.textLight}
           secureTextEntry={secureTextEntry && !showPassword}
-          style={styles.input}
+          style={[styles.input, webInputReset]}
           value={value}
         />
         {secureTextEntry && (
@@ -83,13 +92,13 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     minHeight: 54,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderWidth: 0,
     borderRadius: 12,
     backgroundColor: COLORS.inputBg,
     paddingHorizontal: 16,
   },
   inputError: {
+    borderWidth: 1,
     borderColor: COLORS.error,
   },
   input: {
