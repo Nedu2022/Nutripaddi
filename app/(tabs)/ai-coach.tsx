@@ -44,15 +44,14 @@ const D = {
 export default function AICoachTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
+  const isWeb = Platform.OS === "web";
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [quickQuestions, setQuickQuestions] = useState<QuickQuestion[]>([]);
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const isSendingRef = useRef(false);
-  const inputBottomClearance = Platform.OS === "web"
-    ? 18
-    : Math.max(98, insets.bottom + 72);
+  const inputBottomClearance = isWeb ? 102 : Math.max(98, insets.bottom + 72);
 
   useEffect(() => {
     let mounted = true;
@@ -176,69 +175,75 @@ export default function AICoachTab() {
         behavior={Platform.OS === "ios" ? "padding" : undefined}
         keyboardVerticalOffset={0}
       >
-        {/* ── HEADER ─────────────────────────────────────────────── */}
-        <Animated.View entering={FadeInDown.duration(320)} style={styles.header}>
-          <View style={styles.headerAvatarWrap}>
-            <View style={styles.headerAvatar}>
-              <Image resizeMode="contain" source={LOGO_MARK} style={styles.headerLogo} />
+        <View style={[styles.contentRail, isWeb && styles.contentRailWeb]}>
+          {/* ── HEADER ─────────────────────────────────────────────── */}
+          <Animated.View
+            entering={FadeInDown.duration(320)}
+            style={[styles.header, isWeb && styles.headerWeb]}
+          >
+            <View style={styles.headerAvatarWrap}>
+              <View style={styles.headerAvatar}>
+                <Image resizeMode="contain" source={LOGO_MARK} style={styles.headerLogo} />
+              </View>
+              <View style={styles.statusDot} />
             </View>
-            <View style={styles.statusDot} />
-          </View>
-          <View style={styles.flex}>
-            <Text style={styles.headerTitle}>NutriPadi</Text>
-            <Text style={styles.headerSub}>Your personal nutrition coach</Text>
-          </View>
-          <View style={styles.onlineBadge}>
-            <Text style={styles.onlineBadgeText}>Online</Text>
-          </View>
-        </Animated.View>
+            <View style={styles.flex}>
+              <Text style={styles.headerTitle}>NutriPadi</Text>
+              <Text style={styles.headerSub}>Your personal nutrition coach</Text>
+            </View>
+            <View style={styles.onlineBadge}>
+              <Text style={styles.onlineBadgeText}>Online</Text>
+            </View>
+          </Animated.View>
 
-        {/* ── CHAT ────────────────────────────────────────────────── */}
-        <FlatList
-          ref={flatListRef}
-          data={messages}
-          keyExtractor={(item) => item.id}
-          renderItem={renderMessage}
-          contentContainerStyle={styles.chatContent}
-          showsVerticalScrollIndicator={false}
-          ListHeaderComponent={ListHeader}
-          onContentSizeChange={() =>
-            flatListRef.current?.scrollToEnd({ animated: true })
-          }
-        />
+          {/* ── CHAT ────────────────────────────────────────────────── */}
+          <FlatList
+            ref={flatListRef}
+            data={messages}
+            keyExtractor={(item) => item.id}
+            renderItem={renderMessage}
+            contentContainerStyle={styles.chatContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={ListHeader}
+            onContentSizeChange={() =>
+              flatListRef.current?.scrollToEnd({ animated: true })
+            }
+          />
 
-        {/* ── INPUT BAR ───────────────────────────────────────────── */}
-        <Animated.View
-          entering={FadeInDown.delay(150).duration(320)}
-          style={[styles.inputBar, { paddingBottom: inputBottomClearance }]}
-        >
-          <View style={styles.inputWrap}>
-            <TextInput
-              style={styles.input}
-              placeholder={t.askAboutFood}
-              placeholderTextColor={D.light}
-              value={inputText}
-              onChangeText={setInputText}
-              onKeyPress={handleInputKeyPress}
-              onSubmitEditing={Platform.OS === "web" ? undefined : () => handleSend()}
-              returnKeyType="send"
-              multiline
-              submitBehavior="submit"
-            />
-            <Pressable
-              onPress={() => handleSend()}
-              disabled={!inputText.trim() || isSending}
-              style={({ pressed }) => [
-                styles.sendBtn,
-                (!inputText.trim() || isSending) && styles.sendBtnOff,
-                pressed && styles.sendBtnPressed,
-              ]}
-            >
-              <Send color="#FFFFFF" size={17} />
-            </Pressable>
-          </View>
-          <Text style={styles.disclaimer}>{t.coachDisclaimer}</Text>
-        </Animated.View>
+          {/* ── INPUT BAR ───────────────────────────────────────────── */}
+          <Animated.View
+            entering={FadeInDown.delay(150).duration(320)}
+            style={[styles.inputBar, { paddingBottom: inputBottomClearance }]}
+          >
+            <View style={styles.inputWrap}>
+              <TextInput
+                style={styles.input}
+                placeholder={t.askAboutFood}
+                placeholderTextColor={D.light}
+                value={inputText}
+                onChangeText={setInputText}
+                onKeyPress={handleInputKeyPress}
+                onSubmitEditing={Platform.OS === "web" ? undefined : () => handleSend()}
+                returnKeyType="send"
+                multiline
+                submitBehavior="submit"
+              />
+              <Pressable
+                onPress={() => handleSend()}
+                disabled={!inputText.trim() || isSending}
+                style={({ pressed }) => [
+                  styles.sendBtn,
+                  (!inputText.trim() || isSending) && styles.sendBtnOff,
+                  pressed && styles.sendBtnPressed,
+                ]}
+              >
+                <Send color="#FFFFFF" size={17} />
+              </Pressable>
+            </View>
+            <Text style={styles.disclaimer}>{t.coachDisclaimer}</Text>
+          </Animated.View>
+        </View>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -247,6 +252,14 @@ export default function AICoachTab() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: D.bg },
   flex: { flex: 1 },
+  contentRail: {
+    flex:  1,
+    width: "100%",
+  },
+  contentRailWeb: {
+    alignSelf: "center",
+    maxWidth:  760,
+  },
 
   // Header
   header: {
@@ -261,6 +274,10 @@ const styles = StyleSheet.create({
     shadowRadius:      12,
     shadowOffset:      { width: 0, height: 3 },
     elevation:         4,
+  },
+  headerWeb: {
+    borderBottomLeftRadius:  22,
+    borderBottomRightRadius: 22,
   },
   headerAvatarWrap: {
     position: "relative",
@@ -453,6 +470,7 @@ const styles = StyleSheet.create({
     gap:             10,
     backgroundColor: D.card,
     borderRadius:    28,
+    minHeight:       58,
     paddingLeft:     18,
     paddingRight:    6,
     paddingVertical: 6,
@@ -468,6 +486,7 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.regular,
     color:      D.text,
     maxHeight:  96,
+    minHeight:  40,
     paddingVertical: 8,
   },
   sendBtn: {
@@ -482,6 +501,7 @@ const styles = StyleSheet.create({
     shadowRadius:    8,
     shadowOffset:    { width: 0, height: 3 },
     elevation:       4,
+    flexShrink:      0,
   },
   sendBtnOff: {
     backgroundColor: D.border,

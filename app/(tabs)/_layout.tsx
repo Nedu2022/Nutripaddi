@@ -8,7 +8,7 @@ import {
   User,
 } from "lucide-react-native";
 import { BlurView } from "expo-blur";
-import { View, Text, StyleSheet, Platform } from "react-native";
+import { View, Text, StyleSheet, Platform, useWindowDimensions } from "react-native";
 
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
@@ -18,8 +18,10 @@ import { hasAuthSession } from "@/src/services/authSessionService";
 const ACTIVE_COLOR   = COLORS.primary;
 const INACTIVE_COLOR = "#8A8F9A";
 const IS_WEB         = Platform.OS === "web";
-const TAB_BAR_HEIGHT = IS_WEB ? 66 : 70;
-const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 14 : 12;
+const TAB_BAR_HEIGHT = IS_WEB ? 64 : 70;
+const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 18 : 12;
+const TAB_BAR_MAX_WIDTH = 620;
+const TAB_BAR_MIN_MARGIN = IS_WEB ? 16 : 18;
 
 function TabBarGlass() {
   return (
@@ -52,7 +54,14 @@ function TabIcon({
 }
 
 export default function TabsLayout() {
+  const { width } = useWindowDimensions();
   const [authState, setAuthState] = useState<"checking" | "signed-in" | "signed-out">("checking");
+  const tabBarWidth = IS_WEB
+    ? Math.min(Math.max(width - TAB_BAR_MIN_MARGIN * 2, 0), TAB_BAR_MAX_WIDTH)
+    : undefined;
+  const tabBarLeft = IS_WEB && tabBarWidth
+    ? Math.max((width - tabBarWidth) / 2, TAB_BAR_MIN_MARGIN)
+    : TAB_BAR_MIN_MARGIN;
 
   useEffect(() => {
     let mounted = true;
@@ -92,12 +101,13 @@ export default function TabsLayout() {
         tabBarBackground: () => <TabBarGlass />,
         tabBarStyle: {
           position:          "absolute",
-          left:              38,
-          right:             38,
+          left:              tabBarLeft,
+          right:             IS_WEB ? undefined : TAB_BAR_MIN_MARGIN,
+          width:             tabBarWidth,
           bottom:            TAB_BAR_BOTTOM,
           height:            TAB_BAR_HEIGHT,
           borderRadius:      TAB_BAR_HEIGHT / 2,
-          paddingHorizontal: 4,
+          paddingHorizontal: IS_WEB ? 6 : 4,
           paddingVertical:   5,
           // transparent — let the blur be the background
           backgroundColor:   "transparent",
