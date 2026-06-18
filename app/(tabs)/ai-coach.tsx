@@ -51,7 +51,7 @@ export default function AICoachTab() {
   const [isSending, setIsSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
   const isSendingRef = useRef(false);
-  const inputBottomClearance = isWeb ? 102 : Math.max(98, insets.bottom + 72);
+  const inputBottomClearance = isWeb ? 96 : Math.max(98, insets.bottom + 72);
 
   useEffect(() => {
     let mounted = true;
@@ -97,10 +97,7 @@ export default function AICoachTab() {
     } catch (error) {
       setMessages((prev) => [
         ...prev,
-        createMessage(
-          error instanceof Error ? error.message : "The coach could not respond right now.",
-          false
-        ),
+        createMessage(getCoachErrorMessage(error), false),
       ]);
     } finally {
       isSendingRef.current = false;
@@ -108,6 +105,15 @@ export default function AICoachTab() {
     }
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const getCoachErrorMessage = (error: unknown) => {
+    const message = error instanceof Error ? error.message : "";
+    if (/edge function|failed to send|network request/i.test(message)) {
+      return "I couldn't reach the coach right now. Please check your connection and try again.";
+    }
+
+    return message || "The coach could not respond right now. Please try again.";
   };
 
   const handleInputKeyPress = (
@@ -202,7 +208,10 @@ export default function AICoachTab() {
             data={messages}
             keyExtractor={(item) => item.id}
             renderItem={renderMessage}
-            contentContainerStyle={styles.chatContent}
+            contentContainerStyle={[
+              styles.chatContent,
+              isWeb && styles.chatContentWeb,
+            ]}
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled"
             ListHeaderComponent={ListHeader}
@@ -214,9 +223,13 @@ export default function AICoachTab() {
           {/* ── INPUT BAR ───────────────────────────────────────────── */}
           <Animated.View
             entering={FadeInDown.delay(150).duration(320)}
-            style={[styles.inputBar, { paddingBottom: inputBottomClearance }]}
+            style={[
+              styles.inputBar,
+              isWeb && styles.inputBarWeb,
+              { paddingBottom: inputBottomClearance },
+            ]}
           >
-            <View style={styles.inputWrap}>
+            <View style={[styles.inputWrap, isWeb && styles.inputWrapWeb]}>
               <TextInput
                 style={styles.input}
                 placeholder={t.askAboutFood}
@@ -258,7 +271,8 @@ const styles = StyleSheet.create({
   },
   contentRailWeb: {
     alignSelf: "center",
-    maxWidth:  760,
+    maxWidth:  740,
+    paddingHorizontal: 18,
   },
 
   // Header
@@ -276,8 +290,10 @@ const styles = StyleSheet.create({
     elevation:         4,
   },
   headerWeb: {
-    borderBottomLeftRadius:  22,
-    borderBottomRightRadius: 22,
+    borderRadius: 22,
+    borderWidth:  1,
+    borderColor:  "rgba(15,23,42,0.05)",
+    marginTop:    16,
   },
   headerAvatarWrap: {
     position: "relative",
@@ -340,6 +356,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 18,
     paddingTop:        18,
     paddingBottom:     12,
+  },
+  chatContentWeb: {
+    paddingHorizontal: 0,
+    paddingTop:        20,
+    paddingBottom:     18,
   },
 
   // Quick questions
@@ -464,6 +485,10 @@ const styles = StyleSheet.create({
     paddingTop:        10,
     backgroundColor:   D.bg,
   },
+  inputBarWeb: {
+    paddingHorizontal: 0,
+    backgroundColor:   "transparent",
+  },
   inputWrap: {
     flexDirection:   "row",
     alignItems:      "center",
@@ -479,6 +504,12 @@ const styles = StyleSheet.create({
     shadowRadius:    16,
     shadowOffset:    { width: 0, height: 4 },
     elevation:       4,
+  },
+  inputWrapWeb: {
+    borderWidth:   1,
+    borderColor:   "rgba(15,23,42,0.06)",
+    shadowOpacity: 0.1,
+    shadowRadius:  18,
   },
   input: {
     flex:       1,

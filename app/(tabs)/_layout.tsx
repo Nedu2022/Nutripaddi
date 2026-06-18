@@ -18,10 +18,10 @@ import { hasAuthSession } from "@/src/services/authSessionService";
 const ACTIVE_COLOR   = COLORS.primary;
 const INACTIVE_COLOR = "#8A8F9A";
 const IS_WEB         = Platform.OS === "web";
-const TAB_BAR_HEIGHT = IS_WEB ? 64 : 70;
-const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 18 : 12;
-const TAB_BAR_MAX_WIDTH = 620;
-const TAB_BAR_MIN_MARGIN = IS_WEB ? 16 : 18;
+const TAB_BAR_HEIGHT = IS_WEB ? 58 : 70;
+const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 20 : 12;
+const TAB_BAR_MAX_WIDTH = 540;
+const TAB_BAR_MIN_MARGIN = IS_WEB ? 18 : 18;
 
 function TabBarGlass() {
   return (
@@ -59,9 +59,9 @@ export default function TabsLayout() {
   const tabBarWidth = IS_WEB
     ? Math.min(Math.max(width - TAB_BAR_MIN_MARGIN * 2, 0), TAB_BAR_MAX_WIDTH)
     : undefined;
-  const tabBarLeft = IS_WEB && tabBarWidth
-    ? Math.max((width - tabBarWidth) / 2, TAB_BAR_MIN_MARGIN)
-    : TAB_BAR_MIN_MARGIN;
+  const tabBarTransform = IS_WEB && tabBarWidth
+    ? [{ translateX: -tabBarWidth / 2 }]
+    : undefined;
 
   useEffect(() => {
     let mounted = true;
@@ -101,9 +101,10 @@ export default function TabsLayout() {
         tabBarBackground: () => <TabBarGlass />,
         tabBarStyle: {
           position:          "absolute",
-          left:              tabBarLeft,
+          left:              IS_WEB ? "50%" : TAB_BAR_MIN_MARGIN,
           right:             IS_WEB ? undefined : TAB_BAR_MIN_MARGIN,
           width:             tabBarWidth,
+          transform:         tabBarTransform,
           bottom:            TAB_BAR_BOTTOM,
           height:            TAB_BAR_HEIGHT,
           borderRadius:      TAB_BAR_HEIGHT / 2,
@@ -113,12 +114,12 @@ export default function TabsLayout() {
           backgroundColor:   "transparent",
           borderTopWidth:    0,
           borderWidth:       1,
-          borderColor:       "rgba(255,255,255,0.50)",
+          borderColor:       IS_WEB ? "rgba(13, 94, 42, 0.10)" : "rgba(255,255,255,0.50)",
           overflow:          "hidden",
           shadowColor:       "#000",
-          shadowOpacity:     0.12,
-          shadowRadius:      24,
-          shadowOffset:      { width: 0, height: 8 },
+          shadowOpacity:     IS_WEB ? 0.08 : 0.12,
+          shadowRadius:      IS_WEB ? 18 : 24,
+          shadowOffset:      { width: 0, height: IS_WEB ? 6 : 8 },
           elevation:         18,
         },
       }}
@@ -203,19 +204,19 @@ const styles = StyleSheet.create({
   tabItem: {
     alignItems:     "center",
     justifyContent: "center",
-    gap:            2,
+    gap:            IS_WEB ? 1 : 2,
     width:          "100%",
     height:         "100%",
     borderRadius:   999,
   },
   tabItemActive: {
-    backgroundColor: "rgba(255,255,255,0.30)",
+    backgroundColor: IS_WEB ? "rgba(0,132,43,0.08)" : "rgba(255,255,255,0.30)",
     borderWidth:     1,
-    borderColor:     "rgba(255,255,255,0.55)",
+    borderColor:     IS_WEB ? "rgba(0,132,43,0.12)" : "rgba(255,255,255,0.55)",
   },
   tabLabel: {
     color:      INACTIVE_COLOR,
-    fontSize:   10,
+    fontSize:   IS_WEB ? 9 : 10,
     fontFamily: FONTS.semiBold,
     lineHeight: 12,
   },
