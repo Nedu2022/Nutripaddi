@@ -1,4 +1,6 @@
 import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
+import { getProfileContext } from "@/src/services/coachService";
+import { prepareImageForUpload } from "@/src/services/imageService";
 import type { FoodDetectionResult } from "@/src/types/detection";
 
 export async function detectFoodFromImage(
@@ -8,17 +10,19 @@ export async function detectFoodFromImage(
 
   assertSupabaseConfigured();
 
-  const formData = new FormData();
-  formData.append("file", {
-    name: imageUri.split("/").pop() || `meal-scan-${Date.now()}.jpg`,
-    type: "image/jpeg",
-    uri: imageUri,
-  } as unknown as Blob);
+  const [{ base64, mimeType }, profileContext] = await Promise.all([
+    prepareImageForUpload(imageUri, 640),
+    getProfileContext().catch(() => null),
+  ]);
+
+  if (!base64) return { imageQuality: "poor", summary: null };
+
+  const fileName = imageUri.split("/").pop() || `meal-scan-${Date.now()}.jpg`;
 
   const { data, error } = await supabase.functions.invoke<FoodDetectionResult>(
     "detect-food",
     {
-      body: formData,
+      body: { fileName, image: base64, mimeType, profileContext },
     }
   );
 

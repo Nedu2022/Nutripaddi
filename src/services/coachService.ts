@@ -21,7 +21,6 @@ const LANGUAGE_NAMES: Record<string, string> = {
   igbo: "Igbo",
 };
 
-// undefined = not loaded yet, null = no context available.
 let cachedContext: string | null | undefined;
 
 function buildProfileContext(profile: ProfileData): string {
@@ -39,10 +38,8 @@ function buildProfileContext(profile: ProfileData): string {
     const focus = getMaternalFocusNutrients(profile.lifeStage);
     if (focus.length) lines.push(`- Priority nutrients to watch: ${focus.join(", ")}`);
   } else {
-    // General user: make it explicit so the coach does NOT assume a pregnancy
-    // or a baby. This app is for everyone, not only mothers.
     lines.push(
-      "- Life stage: General user — NOT pregnant and NOT nursing. Do not assume they have a baby or are a mother; speak to them as an everyday person looking after their own nutrition."
+      "- Life stage: General user, NOT pregnant and NOT nursing. Do not assume they have a baby or are a mother; speak to them as an everyday person looking after their own nutrition."
     );
   }
 
@@ -68,7 +65,7 @@ function buildProfileContext(profile: ProfileData): string {
   return lines.join("\n");
 }
 
-async function getProfileContext(): Promise<string | null> {
+export async function getProfileContext(): Promise<string | null> {
   if (cachedContext !== undefined) return cachedContext;
   try {
     const profile = await getProfile();
@@ -79,29 +76,36 @@ async function getProfileContext(): Promise<string | null> {
   return cachedContext;
 }
 
-/** Call after the profile changes (e.g. finishing onboarding) so the coach refetches it. */
 export function clearCoachProfileCache() {
   cachedContext = undefined;
 }
 
-/**
- * Strip the markdown the model sometimes returns (asterisks for bold/bullets,
- * leading list dashes) so the chat bubble shows clean, human text.
- */
+async function getProfileContextForRequest(timeoutMs = 450) {
+  const profilePromise = getProfileContext();
+  if (cachedContext !== undefined) return profilePromise;
+
+  return Promise.race<string | null>([
+    profilePromise,
+    new Promise((resolve) => {
+      setTimeout(() => resolve(null), timeoutMs);
+    }),
+  ]);
+}
+
 function cleanReply(text: string): string {
   return text
-    .replace(/\*\*(.*?)\*\*/g, "$1") // **bold**
-    .replace(/\*(.*?)\*/g, "$1") // *italic*
-    .replace(/^\s*[*\-•]\s+/gm, "") // bullet markers at line start
-    .replace(/`{1,3}([^`]*)`{1,3}/g, "$1") // `code`
-    .replace(/^#{1,6}\s+/gm, "") // markdown headings
+    .replace(/\*\*(.*?)\*\*/g, "$1")
+    .replace(/\*(.*?)\*/g, "$1")
+    .replace(/^\s*[*\-•]\s+/gm, "")
+    .replace(/`{1,3}([^`]*)`{1,3}/g, "$1")
+    .replace(/^#{1,6}\s+/gm, "")
     .trim();
 }
 
 export async function askCoach(message: string, history: ChatMessage[]) {
   assertSupabaseConfigured();
 
-  const profileContext = await getProfileContext();
+  const profileContext = await getProfileContextForRequest();
 
   const { data, error } = await supabase.functions.invoke<CoachResponse>(
     "ai-coach",

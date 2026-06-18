@@ -68,6 +68,14 @@ type QuickQuestionRow = {
   sort_order?: number | null;
 };
 
+const DEFAULT_QUICK_QUESTIONS: QuickQuestion[] = [
+  { id: "local-balanced-meal", text: "How can I balance my next Nigerian meal?" },
+  { id: "protein-options", text: "What affordable foods can add more protein?" },
+  { id: "scan-followup", text: "What should I watch out for in my last meal?" },
+];
+
+let quickQuestionsCache: QuickQuestion[] = DEFAULT_QUICK_QUESTIONS;
+
 export async function getFoodCategories() {
   assertSupabaseConfigured();
 
@@ -201,7 +209,7 @@ export async function submitStudyFeedback(answers: Record<string, string>) {
   if (error) throw new Error(error.message);
 }
 
-export async function getQuickQuestions(): Promise<QuickQuestion[]> {
+async function refreshQuickQuestions() {
   assertSupabaseConfigured();
 
   const { data, error } = await supabase
@@ -211,5 +219,12 @@ export async function getQuickQuestions(): Promise<QuickQuestion[]> {
     .returns<QuickQuestionRow[]>();
 
   if (error) throw new Error(error.message);
-  return data ?? [];
+  quickQuestionsCache = data?.length ? data : DEFAULT_QUICK_QUESTIONS;
+  return quickQuestionsCache;
+}
+
+export async function getQuickQuestions(): Promise<QuickQuestion[]> {
+  const cached = quickQuestionsCache;
+  void refreshQuickQuestions().catch(() => undefined);
+  return cached;
 }

@@ -18,7 +18,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { clearAuthSession } from "@/src/services/authSessionService";
 import {
   getSavedMeals,
-  getWeeklyCalories,
+  getWeeklyCaloriesFromMeals,
   type SavedMeal,
   type WeeklyCalories,
 } from "@/src/services/mealHistoryService";
@@ -106,11 +106,11 @@ export default function ProfileTab() {
 
     const loadProfile = async () => {
       try {
-        const [profileData, savedMeals, weekly] = await Promise.all([
+        const [profileData, savedMeals] = await Promise.all([
           getProfile(),
           getSavedMeals({ limit: 200 }),
-          getWeeklyCalories(),
         ]);
+        const weekly = getWeeklyCaloriesFromMeals(savedMeals);
 
         if (!mounted) return;
         setProfile(profileData);
