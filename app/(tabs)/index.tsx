@@ -431,7 +431,15 @@ export default function DashboardTab() {
                     style={styles.mealRow}
                   >
                     <View style={[styles.mealIcon, { backgroundColor: bg }]}>
-                      <Icon color={color} size={16} />
+                      {meal.imageUri ? (
+                        <Image
+                          source={{ uri: meal.imageUri }}
+                          style={styles.mealImage}
+                          resizeMode="cover"
+                        />
+                      ) : (
+                        <Icon color={color} size={16} />
+                      )}
                     </View>
                     <View style={styles.mealInfo}>
                       <Text style={styles.mealName} numberOfLines={1}>
@@ -786,6 +794,11 @@ const styles = StyleSheet.create({
     borderRadius:    13,
     alignItems:      "center",
     justifyContent:  "center",
+    overflow:        "hidden",
+  },
+  mealImage: {
+    width:  "100%",
+    height: "100%",
   },
   mealInfo: {
     flex: 1,

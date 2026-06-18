@@ -37,25 +37,25 @@ const LOGO_MARK = require("@/assets/images/logo-mark.png");
 
 // Glassmorphism color tokens
 const G = {
-  bg: "rgba(8, 8, 12, 0.75)",
-  border: "rgba(255, 255, 255, 0.13)",
-  handle: "rgba(255, 255, 255, 0.28)",
-  cardBg: "rgba(255, 255, 255, 0.07)",
-  cardBorder: "rgba(255, 255, 255, 0.10)",
-  divider: "rgba(255, 255, 255, 0.09)",
-  text: "#FFFFFF",
-  textMuted: "rgba(255, 255, 255, 0.62)",
-  textLight: "rgba(255, 255, 255, 0.38)",
+  bg: "rgba(255, 255, 255, 0.72)",
+  border: "rgba(255, 255, 255, 0.72)",
+  handle: "rgba(17, 24, 39, 0.20)",
+  cardBg: "rgba(255, 255, 255, 0.52)",
+  cardBorder: "rgba(255, 255, 255, 0.62)",
+  divider: "rgba(17, 24, 39, 0.08)",
+  text: "#111827",
+  textMuted: "rgba(17, 24, 39, 0.66)",
+  textLight: "rgba(17, 24, 39, 0.42)",
   accent: COLORS.primary,
   accentDark: COLORS.primaryDark,
-  accentBg: "rgba(0, 128, 0, 0.14)",
-  accentBorder: "rgba(0, 128, 0, 0.22)",
-  warnBg: "rgba(255, 175, 0, 0.13)",
-  warnText: "#FFBB33",
-  warnBorder: "rgba(255, 175, 0, 0.2)",
-  pillBg: "rgba(255, 255, 255, 0.09)",
-  chipBg: "rgba(255, 255, 255, 0.08)",
-  actionBorder: "rgba(255, 255, 255, 0.16)",
+  accentBg: "rgba(0, 128, 0, 0.08)",
+  accentBorder: "rgba(0, 128, 0, 0.14)",
+  warnBg: "rgba(255, 175, 0, 0.12)",
+  warnText: "#B66A00",
+  warnBorder: "rgba(255, 175, 0, 0.20)",
+  pillBg: "rgba(255, 255, 255, 0.56)",
+  chipBg: "rgba(255, 255, 255, 0.50)",
+  actionBorder: "rgba(17, 24, 39, 0.10)",
 };
 
 export type SheetSnap = "hidden" | "collapsed" | "half" | "full";
@@ -226,7 +226,7 @@ export default function LiveNutritionSheet({
           sheetStyle,
         ]}
       >
-        <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+        <BlurView intensity={78} tint="light" style={StyleSheet.absoluteFill} />
         <View style={styles.tintOverlay} />
         <View {...panResponder.panHandlers} style={styles.dragArea}>
           <View style={styles.handle} />
@@ -266,7 +266,7 @@ export default function LiveNutritionSheet({
       ]}
     >
       {/* Frosted glass backdrop */}
-      <BlurView intensity={80} tint="dark" style={StyleSheet.absoluteFill} />
+      <BlurView intensity={78} tint="light" style={StyleSheet.absoluteFill} />
       <View style={styles.tintOverlay} />
 
       {/* Drag handle */}
@@ -605,11 +605,11 @@ const nutStyles = StyleSheet.create({
     borderColor: G.cardBorder,
   },
   cellHighlight: {
-    backgroundColor: G.accent,
-    borderColor: G.accent,
+    backgroundColor: "rgba(255, 255, 255, 0.72)",
+    borderColor: G.accentBorder,
     shadowColor: G.accent,
-    shadowOpacity: 0.35,
-    shadowRadius: 14,
+    shadowOpacity: 0.12,
+    shadowRadius: 12,
     shadowOffset: { width: 0, height: 4 },
   },
   value: {
@@ -618,7 +618,7 @@ const nutStyles = StyleSheet.create({
     fontFamily: FONTS.extraBold,
   },
   valueHighlight: {
-    color: COLORS.white,
+    color: G.accentDark,
   },
   unit: {
     fontSize: 11,
@@ -632,7 +632,7 @@ const nutStyles = StyleSheet.create({
     textTransform: "uppercase",
   },
   labelHighlight: {
-    color: "rgba(0,0,0,0.6)",
+    color: G.accentDark,
   },
 });
 
@@ -650,9 +650,9 @@ const styles = StyleSheet.create({
     borderColor: G.border,
     overflow: "hidden",
     shadowColor: "#000",
-    shadowOpacity: 0.55,
-    shadowRadius: 36,
-    shadowOffset: { width: 0, height: -10 },
+    shadowOpacity: 0.18,
+    shadowRadius: 30,
+    shadowOffset: { width: 0, height: -8 },
     elevation: 24,
   },
   tintOverlay: {
@@ -919,7 +919,7 @@ const styles = StyleSheet.create({
   },
   freshnessTrack: {
     height: 6,
-    backgroundColor: "rgba(255,255,255,0.08)",
+    backgroundColor: "rgba(17,24,39,0.10)",
     borderRadius: 999,
     overflow: "hidden",
     marginTop: 12,
