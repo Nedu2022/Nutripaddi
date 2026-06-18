@@ -3,11 +3,13 @@ import {
   FlatList,
   Image,
   KeyboardAvoidingView,
+  type NativeSyntheticEvent,
   Platform,
   Pressable,
   StyleSheet,
   Text,
   TextInput,
+  type TextInputKeyPressEventData,
   View,
 } from "react-native";
 import { SafeAreaView, useSafeAreaInsets } from "react-native-safe-area-context";
@@ -22,6 +24,11 @@ import type { ChatMessage, QuickQuestion } from "@/types";
 import { useLanguage } from "@/hooks/useLanguage";
 
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
+
+type WebTextInputKeyEvent = TextInputKeyPressEventData & {
+  isComposing?: boolean;
+  shiftKey?: boolean;
+};
 
 const D = {
   bg:       "#F5F6FA",
@@ -42,6 +49,7 @@ export default function AICoachTab() {
   const [inputText, setInputText] = useState("");
   const [isSending, setIsSending] = useState(false);
   const flatListRef = useRef<FlatList>(null);
+  const isSendingRef = useRef(false);
   const inputBottomClearance = Platform.OS === "web"
     ? 18
     : Math.max(98, insets.bottom + 72);
@@ -73,11 +81,12 @@ export default function AICoachTab() {
   });
 
   const handleSend = async (text?: string) => {
-    const msg = text || inputText.trim();
-    if (!msg || isSending) return;
+    const msg = (text ?? inputText).trim();
+    if (!msg || isSendingRef.current) return;
 
     const userMessage = createMessage(msg, true);
     const nextMessages = [...messages, userMessage];
+    isSendingRef.current = true;
     setMessages(nextMessages);
     setInputText("");
     setIsSending(true);
@@ -95,10 +104,25 @@ export default function AICoachTab() {
         ),
       ]);
     } finally {
+      isSendingRef.current = false;
       setIsSending(false);
     }
 
     setTimeout(() => flatListRef.current?.scrollToEnd({ animated: true }), 100);
+  };
+
+  const handleInputKeyPress = (
+    event: NativeSyntheticEvent<TextInputKeyPressEventData>
+  ) => {
+    if (Platform.OS !== "web") return;
+
+    const nativeEvent = event.nativeEvent as WebTextInputKeyEvent;
+    if (nativeEvent.key !== "Enter" || nativeEvent.shiftKey || nativeEvent.isComposing) {
+      return;
+    }
+
+    event.preventDefault();
+    void handleSend();
   };
 
   const renderMessage = ({ item, index }: { item: ChatMessage; index: number }) => (
@@ -195,9 +219,11 @@ export default function AICoachTab() {
               placeholderTextColor={D.light}
               value={inputText}
               onChangeText={setInputText}
-              onSubmitEditing={() => handleSend()}
+              onKeyPress={handleInputKeyPress}
+              onSubmitEditing={Platform.OS === "web" ? undefined : () => handleSend()}
               returnKeyType="send"
               multiline
+              submitBehavior="submit"
             />
             <Pressable
               onPress={() => handleSend()}
