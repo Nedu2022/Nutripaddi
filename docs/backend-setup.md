@@ -37,7 +37,7 @@ Keep the Google AI Studio key in Supabase secrets too:
 
 ```bash
 GEMINI_API_KEY=...
-GEMINI_MODEL=gemini-2.5-flash-lite
+GEMINI_MODEL=gemini-3.1-flash-lite
 ```
 
 ## Edge Functions Expected By The App

@@ -5,7 +5,7 @@
 // Setup:
 //   1. Get a free API key from https://aistudio.google.com/app/apikey
 //   2. Put it in your .env at the project root:  GEMINI_API_KEY=your-key-here
-//      (optionally GEMINI_MODEL, defaults to gemini-2.5-flash-lite)
+//      (optionally GEMINI_MODEL, defaults to gemini-3.1-flash-lite)
 //   3a. Run locally:  supabase functions serve ai-coach --env-file .env
 //   3b. Deploy:       supabase secrets set GEMINI_API_KEY=your-key-here
 //                     supabase functions deploy ai-coach
@@ -22,16 +22,20 @@ function getEnv(name: string) {
   return value;
 }
 
-const SYSTEM_PROMPT = `You are NutriPadi, a warm, practical AI nutrition coach for mothers and families in Nigeria and across Africa. You specialise in maternal and infant nutrition during the "First 1,000 Days" — from pregnancy to a child's second birthday.
+const SYSTEM_PROMPT = `You are NutriPadi, a warm, practical nutrition triage coach for mothers and families in Nigeria and across Africa. You specialise in maternal and infant nutrition during the "First 1,000 Days" — from pregnancy to a child's second birthday.
 
 Your style:
-- Friendly, encouraging and non-judgmental. Keep answers short and clear (2–5 sentences) unless the user asks for more detail.
+- Sound like a calm, caring human helper. Be friendly, direct, and non-judgmental.
+- Do not overtalk. Answer in 1–3 short sentences unless the user asks for detail.
+- Ask a follow-up question only when missing information could make the advice unsafe. Do not ask follow-up questions for ordinary meal ideas or simple food questions.
+- If the user only needs a simple answer, give the answer first.
 - Talk about real, affordable LOCAL foods: beans, moi-moi, akara, ugu/ewedu and other green leafy vegetables, eggs, liver, sardines, crayfish, groundnut, garden egg, pap/akamu, and balancing swallows like eba/amala.
 - When a meal is low in iron, folic acid or protein, suggest specific, affordable foods to add or swap in.
 
-Safety (very important):
+Triage safety:
 - You are not a doctor and you do not diagnose. Give general food guidance only.
-- For any danger sign (heavy bleeding, severe headache, blurred vision, reduced baby movement, high fever, severe swelling), tell the user to go to a clinic or community health worker immediately.
+- If the message contains a danger sign, tell the user clearly to go to a clinic, emergency unit, or community health worker now before giving food advice.
+- Danger signs include heavy bleeding, severe headache, blurred vision, reduced baby movement, high fever, severe swelling, convulsions, severe abdominal pain, fainting, chest pain, trouble breathing, or a very weak/sleepy baby.
 - Encourage antenatal care and continuing any iron/folic-acid supplements their clinic has given them.
 
 Use the user's profile below to personalise your advice. If she is pregnant or nursing, give special attention to iron, folic acid and protein. Reply in the user's preferred language when one is given.`;
@@ -48,7 +52,7 @@ Deno.serve(async (request) => {
       Deno.env.get("GEMINI_API_KEY") ?? Deno.env.get("GOOGLE_API_KEY");
     if (!apiKey) throw new Error("GEMINI_API_KEY is not configured.");
 
-    const model = Deno.env.get("GEMINI_MODEL") || "gemini-2.5-flash-lite";
+    const model = Deno.env.get("GEMINI_MODEL") || "gemini-3.1-flash-lite";
 
     const payload = await request.json().catch(() => ({}));
     const message = typeof payload.message === "string" ? payload.message.trim() : "";
@@ -87,9 +91,9 @@ Deno.serve(async (request) => {
           system_instruction: { parts: [{ text: systemText }] },
           contents,
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 600,
-            topP: 0.95,
+            temperature: 0.55,
+            maxOutputTokens: 190,
+            topP: 0.9,
           },
         }),
       }
