@@ -20,6 +20,10 @@ import { FONTS } from "@/constants/fonts";
 import StreamingText from "@/components/chat/StreamingText";
 import TypingIndicator from "@/components/chat/TypingIndicator";
 import { askCoach } from "@/src/services/coachService";
+import {
+  loadCoachHistory,
+  saveCoachHistory,
+} from "@/src/services/coachHistoryService";
 import { getQuickQuestions } from "@/src/services/contentService";
 import type { ChatMessage, QuickQuestion } from "@/types";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -52,6 +56,7 @@ export default function AICoachTab() {
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
   const flatListRef = useRef<FlatList>(null);
   const isSendingRef = useRef(false);
+  const historyLoadedRef = useRef(false);
   const scrollToEnd = () =>
     flatListRef.current?.scrollToEnd({ animated: true });
   const inputBottomClearance = isWeb ? 96 : Math.max(98, insets.bottom + 72);
@@ -70,11 +75,34 @@ export default function AICoachTab() {
       mounted = false;
     };
   }, []);
+
+  useEffect(() => {
+    let mounted = true;
+    loadCoachHistory()
+      .then((saved) => {
+        if (mounted && saved.length) {
+          setMessages((current) => (current.length === 0 ? saved : current));
+        }
+      })
+      .finally(() => {
+        historyLoadedRef.current = true;
+      });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!historyLoadedRef.current) return;
+    void saveCoachHistory(messages);
+  }, [messages]);
+
   const createMessage = (text: string, isUser: boolean): ChatMessage => ({
       id:        `msg-${Date.now()}-${isUser ? "u" : "ai"}`,
       text,
       isUser,
       timestamp: "Just now",
+      createdAt: Date.now(),
   });
   const runCoach = async (msg: string, history: ChatMessage[]) => {
     isSendingRef.current = true;

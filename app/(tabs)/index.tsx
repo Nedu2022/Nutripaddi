@@ -399,7 +399,7 @@ export default function DashboardTab() {
         <Pressable onPress={() => router.push(ROUTES.scan)} style={styles.scanCta}>
           <View style={styles.scanLeft}>
             <View style={styles.scanIconBg}>
-              <ScanLine color="#FFFFFF" size={19} />
+              <ScanLine color="#FFFFFF" size={24} />
             </View>
             <View>
               <Text style={styles.scanTitle}>Scan a Meal</Text>
@@ -706,12 +706,10 @@ const styles = StyleSheet.create({
     gap:           12,
   },
   scanIconBg: {
-    width:           40,
-    height:          40,
-    borderRadius:    13,
-    backgroundColor: "rgba(255,255,255,0.16)",
-    alignItems:      "center",
-    justifyContent:  "center",
+    width:          40,
+    height:         40,
+    alignItems:     "center",
+    justifyContent: "center",
   },
   scanTitle: {
     color:      "white",

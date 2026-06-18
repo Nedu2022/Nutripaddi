@@ -155,6 +155,7 @@ export type ChatMessage = {
   text: string;
   isUser: boolean;
   timestamp: string;
+  createdAt?: number;
 };
 
 export type QuickQuestion = {

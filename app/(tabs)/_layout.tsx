@@ -18,17 +18,16 @@ import { hasAuthSession } from "@/src/services/authSessionService";
 const ACTIVE_COLOR   = COLORS.primary;
 const INACTIVE_COLOR = "#8A8F9A";
 const IS_WEB         = Platform.OS === "web";
-const TAB_BAR_HEIGHT = IS_WEB ? 58 : 70;
+const TAB_BAR_HEIGHT = IS_WEB ? 64 : 72;
 const TAB_BAR_BOTTOM = Platform.OS === "ios" ? 16 : IS_WEB ? 20 : 12;
 const TAB_BAR_MAX_WIDTH = 540;
-const TAB_BAR_MIN_MARGIN = IS_WEB ? 18 : 18;
+const TAB_BAR_MIN_MARGIN = 18;
 
 function TabBarGlass() {
   return (
     <View style={styles.glassLayer}>
-      {/* Ultra-thin blur — lets content show through */}
-      <BlurView intensity={55} tint="systemUltraThinMaterialLight" style={StyleSheet.absoluteFill} />
-      {/* 1-px specular edge at the top — the only thing that reads as "glass" */}
+      <BlurView intensity={IS_WEB ? 25 : 40} tint="light" style={StyleSheet.absoluteFill} />
+      <View style={styles.glassTint} />
       <View style={styles.specularTop} />
     </View>
   );
@@ -90,13 +89,15 @@ export default function TabsLayout() {
         tabBarHideOnKeyboard: true,
         tabBarShowLabel: false,
         tabBarItemStyle: {
-          height: TAB_BAR_HEIGHT - 10,
-          borderRadius: 999,
-          marginHorizontal: 1,
+          height: TAB_BAR_HEIGHT - 12,
+          borderRadius: 16,
+          marginHorizontal: 2,
         },
         tabBarIconStyle: {
           flex: 1,
           width: "100%",
+          alignItems: "center",
+          justifyContent: "center",
         },
         tabBarBackground: () => <TabBarGlass />,
         tabBarStyle: {
@@ -108,16 +109,15 @@ export default function TabsLayout() {
           bottom:            TAB_BAR_BOTTOM,
           height:            TAB_BAR_HEIGHT,
           borderRadius:      TAB_BAR_HEIGHT / 2,
-          paddingHorizontal: IS_WEB ? 6 : 4,
-          paddingVertical:   5,
-          // transparent — let the blur be the background
+          paddingHorizontal: IS_WEB ? 8 : 6,
+          paddingVertical:   6,
           backgroundColor:   "transparent",
           borderTopWidth:    0,
           borderWidth:       1,
-          borderColor:       IS_WEB ? "rgba(13, 94, 42, 0.10)" : "rgba(255,255,255,0.50)",
+          borderColor:       "rgba(255, 255, 255, 0.55)",
           overflow:          "hidden",
-          shadowColor:       "#000",
-          shadowOpacity:     IS_WEB ? 0.08 : 0.12,
+          shadowColor:       "#0F172A",
+          shadowOpacity:     IS_WEB ? 0.10 : 0.14,
           shadowRadius:      IS_WEB ? 18 : 24,
           shadowOffset:      { width: 0, height: IS_WEB ? 6 : 8 },
           elevation:         18,
@@ -191,6 +191,10 @@ const styles = StyleSheet.create({
     overflow:     "hidden",
     borderRadius: TAB_BAR_HEIGHT / 2,
   },
+  glassTint: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
+  },
   specularTop: {
     position:        "absolute",
     top:             0,
@@ -198,27 +202,26 @@ const styles = StyleSheet.create({
     right:           18,
     height:          1,
     borderRadius:    999,
-    backgroundColor: "rgba(255,255,255,0.85)",
+    backgroundColor: "rgba(255, 255, 255, 0.85)",
   },
-
   tabItem: {
-    alignItems:     "center",
-    justifyContent: "center",
-    gap:            IS_WEB ? 1 : 2,
-    width:          "100%",
-    height:         "100%",
-    borderRadius:   999,
+    alignItems:        "center",
+    justifyContent:    "center",
+    gap:               IS_WEB ? 3 : 4,
+    paddingHorizontal: IS_WEB ? 14 : 11,
+    paddingVertical:   IS_WEB ? 6 : 8,
+    borderRadius:      16,
   },
   tabItemActive: {
-    backgroundColor: IS_WEB ? "rgba(0,132,43,0.08)" : "rgba(255,255,255,0.30)",
+    backgroundColor: "rgba(0, 128, 0, 0.14)",
     borderWidth:     1,
-    borderColor:     IS_WEB ? "rgba(0,132,43,0.12)" : "rgba(255,255,255,0.55)",
+    borderColor:     "rgba(0, 128, 0, 0.18)",
   },
   tabLabel: {
     color:      INACTIVE_COLOR,
-    fontSize:   IS_WEB ? 9 : 10,
+    fontSize:   10,
     fontFamily: FONTS.semiBold,
-    lineHeight: 12,
+    lineHeight: IS_WEB ? 12 : 13,
   },
   tabLabelActive: {
     color:      ACTIVE_COLOR,
