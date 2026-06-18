@@ -25,6 +25,7 @@ export const ha: typeof en = {
   personalDetails: "Bayanai na sirri", age: "Shekaru", gender: "Jinsi",
   weight: "Nauyi (kg)", height: "Tsayi (cm)", nickname: "Sunan ladabi",
   addPhotoLater: "Ƙara hoto daga baya", changePhoto: "Canza hoto", finishSetup: "Gama Saita",
+  locationLabel: "Ina kake zama?", locationPlaceholder: "misali Kano, Najeriya",
   goalEatHealthier: "Ci abinci mai kyau", goalTrackCalories: "Bi diddigin kalori", goalManageWeight: "Sarrafa nauyi",
   goalReduceCarbs: "Rage yawan carbs", goalUnderstandMeals: "Fahimci abincin Afirka", goalBetterHabits: "Gina kyawawan al'adu",
   lifestyleSwallow: "Ina cin tuwo akai-akai", lifestyleRice: "Ina cin shinkafa akai-akai",

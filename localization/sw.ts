@@ -7,6 +7,7 @@ export const sw: typeof en = {
   splashSubtitle: "Mshauri wako wa Lishe",
   onboarding1Title: "Kutana na Mshauri Wako", onboarding1Desc: "NutriPadi inakusaidia kuelewa vyakula vya Afrika.",
   addPhotoLater: "Ongeza picha baadaye", changePhoto: "Badilisha picha", finishSetup: "Maliza Usanidi",
+  locationLabel: "Unaishi wapi?", locationPlaceholder: "mfano Nairobi, Kenya",
   chooseLanguage: "Chagua Lugha Yako", chooseLanguageSub: "Chagua lugha ambayo NutriPadi itatumia.", langMoreSoon: "Lugha zaidi zinakuja hivi karibuni.",
   loginKicker: "Karibu tena", loginTitle: "Tuangalie milo ya leo", loginSubtitle: "Ingia ili uendelee.",
   signupKicker: "Karibu kwenye NutriPadi", signupTitle: "Fungua akaunti yako", signupSubtitle: "Kutana na mshauri wako wa lishe.",

@@ -25,6 +25,7 @@ export const yo: typeof en = {
   personalDetails: "Àlàyé ara ẹni", age: "Ọjọ́ orí", gender: "Akọ tàbí abo",
   weight: "Ìwúwo (kg)", height: "Gíga (cm)", nickname: "Orúkọ àdàni",
   addPhotoLater: "Fi àwòrán kùn lẹ́yìn", changePhoto: "Yí àwòrán padà", finishSetup: "Parí Ìṣètò",
+  locationLabel: "Níbo lo ń gbé?", locationPlaceholder: "àpẹẹrẹ Ìbàdàn, Nàìjíríà",
   goalEatHealthier: "Jẹun dáadáa", goalTrackCalories: "Ṣàmójútó kalori", goalManageWeight: "Ṣàkóso ìwúwo",
   goalReduceCarbs: "Dín carbs kù", goalUnderstandMeals: "Mọ oúnjẹ Áfíríkà", goalBetterHabits: "Kọ́ àṣà tó dára",
   lifestyleSwallow: "Mo máa ń jẹ swallow", lifestyleRice: "Mo máa ń jẹ ìrẹsì",

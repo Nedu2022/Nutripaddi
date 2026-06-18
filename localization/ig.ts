@@ -25,6 +25,7 @@ export const ig: typeof en = {
   personalDetails: "Nkọwa onwe gị", age: "Afọ", gender: "Oke/nwanyị",
   weight: "Arọ (kg)", height: "Elu (cm)", nickname: "Aha",
   addPhotoLater: "Tinye foto mgbe e mesịrị", changePhoto: "Gbanwee foto", finishSetup: "Mechaa Nhazi",
+  locationLabel: "Ebee ka i bi?", locationPlaceholder: "dịka Enugu, Naịjịrịa",
   goalEatHealthier: "Rie nke ọma karịa", goalTrackCalories: "Soro ụzọ kalori", goalManageWeight: "Jikwaa arọ",
   goalReduceCarbs: "Belata carbs", goalUnderstandMeals: "Ghọta nri Africa", goalBetterHabits: "Wuo àgwà iri nri ọma",
   lifestyleSwallow: "Ana m eri swallow mgbe niile", lifestyleRice: "Ana m eri rice mgbe niile",

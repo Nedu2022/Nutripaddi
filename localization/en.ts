@@ -89,6 +89,8 @@ export const en = {
   addPhotoLater: "Add photo later",
   changePhoto: "Change photo",
   finishSetup: "Finish Setup",
+  locationLabel: "Where do you live?",
+  locationPlaceholder: "e.g. Lagos, Nigeria",
 
   // Life stage (maternal focus)
   lifeStageTitle: "Who are we supporting?",

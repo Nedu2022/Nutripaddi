@@ -7,6 +7,7 @@ export const fr: typeof en = {
   splashSubtitle: "Votre Nutritionniste IA",
   onboarding1Title: "Rencontrez votre Nutritionniste", onboarding1Desc: "NutriPadi vous aide à comprendre les repas africains.",
   addPhotoLater: "Ajouter une photo plus tard", changePhoto: "Changer la photo", finishSetup: "Terminer la configuration",
+  locationLabel: "Où habitez-vous ?", locationPlaceholder: "ex. Dakar, Sénégal",
   chooseLanguage: "Choisissez votre langue", chooseLanguageSub: "Sélectionnez la langue que NutriPadi doit utiliser.", langMoreSoon: "D'autres langues seront bientôt disponibles.",
   loginKicker: "Bon retour", loginTitle: "Vérifions les repas d'aujourd'hui", loginSubtitle: "Connectez-vous pour continuer.",
   signupKicker: "Bienvenue sur NutriPadi", signupTitle: "Créez votre compte", signupSubtitle: "Rencontrez votre nutritionniste IA.",
