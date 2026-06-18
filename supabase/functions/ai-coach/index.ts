@@ -22,25 +22,61 @@ function getEnv(name: string) {
   return value;
 }
 
-const SYSTEM_PROMPT = `You are NutriPadi, a warm, practical nutrition triage coach for mothers and families in Nigeria and across Africa. You specialise in maternal and infant nutrition during the "First 1,000 Days" — from pregnancy to a child's second birthday.
+const SYSTEM_PROMPT = `You are NutriPadi, a friendly food and nutrition assistant inside the AI FoodScan app.
 
-Your style:
-- Sound like a calm, caring human helper. Be friendly, direct, and non-judgmental.
-- Do not overtalk. Answer in 1–3 short sentences unless the user asks for detail.
-- Ask a follow-up question only when missing information could make the advice unsafe. Do not ask follow-up questions for ordinary meal ideas or simple food questions.
-- If the user only needs a simple answer, give the answer first.
-- Talk about real, affordable LOCAL foods: beans, moi-moi, akara, ugu/ewedu and other green leafy vegetables, eggs, liver, sardines, crayfish, groundnut, garden egg, pap/akamu, and balancing swallows like eba/amala.
-- When a meal is low in iron, folic acid or protein, suggest specific, affordable foods to add or swap in.
+Core rules:
+- On a greeting or small talk like "hi", "hello", or "good morning", reply in ONE short line and ask how you can help. Example: "Hi Nnedu! How can I help you today?" Do not give food or nutrition advice unless asked.
+- Only give nutrition or diet advice when the user asks a food question, asks about their health goal, or has just scanned a meal.
+- Keep every reply to 1 to 3 sentences unless the user asks for more detail.
+- Use a warm, simple, African-friendly tone. No long paragraphs and no unsolicited advice.
+- Use the user's onboarding/profile context to personalize replies. Respect their name, language, life stage, health note, eating habits, nutrition goal, location, and calorie target when relevant.
+- If the user is a general user, do not assume pregnancy, breastfeeding, motherhood, or a baby.
+- Only mention pregnancy, breastfeeding, babies, antenatal care, or postnatal care when the profile clearly says the user is pregnant or nursing.
+- If the user gave a location, suggest foods and meals that are common and affordable there when they ask for food ideas.
+- Write in plain text only. Do not use markdown, asterisks, bullets, hashes, bold, or italic symbols.
 
-Triage safety:
+Food style:
+- Prefer real, affordable local foods such as beans, moi-moi, akara, ugu, ewedu, other green leafy vegetables, eggs, liver, sardines, crayfish, groundnut, garden egg, pap/akamu, plantain, rice, yam, and swallows like eba or amala.
+
+Safety:
 - You are not a doctor and you do not diagnose. Give general food guidance only.
-- If the message contains a danger sign, tell the user clearly to go to a clinic, emergency unit, or community health worker now before giving food advice.
-- Danger signs include heavy bleeding, severe headache, blurred vision, reduced baby movement, high fever, severe swelling, convulsions, severe abdominal pain, fainting, chest pain, trouble breathing, or a very weak/sleepy baby.
-- Encourage antenatal care and continuing any iron/folic-acid supplements their clinic has given them.
+- If the message describes a danger sign, tell the user to go to a clinic, emergency unit, or community health worker now before giving food advice. Danger signs include heavy bleeding, severe headache, blurred vision, reduced baby movement, high fever, severe swelling, convulsions, severe abdominal pain, fainting, chest pain, trouble breathing, or a very weak or sleepy baby.
 
-Use the user's profile below to personalise your advice. If she is pregnant or nursing, give special attention to iron, folic acid and protein. Reply in the user's preferred language when one is given.`;
+Reply in the user's preferred language when one is given.`;
 
 type HistoryItem = { isUser?: boolean; text?: string };
+
+const SMALL_TALK_RE =
+  /^(hi|hello|hey|good morning|good afternoon|good evening|morning|afternoon|evening|how are you|how far|what's up|whats up|thanks|thank you)[\s!.?]*$/i;
+
+function getProfileName(profileContext: string) {
+  const match = profileContext.match(/^- Name:\s*(.+)$/m);
+  const firstName = match?.[1]?.trim().split(/\s+/)[0] ?? "";
+  return firstName.replace(/[^\p{L}\p{N}'-]/gu, "");
+}
+
+function getSmallTalkReply(message: string, profileContext: string) {
+  const text = message.trim().toLowerCase().replace(/\s+/g, " ");
+  if (!SMALL_TALK_RE.test(text)) return null;
+
+  const name = getProfileName(profileContext);
+  const namePart = name ? ` ${name}` : "";
+
+  if (text.includes("morning")) {
+    return `Good morning${namePart}! How can I help you today?`;
+  }
+  if (text.includes("afternoon")) {
+    return `Good afternoon${namePart}! How can I help you today?`;
+  }
+  if (text.includes("evening")) {
+    return `Good evening${namePart}! How can I help you today?`;
+  }
+  if (text.includes("thank")) {
+    return `You're welcome${namePart}. How can I help you today?`;
+  }
+
+  return `Hi${namePart}! How can I help you today?`;
+}
 
 Deno.serve(async (request) => {
   if (request.method === "OPTIONS") {
@@ -67,6 +103,11 @@ Deno.serve(async (request) => {
       );
     }
 
+    const smallTalkReply = getSmallTalkReply(message, profileContext);
+    if (smallTalkReply) {
+      return Response.json({ reply: smallTalkReply }, { headers: corsHeaders });
+    }
+
     const systemText = profileContext
       ? `${SYSTEM_PROMPT}\n\nUser profile:\n${profileContext}`
       : SYSTEM_PROMPT;
@@ -91,8 +132,8 @@ Deno.serve(async (request) => {
           system_instruction: { parts: [{ text: systemText }] },
           contents,
           generationConfig: {
-            temperature: 0.55,
-            maxOutputTokens: 190,
+            temperature: 0.45,
+            maxOutputTokens: 170,
             topP: 0.9,
           },
         }),
@@ -109,9 +150,18 @@ Deno.serve(async (request) => {
       );
     }
 
-    const reply = data?.candidates?.[0]?.content?.parts
+    const rawReply = data?.candidates?.[0]?.content?.parts
       ?.map((part: { text?: string }) => part?.text ?? "")
       .join("")
+      .trim();
+
+    // Strip any markdown the model slips in so the chat shows clean human text.
+    const reply = rawReply
+      ?.replace(/\*\*(.*?)\*\*/g, "$1")
+      .replace(/\*(.*?)\*/g, "$1")
+      .replace(/^\s*[*\-•]\s+/gm, "")
+      .replace(/`{1,3}([^`]*)`{1,3}/g, "$1")
+      .replace(/^#{1,6}\s+/gm, "")
       .trim();
 
     if (!reply) {

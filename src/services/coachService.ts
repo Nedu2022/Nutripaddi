@@ -38,6 +38,18 @@ function buildProfileContext(profile: ProfileData): string {
     lines.push(`- Life stage: ${stage}`);
     const focus = getMaternalFocusNutrients(profile.lifeStage);
     if (focus.length) lines.push(`- Priority nutrients to watch: ${focus.join(", ")}`);
+  } else {
+    // General user: make it explicit so the coach does NOT assume a pregnancy
+    // or a baby. This app is for everyone, not only mothers.
+    lines.push(
+      "- Life stage: General user — NOT pregnant and NOT nursing. Do not assume they have a baby or are a mother; speak to them as an everyday person looking after their own nutrition."
+    );
+  }
+
+  if (profile.location) {
+    lines.push(
+      `- Location: ${profile.location}. Suggest foods, markets and meals that are common and affordable in this area.`
+    );
   }
 
   const target =
@@ -72,6 +84,20 @@ export function clearCoachProfileCache() {
   cachedContext = undefined;
 }
 
+/**
+ * Strip the markdown the model sometimes returns (asterisks for bold/bullets,
+ * leading list dashes) so the chat bubble shows clean, human text.
+ */
+function cleanReply(text: string): string {
+  return text
+    .replace(/\*\*(.*?)\*\*/g, "$1") // **bold**
+    .replace(/\*(.*?)\*/g, "$1") // *italic*
+    .replace(/^\s*[*\-•]\s+/gm, "") // bullet markers at line start
+    .replace(/`{1,3}([^`]*)`{1,3}/g, "$1") // `code`
+    .replace(/^#{1,6}\s+/gm, "") // markdown headings
+    .trim();
+}
+
 export async function askCoach(message: string, history: ChatMessage[]) {
   assertSupabaseConfigured();
 
@@ -96,5 +122,5 @@ export async function askCoach(message: string, history: ChatMessage[]) {
   const reply = data?.reply ?? data?.message;
   if (!reply) throw new Error("The coach endpoint did not return a reply.");
 
-  return reply;
+  return cleanReply(reply);
 }

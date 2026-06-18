@@ -59,7 +59,7 @@ export default function SignupScreen() {
         return;
       }
 
-      setFormError("Check your email to confirm your account, then log in.");
+      setFormError("Check your email to confirm your account, then continue your setup.");
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {

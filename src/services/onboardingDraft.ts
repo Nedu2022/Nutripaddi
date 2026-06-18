@@ -19,6 +19,7 @@ export type OnboardingDraft = {
   nutritionGoal?: string | null;
   eatingLifestyle?: string[] | null;
   healthAwareness?: string | null;
+  location?: string | null;
 };
 
 let draft: OnboardingDraft = {};

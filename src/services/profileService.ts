@@ -20,6 +20,7 @@ export type ProfileData = {
   trimester?: PregnancyTrimester | null;
   babyAgeMonths?: number | null;
   dailyCalorieTarget?: number | null;
+  location?: string | null;
 };
 
 type ProfileRow = {
@@ -41,6 +42,7 @@ type ProfileRow = {
   trimester?: string | null;
   baby_age_months?: number | null;
   daily_calorie_target?: number | null;
+  location?: string | null;
 };
 
 function emptyProfile(): ProfileData {
@@ -67,6 +69,7 @@ function mapProfile(row?: ProfileRow | null): ProfileData {
     id: row.id,
     language: row.language,
     lifeStage: (row.life_stage as LifeStage | null) ?? null,
+    location: row.location ?? null,
     nickname: row.nickname ?? "",
     nutritionGoal: row.nutrition_goal,
     photoUri: row.avatar_url ?? null,
@@ -104,6 +107,7 @@ export async function saveProfile(data: Partial<ProfileData>) {
     id: userData.user.id,
     language: data.language,
     life_stage: data.lifeStage,
+    location: data.location,
     nickname: data.nickname,
     nutrition_goal: data.nutritionGoal,
     trimester: data.trimester,

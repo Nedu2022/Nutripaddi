@@ -28,6 +28,7 @@ alter table public.profiles add column if not exists gender text;
 alter table public.profiles add column if not exists life_stage text default 'general';
 alter table public.profiles add column if not exists trimester text;
 alter table public.profiles add column if not exists baby_age_months int;
+alter table public.profiles add column if not exists location text;
 
 create table if not exists public.meals (
   id uuid primary key default gen_random_uuid(),

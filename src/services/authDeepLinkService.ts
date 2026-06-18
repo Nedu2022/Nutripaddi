@@ -3,6 +3,7 @@ import * as Linking from "expo-linking";
 
 import { supabase } from "@/src/lib/supabase";
 import { ROUTES } from "@/constants/routes";
+import { getProfile } from "@/src/services/profileService";
 
 function getUrlParams(url: string) {
   const [, fragment = ""] = url.split("#");
@@ -10,22 +11,53 @@ function getUrlParams(url: string) {
   return new URLSearchParams(fragment || query);
 }
 
+async function routeAfterConfirmedAuth() {
+  const profile = await getProfile().catch(() => null);
+  router.replace(
+    profile?.nickname?.trim()
+      ? ROUTES.tabs
+      : ROUTES.languageSelect
+  );
+}
+
+function isRecoveryUrl(url: string, type: string | null) {
+  return type === "recovery" || url.includes("/reset-password");
+}
+
 export async function handleAuthUrl(url: string) {
   const params = getUrlParams(url);
   const accessToken = params.get("access_token");
   const refreshToken = params.get("refresh_token");
+  const code = params.get("code");
   const type = params.get("type");
 
-  if (!accessToken || !refreshToken) return;
+  if (code) {
+    const { error } = await supabase.auth.exchangeCodeForSession(code);
+    if (error) return false;
+
+    if (isRecoveryUrl(url, type)) {
+      router.replace(ROUTES.resetPassword);
+    } else {
+      await routeAfterConfirmedAuth();
+    }
+    return true;
+  }
+
+  if (!accessToken || !refreshToken) return false;
 
   const { error } = await supabase.auth.setSession({
     access_token: accessToken,
     refresh_token: refreshToken,
   });
 
-  if (!error && type === "recovery") {
+  if (error) return false;
+
+  if (isRecoveryUrl(url, type)) {
     router.replace(ROUTES.resetPassword);
+  } else {
+    await routeAfterConfirmedAuth();
   }
+  return true;
 }
 
 export function subscribeToAuthDeepLinks() {

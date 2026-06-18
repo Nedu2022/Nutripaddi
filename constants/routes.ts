@@ -10,6 +10,7 @@ export const ROUTES = {
   // Auth
   signup: route("/(auth)/signup"),
   login: route("/(auth)/login"),
+  authConfirmed: route("/auth-confirmed"),
   forgotPassword: route("/(auth)/forgot-password"),
   resetPassword: route("/(auth)/reset-password"),
 

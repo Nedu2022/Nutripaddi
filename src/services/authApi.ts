@@ -1,5 +1,6 @@
 import * as Linking from "expo-linking";
 
+import { ROUTES } from "@/constants/routes";
 import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
 import type { AuthSession } from "@/src/services/authSessionService";
 
@@ -59,6 +60,8 @@ export async function login(payload: LoginPayload) {
 export async function register(payload: RegisterPayload) {
   assertSupabaseConfigured();
 
+  const emailRedirectTo = Linking.createURL(ROUTES.authConfirmed.toString());
+
   const { data, error } = await supabase.auth.signUp({
     email: payload.email,
     options: {
@@ -66,6 +69,7 @@ export async function register(payload: RegisterPayload) {
         fullName: payload.fullName,
         name: payload.fullName,
       },
+      emailRedirectTo,
     },
     password: payload.password,
   });
@@ -78,7 +82,7 @@ export async function register(payload: RegisterPayload) {
 export async function requestPasswordReset(email: string) {
   assertSupabaseConfigured();
 
-  const redirectTo = Linking.createURL("/(auth)/reset-password");
+  const redirectTo = Linking.createURL(ROUTES.resetPassword.toString());
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo,
   });

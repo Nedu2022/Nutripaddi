@@ -13,6 +13,7 @@ import { useLanguage } from "@/hooks/useLanguage";
 import { login } from "@/src/services/authApi";
 import { saveAuthSession } from "@/src/services/authSessionService";
 import { getErrorMessage } from "@/src/services/errorService";
+import { getProfile } from "@/src/services/profileService";
 
 const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -48,7 +49,12 @@ export default function LoginScreen() {
         password,
       });
       await saveAuthSession(session);
-      router.replace(ROUTES.tabs);
+      const profile = await getProfile().catch(() => null);
+      router.replace(
+        profile?.nickname?.trim()
+          ? ROUTES.tabs
+          : ROUTES.languageSelect
+      );
     } catch (error) {
       setFormError(getErrorMessage(error));
     } finally {

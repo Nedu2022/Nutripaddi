@@ -23,6 +23,7 @@ import { uploadImage } from "@/src/services/uploadService";
 export default function ProfileSetupScreen() {
   const { t } = useLanguage();
   const [nickname, setNickname] = useState("");
+  const [location, setLocation] = useState("");
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,6 +61,7 @@ export default function ProfileSetupScreen() {
       const draft = getOnboardingDraft();
       await saveProfile({
         nickname: nickname.trim(),
+        location: location.trim() || null,
         photoUri: uploadedPhoto?.secureUrl ?? uploadedPhoto?.url ?? null,
         language: draft.language ?? null,
         lifeStage: draft.lifeStage ?? "general",
@@ -124,6 +126,14 @@ export default function ProfileSetupScreen() {
           }}
           placeholder="e.g. Ada"
           value={nickname}
+        />
+
+        <InputField
+          autoCapitalize="words"
+          label={t.locationLabel ?? "Where do you live?"}
+          onChangeText={setLocation}
+          placeholder={t.locationPlaceholder ?? "e.g. Lagos, Nigeria"}
+          value={location}
         />
       </Animated.View>
 
