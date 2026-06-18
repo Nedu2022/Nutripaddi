@@ -1,5 +1,5 @@
 type RuntimeProcess = {
-  env?: {
+  env: {
     EXPO_PUBLIC_SUPABASE_ANON_KEY?: string;
     EXPO_PUBLIC_SUPABASE_KEY?: string;
     EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY?: string;
