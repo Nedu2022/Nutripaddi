@@ -14,7 +14,7 @@ import { FONTS } from "@/constants/fonts";
 import { useLanguage } from "@/hooks/useLanguage";
 import { ROUTES } from "@/constants/routes";
 import {
-  getDailyTotals,
+  getDailyTotalsFromMeals,
   getTodayMeals,
   type DailyTotals,
   type SavedMeal,
@@ -65,12 +65,12 @@ export default function MealLogTab() {
 
     const loadMeals = async () => {
       try {
-        const profile = await getProfile();
-        const target = profile.dailyCalorieTarget ?? 0;
-        const [todayMeals, totals] = await Promise.all([
+        const [profile, todayMeals] = await Promise.all([
+          getProfile(),
           getTodayMeals(),
-          getDailyTotals(new Date(), target),
         ]);
+        const target = profile.dailyCalorieTarget ?? 0;
+        const totals = getDailyTotalsFromMeals(todayMeals, target);
 
         if (!mounted) return;
         setMeals(todayMeals);

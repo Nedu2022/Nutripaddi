@@ -211,9 +211,7 @@ export async function getTodayMeals(date = new Date()) {
   });
 }
 
-export async function getDailyTotals(date = new Date(), target = 0): Promise<DailyTotals> {
-  const meals = await getTodayMeals(date);
-
+export function getDailyTotalsFromMeals(meals: SavedMeal[], target = 0): DailyTotals {
   return meals.reduce<DailyTotals>(
     (totals, meal) => ({
       calories: totals.calories + meal.calories,
@@ -226,12 +224,25 @@ export async function getDailyTotals(date = new Date(), target = 0): Promise<Dai
   );
 }
 
-export async function getWeeklyCalories(date = new Date()): Promise<WeeklyCalories[]> {
+export async function getDailyTotals(date = new Date(), target = 0): Promise<DailyTotals> {
+  return getDailyTotalsFromMeals(await getTodayMeals(date), target);
+}
+
+export async function getMealsForWeek(date = new Date()) {
   const end = endOfDay(date);
   const start = startOfDay(date);
   start.setDate(start.getDate() - 6);
 
-  const meals = await getSavedMeals({ from: start, to: end });
+  return getSavedMeals({ from: start, to: end });
+}
+
+export function getWeeklyCaloriesFromMeals(
+  meals: SavedMeal[],
+  date = new Date()
+): WeeklyCalories[] {
+  const start = startOfDay(date);
+  start.setDate(start.getDate() - 6);
+
   const buckets = new Map<string, number>();
 
   for (let i = 0; i < 7; i += 1) {
@@ -252,6 +263,10 @@ export async function getWeeklyCalories(date = new Date()): Promise<WeeklyCalori
       value,
     };
   });
+}
+
+export async function getWeeklyCalories(date = new Date()): Promise<WeeklyCalories[]> {
+  return getWeeklyCaloriesFromMeals(await getMealsForWeek(date), date);
 }
 
 export async function deleteMeal(id: string): Promise<void> {

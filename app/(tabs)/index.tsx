@@ -26,9 +26,9 @@ import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
-  getDailyTotals,
-  getTodayMeals,
-  getWeeklyCalories,
+  getDailyTotalsFromMeals,
+  getMealsForWeek,
+  getWeeklyCaloriesFromMeals,
   type DailyTotals,
   type SavedMeal,
   type WeeklyCalories,
@@ -279,13 +279,15 @@ export default function DashboardTab() {
 
     const loadDashboard = async () => {
       try {
-        const profileData = await getProfile();
-        const target = profileData.dailyCalorieTarget ?? 0;
-        const [meals, totals, weekly] = await Promise.all([
-          getTodayMeals(),
-          getDailyTotals(new Date(), target),
-          getWeeklyCalories(),
+        const [profileData, weekMeals] = await Promise.all([
+          getProfile(),
+          getMealsForWeek(),
         ]);
+        const target = profileData.dailyCalorieTarget ?? 0;
+        const todayKey = new Date().toISOString().split("T")[0];
+        const meals = weekMeals.filter((meal) => meal.dateLogged === todayKey);
+        const totals = getDailyTotalsFromMeals(meals, target);
+        const weekly = getWeeklyCaloriesFromMeals(weekMeals);
 
         if (!mounted) return;
         setProfile(profileData);

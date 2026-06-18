@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Platform, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import Animated, {
   Easing,
@@ -17,8 +17,8 @@ import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { hasAuthSession } from "@/src/services/authSessionService";
 
-const MIN_SPLASH_DURATION = 1850;
-const EXIT_DURATION = 320;
+const MIN_SPLASH_DURATION = Platform.OS === "web" ? 250 : 650;
+const EXIT_DURATION = Platform.OS === "web" ? 120 : 180;
 
 const sleep = (duration: number) =>
   new Promise<void>((resolve) => {
@@ -37,20 +37,20 @@ export default function StartupSplash() {
     let mounted = true;
 
     logoScale.value = withSequence(
-      withTiming(1.035, { duration: 620, easing: Easing.out(Easing.cubic) }),
-      withTiming(1, { duration: 320, easing: Easing.out(Easing.cubic) })
+      withTiming(1.02, { duration: 260, easing: Easing.out(Easing.cubic) }),
+      withTiming(1, { duration: 160, easing: Easing.out(Easing.cubic) })
     );
     copyOpacity.value = withDelay(
-      240,
-      withTiming(1, { duration: 520, easing: Easing.out(Easing.cubic) })
+      80,
+      withTiming(1, { duration: 220, easing: Easing.out(Easing.cubic) })
     );
     copyY.value = withDelay(
-      240,
-      withTiming(0, { duration: 520, easing: Easing.out(Easing.cubic) })
+      80,
+      withTiming(0, { duration: 220, easing: Easing.out(Easing.cubic) })
     );
     accentScale.value = withDelay(
-      760,
-      withTiming(1, { duration: 440, easing: Easing.out(Easing.cubic) })
+      180,
+      withTiming(1, { duration: 200, easing: Easing.out(Easing.cubic) })
     );
 
     const finishStartup = async () => {

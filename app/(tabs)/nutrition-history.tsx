@@ -17,9 +17,10 @@ import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import {
-  getDailyTotals,
+  getDailyTotalsFromMeals,
+  getMealsForWeek,
   getSavedMeals,
-  getWeeklyCalories,
+  getWeeklyCaloriesFromMeals,
   type DailyTotals,
   type SavedMeal,
   type WeeklyCalories,
@@ -48,13 +49,16 @@ export default function NutritionHistoryScreen() {
 
     const loadHistory = async () => {
       try {
-        const profile = await getProfile();
-        const target = profile.dailyCalorieTarget ?? 0;
-        const [allMeals, totals, weekly] = await Promise.all([
+        const [profile, allMeals, weekMeals] = await Promise.all([
+          getProfile(),
           getSavedMeals({ limit: 50 }),
-          getDailyTotals(new Date(), target),
-          getWeeklyCalories(),
+          getMealsForWeek(),
         ]);
+        const target = profile.dailyCalorieTarget ?? 0;
+        const todayKey = new Date().toISOString().split("T")[0];
+        const todayMeals = weekMeals.filter((meal) => meal.dateLogged === todayKey);
+        const totals = getDailyTotalsFromMeals(todayMeals, target);
+        const weekly = getWeeklyCaloriesFromMeals(weekMeals);
 
         if (!mounted) return;
         setMeals(allMeals);
