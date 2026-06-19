@@ -12,6 +12,13 @@ type CoachResponse = {
   reply?: string;
 };
 
+export type ScanUserStatus = "pregnant" | "breastfeeding" | "other";
+
+export type ProfileScanContext = {
+  profileContext: string | null;
+  userStatus: ScanUserStatus;
+};
+
 const LANGUAGE_NAMES: Record<string, string> = {
   english: "English",
   french: "French",
@@ -22,6 +29,15 @@ const LANGUAGE_NAMES: Record<string, string> = {
 };
 
 let cachedContext: string | null | undefined;
+let cachedScanContext: ProfileScanContext | undefined;
+
+function lifeStageToScanUserStatus(
+  stage: ProfileData["lifeStage"]
+): ScanUserStatus {
+  if (stage === "pregnant") return "pregnant";
+  if (stage === "nursing") return "breastfeeding";
+  return "other";
+}
 
 function buildProfileContext(profile: ProfileData): string {
   const lines: string[] = [];
@@ -66,18 +82,29 @@ function buildProfileContext(profile: ProfileData): string {
 }
 
 export async function getProfileContext(): Promise<string | null> {
-  if (cachedContext !== undefined) return cachedContext;
+  const context = await getProfileScanContext();
+  return context.profileContext;
+}
+
+export async function getProfileScanContext(): Promise<ProfileScanContext> {
+  if (cachedScanContext) return cachedScanContext;
   try {
     const profile = await getProfile();
-    cachedContext = buildProfileContext(profile) || null;
+    cachedScanContext = {
+      profileContext: buildProfileContext(profile) || null,
+      userStatus: lifeStageToScanUserStatus(profile.lifeStage),
+    };
+    cachedContext = cachedScanContext.profileContext;
   } catch {
+    cachedScanContext = { profileContext: null, userStatus: "other" };
     cachedContext = null;
   }
-  return cachedContext;
+  return cachedScanContext;
 }
 
 export function clearCoachProfileCache() {
   cachedContext = undefined;
+  cachedScanContext = undefined;
 }
 
 async function getProfileContextForRequest(timeoutMs = 450) {

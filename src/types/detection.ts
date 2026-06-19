@@ -49,5 +49,7 @@ export type DetectedMealSummary = {
 export type FoodDetectionResult = {
   imageQuality: "good" | "poor";
   summary: DetectedMealSummary | null;
+  advice_source?: "mamabot" | "rules" | string | null;
   suggestions?: string[];
+  user_status?: "pregnant" | "breastfeeding" | "other";
 };

@@ -133,6 +133,15 @@ export const en = {
   lifestyleSnack: "I snack a lot",
   lifestylePortion: "I want to control how much I eat",
   lifestyleHealthier: "I want healthier African meals",
+  lifestyleBigPortions: "I eat large portions",
+  lifestyleSugaryDrinks: "I drink sugary drinks often",
+  lifestyleLowProtein: "I rarely eat protein",
+  lifestyleSkipMeals: "I often skip meals",
+  lifestyleFastFood: "I eat fried or fast food often",
+  lifestyleVeggies: "I rarely eat fruits or vegetables",
+  lifestyleLowWater: "I don't drink enough water",
+  lifestyleCravings: "I get strong food cravings",
+  lifestyleAppetite: "My appetite changes a lot",
   lifestyleHint: "Pick all that apply.",
 
   // Health awareness

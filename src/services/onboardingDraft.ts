@@ -1,12 +1,7 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+
 import type { LifeStage, PregnancyTrimester } from "@/types";
 
-/**
- * Lightweight, module-level store for answers collected across the onboarding
- * screens. Onboarding is a linear flow, so each screen writes its answers here
- * on "Continue" and the final profile-setup screen reads the whole draft to
- * persist it in one upsert. This fixes the previous behaviour where every
- * answer except nickname/photo was discarded.
- */
 export type OnboardingDraft = {
   language?: string | null;
   lifeStage?: LifeStage | null;
@@ -22,10 +17,14 @@ export type OnboardingDraft = {
   location?: string | null;
 };
 
+const KEY = "@nutriPadi_onboarding_draft";
+
 let draft: OnboardingDraft = {};
+let hydrated = false;
 
 export function updateOnboardingDraft(patch: Partial<OnboardingDraft>) {
   draft = { ...draft, ...patch };
+  AsyncStorage.setItem(KEY, JSON.stringify(draft)).catch(() => {});
 }
 
 export function getOnboardingDraft(): OnboardingDraft {
@@ -34,4 +33,23 @@ export function getOnboardingDraft(): OnboardingDraft {
 
 export function resetOnboardingDraft() {
   draft = {};
+  hydrated = true;
+  AsyncStorage.removeItem(KEY).catch(() => {});
+}
+
+export async function hydrateOnboardingDraft(): Promise<OnboardingDraft> {
+  if (hydrated) return draft;
+  hydrated = true;
+  try {
+    const raw = await AsyncStorage.getItem(KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw);
+      if (parsed && typeof parsed === "object") {
+        draft = { ...parsed, ...draft };
+      }
+    }
+  } catch {
+    return draft;
+  }
+  return draft;
 }

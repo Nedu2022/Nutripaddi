@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
   Image,
   PanResponder,
@@ -154,12 +154,17 @@ export default function LiveNutritionSheet({
   };
   const translateY = useSharedValue(HIDDEN_Y);
   const startY = useRef(HIDDEN_Y);
-  const targetY = snapToY[snap];
-  translateY.value = withTiming(targetY, { duration: 420 });
+
+  useEffect(() => {
+    translateY.value = withTiming(snapToY[snap], { duration: 420 });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [snap, FULL_Y, HALF_Y, COLLAPSED_Y, HIDDEN_Y]);
+
   const panResponder = useMemo(
     () =>
       PanResponder.create({
-        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 6,
+        onStartShouldSetPanResponder: () => true,
+        onMoveShouldSetPanResponder: (_, g) => Math.abs(g.dy) > 3,
         onPanResponderGrant: () => {
           startY.current = translateY.value;
         },
@@ -167,6 +172,10 @@ export default function LiveNutritionSheet({
           translateY.value = clamp(startY.current + g.dy, FULL_Y, HIDDEN_Y);
         },
         onPanResponderRelease: (_, g) => {
+          if (Math.abs(g.dy) < 6) {
+            onSnapChange(snap === "full" ? "half" : "full");
+            return;
+          }
           const current = clamp(startY.current + g.dy, FULL_Y, HIDDEN_Y);
           const points: [number, SheetSnap][] = [
             [FULL_Y, "full"],
@@ -184,7 +193,7 @@ export default function LiveNutritionSheet({
         },
       }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [FULL_Y, HALF_Y, COLLAPSED_Y, HIDDEN_Y]
+    [FULL_Y, HALF_Y, COLLAPSED_Y, HIDDEN_Y, snap]
   );
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],

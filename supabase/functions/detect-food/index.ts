@@ -9,6 +9,8 @@ const corsHeaders = {
 const API_URL =
   Deno.env.get("FOODSCAN_API_URL") || "https://nnedu-foodscan-backend.hf.space";
 
+const USER_STATUSES = new Set(["pregnant", "breastfeeding", "other"]);
+
 const FOOD_TYPES = [
   "swallow",
   "soup",
@@ -19,6 +21,27 @@ const FOOD_TYPES = [
   "plantain",
   "unknown",
 ];
+
+function normalizeUserStatus(value: unknown) {
+  const status = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return USER_STATUSES.has(status) ? status : null;
+}
+
+function inferUserStatus(profileContext: string) {
+  const context = profileContext.toLowerCase();
+  if (context.includes("life stage: pregnant")) return "pregnant";
+  if (context.includes("life stage: nursing")) return "breastfeeding";
+  return "other";
+}
+
+function readUserStatus(value: unknown, profileContext = "") {
+  return normalizeUserStatus(value) ?? inferUserStatus(profileContext);
+}
+
+function normalizeAdviceSource(value: unknown) {
+  const source = typeof value === "string" ? value.trim().toLowerCase() : "";
+  return source === "mamabot" || source === "rules" ? source : undefined;
+}
 
 const BASE_PROMPT = `You are NutriPadi's food vision model for Nigerian and West/East African meals.
 Look at the photo and return ONLY a JSON object (no markdown) with this exact shape:
@@ -37,7 +60,8 @@ Look at the photo and return ONLY a JSON object (no markdown) with this exact sh
 
 Rules:
 - If the image is not food or you cannot tell, set "imageQuality":"poor".
-- List EACH distinct food you can see as a separate item (e.g. the swallow, the soup, the meat, the rice), not just the overall dish.
+- The "items" array is the per-food breakdown, NOT the overall meal name. Do not put the combined dish name (e.g. "Eba and Edikang Ikong Soup") in items; put each separate food instead.
+- List EVERY distinct food as its own item, including each protein you can see individually: fish, meat, chicken, kpomo/ponmo (cow skin), egg, snail, as well as the swallow, the soup or stew, and the rice. For example a plate of eba with edikang ikong soup, fish and kpomo should list eba, edikang ikong, fish and kpomo as separate items.
 - For every item, set point.x and point.y to where that food sits in the photo, as fractions from 0 to 1 (x: 0 = left edge, 1 = right edge; y: 0 = top, 1 = bottom). Point to the centre of that food on the plate so a marker can be drawn on it.
 - Nutrition is for the WHOLE plate shown; use realistic numbers (kcal, grams).
 - advice: one short, warm, friendly sentence with a practical tip, tailored to the user profile below when one is given. Suggest an affordable local food to add if protein, iron or fibre looks low.
@@ -156,24 +180,35 @@ async function readUpload(request: Request) {
     const image = typeof body.image === "string" ? body.image : "";
     const profileContext =
       typeof body.profileContext === "string" ? body.profileContext.trim() : "";
-    if (!image) return { file: null, base64: "", profileContext };
+    const userStatus = readUserStatus(body.user_status ?? body.userStatus, profileContext);
+    if (!image) return { file: null, base64: "", profileContext, userStatus };
     const mimeType = typeof body.mimeType === "string" ? body.mimeType : "image/jpeg";
     const fileName = typeof body.fileName === "string" ? body.fileName : "meal.jpg";
     const file = new File([base64ToBytes(image)], fileName, { type: mimeType });
-    return { file, base64: image, profileContext };
+    return { file, base64: image, profileContext, userStatus };
   }
   const form = await request.formData();
   const f = form.get("file");
   const file = f instanceof File ? f : null;
-  return { file, base64: file ? await toBase64(file) : "", profileContext: "" };
+  return {
+    file,
+    base64: file ? await toBase64(file) : "",
+    profileContext: "",
+    userStatus: readUserStatus(form.get("user_status")),
+  };
 }
 
-async function classifyWithBestPt(file: File, authHeader: string | null) {
+async function classifyWithBestPt(
+  file: File,
+  authHeader: string | null,
+  userStatus: string
+) {
   if (!authHeader) return null;
   try {
     const form = new FormData();
     form.append("file", file, file.name || "meal.jpg");
     form.append("lang", "en");
+    form.append("user_status", readUserStatus(userStatus));
     const res = await fetch(`${API_URL}/scan`, {
       method: "POST",
       headers: { Authorization: authHeader },
@@ -188,6 +223,8 @@ async function classifyWithBestPt(file: File, authHeader: string | null) {
       key: String(top.key),
       name: str(top.name, prettify(String(top.key))),
       confidence: typeof top.confidence === "number" ? top.confidence : null,
+      advice: str(data?.advice, ""),
+      adviceSource: normalizeAdviceSource(data?.advice_source),
     };
   } catch {
     return null;
@@ -218,7 +255,7 @@ Deno.serve(async (request) => {
       Deno.env.get("GEMINI_MODEL") ||
       "gemini-3.1-flash-lite";
 
-    const { file, base64, profileContext } = await readUpload(request);
+    const { file, base64, profileContext, userStatus } = await readUpload(request);
     if (!file) {
       return Response.json(POOR_RESULT, { headers: corsHeaders });
     }
@@ -254,7 +291,7 @@ Deno.serve(async (request) => {
     }));
 
     const [bestPt, gemini] = await Promise.all([
-      classifyWithBestPt(file, authHeader),
+      classifyWithBestPt(file, authHeader, userStatus),
       geminiPromise,
     ]);
 
@@ -313,23 +350,26 @@ Deno.serve(async (request) => {
 
     const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
     const items: any[] = [];
-    items.push({
-      label: mealName,
-      type: bestPt && mealName === bestPt.name ? inferType(bestPt.key) : "unknown",
-      confidence,
-      point: readPoint(
-        rawItems.find((it: unknown) => namesAgree(str((it as any)?.label, ""), mealName))
-      ),
-    });
+    const seen = new Set<string>();
     for (const item of rawItems) {
       const label = str((item as any)?.label, "");
       if (!label) continue;
-      if (label.toLowerCase() === mealName.toLowerCase()) continue;
+      const dedupe = label.toLowerCase();
+      if (seen.has(dedupe)) continue;
+      seen.add(dedupe);
       items.push({
         label,
         type: normalizeType((item as any)?.type),
         confidence: pct((item as any)?.confidence, 70),
         point: readPoint(item),
+      });
+    }
+    if (items.length === 0) {
+      items.push({
+        label: mealName,
+        type: bestPt && mealName === bestPt.name ? inferType(bestPt.key) : "unknown",
+        confidence,
+        point: null,
       });
     }
 
@@ -350,8 +390,10 @@ Deno.serve(async (request) => {
 
     const n = (parsed.nutrition ?? {}) as Record<string, unknown>;
     const f = (parsed.freshness ?? {}) as Record<string, unknown>;
+    const backendAdvice = str(bestPt?.advice, "");
 
     const result = {
+      advice_source: bestPt?.adviceSource,
       imageQuality: "good",
       summary: {
         mealName,
@@ -383,8 +425,9 @@ Deno.serve(async (request) => {
           disclaimer:
             "Freshness is a visual guess. When in doubt, do not eat it.",
         },
-        advice: str(parsed.advice, "Looks like a balanced plate. Keep it up!"),
+        advice: backendAdvice || str(parsed.advice, "Looks like a balanced plate. Keep it up!"),
       },
+      user_status: userStatus,
     };
 
     return Response.json(result, { headers: corsHeaders });

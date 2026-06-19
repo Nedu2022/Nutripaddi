@@ -1,12 +1,21 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { StyleSheet, Text } from "react-native";
 import { router } from "expo-router";
 import {
+  Apple,
+  Ban,
+  Baby,
+  Carrot,
   Cookie,
+  Droplet,
+  Droplets,
+  Egg,
+  Flame,
   Leaf,
   Moon,
   Scale,
   Soup,
+  Utensils,
   Wheat,
 } from "lucide-react-native";
 import Animated, { FadeInUp } from "react-native-reanimated";
@@ -19,25 +28,69 @@ import { COLORS } from "@/constants/colors";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
 import { en } from "@/localization";
-import { updateOnboardingDraft } from "@/src/services/onboardingDraft";
+import {
+  getOnboardingDraft,
+  hydrateOnboardingDraft,
+  updateOnboardingDraft,
+  type OnboardingDraft,
+} from "@/src/services/onboardingDraft";
 
-const lifestyles = [
-  { key: "lifestyleSwallow" as const, Icon: Soup },
-  { key: "lifestyleRice" as const, Icon: Wheat },
-  { key: "lifestyleLateNight" as const, Icon: Moon },
-  { key: "lifestyleSnack" as const, Icon: Cookie },
-  { key: "lifestylePortion" as const, Icon: Scale },
-  { key: "lifestyleHealthier" as const, Icon: Leaf },
-];
+type HabitKey = Extract<keyof typeof en, `lifestyle${string}`>;
+
+type Habit = {
+  key: HabitKey;
+  Icon: React.ComponentType<{ color: string; size: number }>;
+  show: boolean;
+};
+
+function buildHabits(draft: OnboardingDraft): Habit[] {
+  const goals = (draft.nutritionGoal ?? []).map((g) => g.toLowerCase());
+  const has = (token: string) => goals.some((g) => g.includes(token));
+  const maternal = (draft.lifeStage ?? "general") !== "general" || has("baby");
+  const wantsHealthy = has("healthier") || has("habit") || has("understand");
+
+  const pool: Habit[] = [
+    { key: "lifestyleSwallow", Icon: Soup, show: true },
+    { key: "lifestyleRice", Icon: Wheat, show: true },
+    { key: "lifestyleBigPortions", Icon: Utensils, show: has("weight") || has("calorie") },
+    { key: "lifestyleLateNight", Icon: Moon, show: true },
+    { key: "lifestyleSnack", Icon: Cookie, show: true },
+    { key: "lifestyleSugaryDrinks", Icon: Droplets, show: has("carb") },
+    { key: "lifestyleLowProtein", Icon: Egg, show: has("protein") },
+    { key: "lifestyleSkipMeals", Icon: Ban, show: has("energy") },
+    { key: "lifestyleLowWater", Icon: Droplet, show: has("energy") },
+    { key: "lifestyleFastFood", Icon: Flame, show: wantsHealthy },
+    { key: "lifestyleVeggies", Icon: Carrot, show: wantsHealthy },
+    { key: "lifestyleCravings", Icon: Apple, show: maternal },
+    { key: "lifestyleAppetite", Icon: Baby, show: maternal },
+    { key: "lifestylePortion", Icon: Scale, show: true },
+    { key: "lifestyleHealthier", Icon: Leaf, show: true },
+  ];
+
+  return pool.filter((habit) => habit.show);
+}
 
 export default function EatingLifestyleScreen() {
   const { t } = useLanguage();
+  const [draft, setDraft] = useState<OnboardingDraft>(getOnboardingDraft());
   const [selected, setSelected] = useState<string[]>([]);
   const [error, setError] = useState("");
 
+  useEffect(() => {
+    let mounted = true;
+    hydrateOnboardingDraft().then(() => {
+      if (mounted) setDraft({ ...getOnboardingDraft() });
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const habits = useMemo(() => buildHabits(draft), [draft]);
+
   const toggle = (key: string) => {
     setError("");
-    setSelected((c) => c.includes(key) ? c.filter((k) => k !== key) : [...c, key]);
+    setSelected((c) => (c.includes(key) ? c.filter((k) => k !== key) : [...c, key]));
   };
 
   const handleContinue = () => {
@@ -54,14 +107,14 @@ export default function EatingLifestyleScreen() {
       <QuestionHeader eyebrow={t.setupEyebrow} step={5} subtitle={t.step3Subtitle} title={t.step3Title} totalSteps={6} />
 
       <Animated.View entering={FadeInUp.delay(120).duration(420)} style={styles.options}>
-        {lifestyles.map((l) => (
+        {habits.map((habit) => (
           <OptionCard
-            key={l.key}
-            label={t[l.key]}
-            icon={<l.Icon color={COLORS.primary} size={20} />}
+            key={habit.key}
+            label={t[habit.key]}
+            icon={<habit.Icon color={COLORS.primary} size={20} />}
             multiSelect
-            onPress={() => toggle(l.key)}
-            selected={selected.includes(l.key)}
+            onPress={() => toggle(habit.key)}
+            selected={selected.includes(habit.key)}
           />
         ))}
       </Animated.View>

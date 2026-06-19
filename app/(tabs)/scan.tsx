@@ -34,7 +34,7 @@ import type {
   ScanState,
 } from "@/src/types/detection";
 import type { SheetSnap } from "@/components/scan/LiveNutritionSheet";
-const DETECT_TIMEOUT_MS = 5000;
+const DETECT_TIMEOUT_MS = 12000;
 class DetectTimeoutError extends Error {}
 function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
   return new Promise((resolve, reject) => {
@@ -128,7 +128,7 @@ export default function ScanTab() {
       const result = await withTimeout(detectFoodFromImage(uri), DETECT_TIMEOUT_MS);
       applyDetectionResult(result);
     } catch {
-      reportNoFood();
+      setScanState("poor_image");
     } finally {
       setIsCapturing(false);
       setIsDetecting(false);
@@ -153,7 +153,7 @@ export default function ScanTab() {
         );
         applyDetectionResult(detection);
       } catch {
-        reportNoFood();
+        setScanState("poor_image");
       } finally {
         setIsDetecting(false);
       }
@@ -270,12 +270,12 @@ export default function ScanTab() {
             <Text style={styles.poorTitle}>
               {scanState === "no_food"
                 ? "No food detected"
-                : "Can't see the food clearly"}
+                : "Couldn't read that"}
             </Text>
             <Text style={styles.poorSub}>
               {scanState === "no_food"
                 ? "Point the camera at a meal and try again."
-                : "Try better lighting or move closer."}
+                : "Hold steady in good light, then try again."}
             </Text>
           </View>
           <Pressable onPress={resetScan} style={styles.poorRetryBtn}>

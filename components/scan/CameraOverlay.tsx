@@ -93,15 +93,27 @@ export default function CameraOverlay({
     : STATE_TEXT[scanState] ?? TIPS[tipIdx];
   const topPad = insets.top + 88;
   const botPad = insets.bottom + 158;
+
+  const FRAME_SIZE = 280;
+  const boxCenterY = (topPad + (height - botPad)) / 2;
+  const box = {
+    left: width / 2 - FRAME_SIZE / 2,
+    top: boxCenterY - FRAME_SIZE / 2,
+    size: FRAME_SIZE,
+  };
+
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {!hasResult && <View style={styles.vignette} />}
-      {!hasResult && (
-        <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
-          <Animated.View style={frameStyle}>
-            <ScanFrame color={frameColor} glowing={isDetecting && !isPaused} />
-            <Animated.View style={[styles.scanLine, lineStyle]} />
-          </Animated.View>
+      <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
+        <Animated.View style={hasResult ? undefined : frameStyle}>
+          <ScanFrame
+            color={hasResult ? "rgba(255,255,255,0.45)" : frameColor}
+            glowing={isDetecting && !isPaused && !hasResult}
+          />
+          {!hasResult && <Animated.View style={[styles.scanLine, lineStyle]} />}
+        </Animated.View>
+        {!hasResult && (
           <Text
             style={[
               styles.guidanceText,
@@ -110,13 +122,12 @@ export default function CameraOverlay({
           >
             {guidanceText}
           </Text>
-        </View>
-      )}
+        )}
+      </View>
       {visibleDetections.map((item, index) => (
         <DetectionArrow
           key={`${item.id}-${item.confidence}`}
-          frameHeight={height}
-          frameWidth={width}
+          box={box}
           index={index}
           item={item}
         />

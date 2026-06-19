@@ -1,5 +1,5 @@
 import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
-import { getProfileContext } from "@/src/services/coachService";
+import { getProfileScanContext } from "@/src/services/coachService";
 import { prepareImageForUpload } from "@/src/services/imageService";
 import type { FoodDetectionResult } from "@/src/types/detection";
 
@@ -10,9 +10,12 @@ export async function detectFoodFromImage(
 
   assertSupabaseConfigured();
 
-  const [{ base64, mimeType }, profileContext] = await Promise.all([
+  const [{ base64, mimeType }, scanContext] = await Promise.all([
     prepareImageForUpload(imageUri, 640),
-    getProfileContext().catch(() => null),
+    getProfileScanContext().catch(() => ({
+      profileContext: null,
+      userStatus: "other" as const,
+    })),
   ]);
 
   if (!base64) return { imageQuality: "poor", summary: null };
@@ -22,7 +25,13 @@ export async function detectFoodFromImage(
   const { data, error } = await supabase.functions.invoke<FoodDetectionResult>(
     "detect-food",
     {
-      body: { fileName, image: base64, mimeType, profileContext },
+      body: {
+        fileName,
+        image: base64,
+        mimeType,
+        profileContext: scanContext.profileContext,
+        user_status: scanContext.userStatus,
+      },
     }
   );
 
