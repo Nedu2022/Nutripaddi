@@ -29,7 +29,7 @@ import Animated, {
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
-import type { DetectedMealSummary, ScanState } from "@/src/types/detection";
+import type { DetectedMealSummary, FoodCorrectionOption, ScanState } from "@/src/types/detection";
 import type { FreshnessTone } from "@/src/types/freshness";
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
 const G = {
@@ -59,19 +59,11 @@ type Props = {
   scanState: ScanState;
   snap: SheetSnap;
   onSnapChange: (snap: SheetSnap) => void;
-  onFoodCorrection: (label: string) => void;
+  onFoodCorrection: (option: FoodCorrectionOption) => void;
   onSave: () => void;
   onClear: () => void;
   savedMealTime?: string;
 };
-const SWALLOW_OPTIONS = [
-  "Pounded Yam",
-  "Amala",
-  "Semo",
-  "Eba",
-  "Fufu",
-  "Not listed",
-];
 const LOW_ITEM_CONFIDENCE = 60;
 function clamp(v: number, lo: number, hi: number) {
   return Math.min(Math.max(v, lo), hi);
@@ -88,13 +80,24 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
   const rice = summary.detectedItems.find((item) => item.type === "rice");
   const beans = summary.detectedItems.find((item) => item.type === "beans");
   const yam = summary.detectedItems.find((item) => item.type === "yam");
+  const potato = summary.detectedItems.find((item) => item.type === "potato");
   const plantain = summary.detectedItems.find((item) => item.type === "plantain");
+  const cassava = summary.detectedItems.find((item) => item.type === "cassava");
+  const maize = summary.detectedItems.find((item) => item.type === "maize");
+  const grain = summary.detectedItems.find((item) => item.type === "grain");
+  const bread = summary.detectedItems.find((item) => item.type === "bread");
+  const pasta = summary.detectedItems.find((item) => item.type === "pasta");
+  const vegetable = summary.detectedItems.find((item) => item.type === "vegetable");
+  const fruit = summary.detectedItems.find((item) => item.type === "fruit");
+  const dairy = summary.detectedItems.find((item) => item.type === "dairy");
+  const snack = summary.detectedItems.find((item) => item.type === "snack");
+  const drink = summary.detectedItems.find((item) => item.type === "drink");
   if (swallow && soup) {
     return {
-      title: "West African swallow meal",
+      title: "African swallow and soup meal",
       description: `${swallow.label} is a starchy swallow served with ${soup.label}${
         protein ? ` and ${protein.label}` : ""
-      }. This meal pattern is common across Nigerian and West African food cultures.`,
+      }. This kind of soft staple with soup or sauce is common in several African food cultures.`,
       pattern: `Swallow + soup${protein ? " + protein" : ""}`,
     };
   }
@@ -114,18 +117,34 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
       pattern: `Beans${protein ? " + protein" : ""}`,
     };
   }
-  if (yam || plantain) {
-    const staple = yam ?? plantain;
+  if (yam || potato || plantain) {
+    const staple = yam ?? potato ?? plantain;
     return {
       title: "Starchy staple meal",
       description: `${staple?.label} is recognised as the main staple in this plate. The estimate is based on the visible food group and serving context.`,
       pattern: staple?.label ?? "Staple food",
     };
   }
+  if (cassava || maize || grain || bread || pasta) {
+    const staple = cassava ?? maize ?? grain ?? bread ?? pasta;
+    return {
+      title: "Staple-based meal",
+      description: `${staple?.label} is recognised as the main base of the meal. NutriPadi uses the visible staple and other foods on the plate to estimate nutrition.`,
+      pattern: `${staple?.label ?? "Staple"}${protein ? " + protein" : ""}`,
+    };
+  }
+  if (vegetable || fruit || dairy || snack || drink) {
+    const item = vegetable ?? fruit ?? dairy ?? snack ?? drink;
+    return {
+      title: "Light meal or side",
+      description: `${item?.label} is recognised as the main visible item. The estimate is based on the food type and portion shown.`,
+      pattern: item?.label ?? "Light food",
+    };
+  }
   return {
-    title: "Mixed local meal",
+    title: "Mixed African meal",
     description:
-      "NutriPadi matched the visible foods against local meal patterns and food groups before estimating nutrition.",
+      "NutriPadi matched the visible foods against African meal patterns and food groups before estimating nutrition.",
     pattern: "Mixed plate",
   };
 }
@@ -238,6 +257,12 @@ export default function LiveNutritionSheet({
   const sheetH = height - FULL_Y;
   const origin = getFoodOriginCopy(summary);
   const freshnessColor = getFreshnessColor(summary.freshness.tone);
+  const correctionOptions = (summary.correctionOptions ?? [])
+    .filter((option) => option.label.trim())
+    .filter((option, index, arr) =>
+      arr.findIndex((item) => item.label.toLowerCase() === option.label.toLowerCase()) === index
+    )
+    .slice(0, 8);
   return (
     <Animated.View
       style={[
@@ -306,34 +331,42 @@ export default function LiveNutritionSheet({
         {isLowConfidence && (
           <View style={styles.lowConfCard}>
             <Text style={styles.lowConfTitle}>
-              Is this Amala, Semo, or Pounded Yam?
+              What food is this?
             </Text>
-            <Text style={styles.lowConfSub}>Choose the correct one:</Text>
-            <View style={styles.chipGrid}>
-              {SWALLOW_OPTIONS.map((opt) => (
-                <Pressable
-                  key={opt}
-                  onPress={() => {
-                    onFoodCorrection(opt);
-                    setCorrecting(false);
-                  }}
-                  style={[
-                    styles.chip,
-                    summary.detectedItems[0]?.label === opt && styles.chipActive,
-                  ]}
-                >
-                  <Text
-                    style={[
-                      styles.chipText,
-                      summary.detectedItems[0]?.label === opt &&
-                        styles.chipTextActive,
-                    ]}
-                  >
-                    {opt}
-                  </Text>
-                </Pressable>
-              ))}
-            </View>
+            {correctionOptions.length > 0 ? (
+              <>
+                <Text style={styles.lowConfSub}>Choose the closest match from this scan:</Text>
+                <View style={styles.chipGrid}>
+                  {correctionOptions.map((option) => (
+                    <Pressable
+                      key={`${option.label}-${option.type ?? "food"}`}
+                      onPress={() => {
+                        onFoodCorrection(option);
+                        setCorrecting(false);
+                      }}
+                      style={[
+                        styles.chip,
+                        summary.detectedItems[0]?.label === option.label && styles.chipActive,
+                      ]}
+                    >
+                      <Text
+                        style={[
+                          styles.chipText,
+                          summary.detectedItems[0]?.label === option.label &&
+                            styles.chipTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </View>
+              </>
+            ) : (
+              <Text style={styles.lowConfSub}>
+                No close match came back from the detector. Try another scan in good light.
+              </Text>
+            )}
           </View>
         )}
         {!isLowConfidence && (
@@ -473,20 +506,26 @@ export default function LiveNutritionSheet({
             {correcting ? (
               <View>
                 <Text style={styles.sectionLabel}>Change the food</Text>
-                <View style={styles.chipGrid}>
-                  {SWALLOW_OPTIONS.map((opt) => (
-                    <Pressable
-                      key={opt}
-                      onPress={() => {
-                        onFoodCorrection(opt);
-                        setCorrecting(false);
-                      }}
-                      style={styles.chip}
-                    >
-                      <Text style={styles.chipText}>{opt}</Text>
-                    </Pressable>
-                  ))}
-                </View>
+                {correctionOptions.length > 0 ? (
+                  <View style={styles.chipGrid}>
+                    {correctionOptions.map((option) => (
+                      <Pressable
+                        key={`${option.label}-${option.type ?? "food"}`}
+                        onPress={() => {
+                          onFoodCorrection(option);
+                          setCorrecting(false);
+                        }}
+                        style={styles.chip}
+                      >
+                        <Text style={styles.chipText}>{option.label}</Text>
+                      </Pressable>
+                    ))}
+                  </View>
+                ) : (
+                  <Text style={styles.lowConfSub}>
+                    No close match came back from the detector. Try another scan in good light.
+                  </Text>
+                )}
               </View>
             ) : (
               <Pressable

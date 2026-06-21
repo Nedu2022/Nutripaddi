@@ -19,7 +19,7 @@ type CameraOverlayProps = {
   scanState:   ScanState;
 };
 const TIPS = [
-  "Place your food inside the frame",
+  "Scanning automatically. Hold steady",
   "Good lighting gives better results",
   "Include all food items in the frame",
   "Hold the phone steady for a moment",
@@ -32,7 +32,7 @@ const DETECTING_MSGS = [
   "Almost there…",
 ];
 const STATE_TEXT: Partial<Record<ScanState, string>> = {
-  scanning:       "Hold steady for better detection",
+  scanning:       "Scanning automatically. Hold steady",
   good_match:     "Food detected",
   low_confidence: "Confirm the food below",
   poor_image:     "Couldn't see clearly. Try again",
@@ -138,7 +138,7 @@ export default function CameraOverlay({
 const styles = StyleSheet.create({
   vignette: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(0,0,0,0.16)",
+    backgroundColor: "rgba(0,0,0,0.05)",
   },
   frameZone: {
     position:       "absolute",

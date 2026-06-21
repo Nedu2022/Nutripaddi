@@ -1,15 +1,12 @@
 import type { NutritionEstimate } from "./nutrition";
 import type { FreshnessEstimate } from "./freshness";
 
-export type DetectedFoodType =
-  | "swallow"
-  | "soup"
-  | "protein"
-  | "rice"
-  | "beans"
-  | "yam"
-  | "plantain"
-  | "unknown";
+export type DetectedFoodType = string;
+
+export type FoodCorrectionOption = {
+  label: string;
+  type?: DetectedFoodType;
+};
 
 export type DetectedFoodItem = {
   id: string;
@@ -41,6 +38,7 @@ export type DetectedMealSummary = {
   portion: DetectedMealPortion;
   localPortionLabel: string;
   detectedItems: DetectedFoodItem[];
+  correctionOptions?: FoodCorrectionOption[];
   nutrition: NutritionEstimate;
   freshness: FreshnessEstimate;
   advice: string;

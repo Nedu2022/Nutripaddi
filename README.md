@@ -4,32 +4,36 @@
   <img src="assets/images/logo.png" alt="NutriPadi logo" width="260" />
 </p>
 
-NutriPadi is an AI-powered African food analysis and nutrition coaching mobile app. It helps users scan meals, estimate nutrients, save meal history, receive personalized nutrition guidance, and contribute food images that can improve future model quality for underrepresented African cuisines.
+NutriPadi is an AI-powered food analysis and nutrition coaching mobile app with deep focus on African meals across countries. It helps users live-scan meals, estimate nutrients, save meal history, receive personalized nutrition guidance, and contribute food images that can improve future model quality for underrepresented African cuisines.
 
 The product is built as a real mobile-first AI application: the phone handles camera capture and user experience, Supabase handles authentication and user-owned data, and server-side Edge Functions protect AI, vision, and upload secrets.
 
-![NutriPadi scan illustration](assets/images/onboarding_scan_new.png)
-
 ## What The Application Does
 
-- Scans African meals from camera or gallery images.
-- Detects meal components such as swallow, soup, rice, beans, plantain, protein, and other local foods.
+- Live-scans meals from the camera without requiring a shutter tap, with gallery upload as a fallback.
+- Detects food from any cuisine while giving stronger country-aware coverage for African foods.
+- Uses local African food names when the country or location is known, without forcing Western or non-African meals into African labels.
+- Returns dynamic correction options from the detector for the current scan instead of relying on a fixed hardcoded food list in the mobile app.
 - Estimates calories, macros, fibre, freshness, portion size, and practical food advice.
 - Stores meal logs and visual nutrition history for each authenticated user.
 - Personalizes AI coaching with profile context such as life stage, location, goals, language, and health notes.
+- Gives coach and scan advice in plain everyday language that matches the selected country/location and preferred language.
 - Supports maternal nutrition contexts for pregnancy and nursing without assuming those states for general users.
 - Collects consented dataset contributions for future food-recognition improvements.
 - Loads nutrition lessons, meal suggestions, feedback questions, research metrics, and quick coach prompts from Supabase.
+- Uses illustration-style onboarding artwork instead of AI-generated slide images.
 
 ## AI/ML Engineering Highlights
 
 NutriPadi is designed to demonstrate AI product engineering rather than only model prompting.
 
 - **Vision inference boundary:** image analysis runs through the `detect-food` Supabase Edge Function, keeping model keys and provider logic outside the mobile app.
-- **Structured model output:** the food vision prompt asks for strict JSON containing image quality, meal name, confidence, detected items, item coordinates, nutrition estimates, freshness, and advice.
+- **Structured model output:** the food vision prompt asks for strict JSON containing image quality, meal name, confidence, detected items, item coordinates, dynamic correction options, nutrition estimates, freshness, and advice.
 - **Hybrid recognition strategy:** the detection function can combine Gemini Vision output with a FoodScan classifier endpoint hosted on Hugging Face Spaces.
 - **Typed post-processing:** raw model responses are normalized into `FoodDetectionResult` and `DetectedMealSummary` before the UI renders markers, nutrition sheets, and save actions.
+- **Flexible food taxonomy:** detected food type is treated as a broad backend-provided grouping, not a locked frontend enum, so new African country foods and global foods can be added without shipping a new correction list in the app.
 - **Profile-aware personalization:** the coach and vision flows use profile context to tailor advice by goal, location, language, life stage, and calorie target.
+- **Localized response style:** AI coach responses vary wording and use layman-friendly language that fits the user-selected country or location.
 - **Human feedback loop:** dataset contributions store consented food labels and images, creating a path toward better African-food evaluation and training data.
 - **Safety and privacy boundary:** user data is protected with Supabase Auth and Row Level Security, while AI provider secrets stay server-side.
 
@@ -67,7 +71,7 @@ sequenceDiagram
   participant D as Supabase Postgres
   participant S as Upload Function
 
-  U->>M: Capture or select meal image
+  U->>M: Point camera at meal or select image
   M->>I: Resize and compress image
   I-->>M: Base64 image payload
   M->>F: Send image and profile context
@@ -76,8 +80,9 @@ sequenceDiagram
   and Optional classifier
     F->>C: Request food classification
   end
-  F-->>M: Normalized detection result
+  F-->>M: Normalized detection result and correction options
   M->>M: Render item markers and nutrition sheet
+  U->>M: Confirm or correct likely match
   U->>M: Save meal
   M->>S: Upload meal image
   S-->>M: Public image URL
@@ -217,6 +222,16 @@ Supabase is the source of truth for authenticated application data.
 - The mobile app only receives public Supabase keys and authenticated user sessions.
 - Image upload is abstracted behind `upload-image`, so storage can be changed without rewriting scan or dataset screens.
 
+## Food Coverage Strategy
+
+NutriPadi should detect food from anywhere, while giving special depth to Africa.
+
+- African food support is country-aware, not Nigeria-only. The detector prompt covers North, West, Central, East, and Southern African food patterns.
+- Western, Asian, Middle Eastern, and mixed meals should be named plainly when scanned, not forced into an African category.
+- Food correction options come from the backend per scan through `correctionOptions`; the mobile app only displays those likely matches.
+- The long-term source of truth should be a backend food catalogue with country, local names, aliases, visual lookalikes, ingredients, preparation method, and nutrition profile.
+- True “every country in Africa” quality requires real labeled images and evaluation sets, not just prompt rules.
+
 ## Local Setup
 
 ### Prerequisites
@@ -280,8 +295,9 @@ npm run lint    # Run Expo lint
 
 ## AI/ML Roadmap
 
-- Add an evaluation set for African meal recognition and portion-size estimation.
-- Track model confidence, correction events, and failed scans for measurable iteration.
+- Build a country-aware African food catalogue with aliases, local names, and visual lookalike groups.
+- Add evaluation sets for African meal recognition, non-African food recognition, and portion-size estimation.
+- Track model confidence, dynamic correction events, and failed scans for measurable iteration.
 - Promote consented dataset contributions into a review queue for dataset curation.
 - Add offline fallback rules for common meals when network inference is unavailable.
 - Create model/version metadata on saved meals so nutrition estimates can be audited later.

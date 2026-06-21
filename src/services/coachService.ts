@@ -78,6 +78,12 @@ function buildProfileContext(profile: ProfileData): string {
   const lang = profile.language ? LANGUAGE_NAMES[profile.language] : undefined;
   if (lang) lines.push(`- Preferred language: ${lang} (reply in ${lang})`);
 
+  lines.push(
+    profile.location
+      ? `- Response style: Use simple everyday words that a lay person in ${profile.location} can understand. Match the common way people talk about food in that country or area, including familiar local food names. Avoid medical grammar, textbook terms, and big nutrition words unless you explain them simply.`
+      : "- Response style: Use simple everyday words that a lay person can understand. Avoid medical grammar, textbook terms, and big nutrition words unless you explain them simply."
+  );
+
   return lines.join("\n");
 }
 

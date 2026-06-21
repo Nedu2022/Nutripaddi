@@ -11,17 +11,6 @@ const API_URL =
 
 const USER_STATUSES = new Set(["pregnant", "breastfeeding", "other"]);
 
-const FOOD_TYPES = [
-  "swallow",
-  "soup",
-  "protein",
-  "rice",
-  "beans",
-  "yam",
-  "plantain",
-  "unknown",
-];
-
 function normalizeUserStatus(value: unknown) {
   const status = typeof value === "string" ? value.trim().toLowerCase() : "";
   return USER_STATUSES.has(status) ? status : null;
@@ -43,7 +32,7 @@ function normalizeAdviceSource(value: unknown) {
   return source === "mamabot" || source === "rules" ? source : undefined;
 }
 
-const BASE_PROMPT = `You are NutriPadi's food vision model for Nigerian and West/East African meals.
+const BASE_PROMPT = `You are NutriPadi's food vision model for meals from every African country.
 Look at the photo and return ONLY a JSON object (no markdown) with this exact shape:
 
 {
@@ -52,7 +41,8 @@ Look at the photo and return ONLY a JSON object (no markdown) with this exact sh
   "confidence": number,
   "portion": "small" | "normal" | "large",
   "localPortionLabel": string,
-  "items": [ { "label": string, "type": "swallow"|"soup"|"protein"|"rice"|"beans"|"yam"|"plantain"|"unknown", "confidence": number, "point": { "x": number, "y": number } } ],
+  "items": [ { "label": string, "type": string, "confidence": number, "point": { "x": number, "y": number } } ],
+  "correctionOptions": [ { "label": string, "type": string } ],
   "nutrition": { "calories": number, "carbs": number, "protein": number, "fat": number, "fibre": number },
   "freshness": { "score": number, "label": string, "tone": "good"|"caution"|"risk", "summary": string, "signals": [string], "storageTip": string },
   "advice": string
@@ -60,18 +50,26 @@ Look at the photo and return ONLY a JSON object (no markdown) with this exact sh
 
 Rules:
 - If the image is not food or you cannot tell, set "imageQuality":"poor".
+- Cover all African countries, not only Nigeria. Think of North, West, Central, East, and Southern African foods.
+- Use the exact local or country name when you can see it clearly, such as injera, doro wat, shiro, tibs, ugali, sukuma wiki, nyama choma, matoke, waakye, banku, kenkey, thieboudienne, attieke, ndole, eru, couscous, tagine, shakshuka, ful medames, sadza, nshima, pap, chakalaka, jollof, egusi, ewedu, amala, eba, fufu, and similar local foods.
+- Do not force a Nigerian name on a food from another country. If two countries have similar-looking foods, choose a broader name and lower the confidence.
+- "type" is only a broad food group for UI grouping, not the food catalogue. Use simple lowercase group words like soup, protein, rice, beans, cassava, maize, grain, bread, pasta, vegetable, fruit, dairy, snack, drink, or another broad group if those do not fit.
+- "correctionOptions" must be generated from this image and likely local variants. Include 3 to 6 close possible matches when confidence is below 85 or the food has common lookalikes; otherwise return an empty array. Do not use a fixed generic list.
 - The "items" array is the per-food breakdown, NOT the overall meal name. Do not put the combined dish name (e.g. "Eba and Edikang Ikong Soup") in items; put each separate food instead.
 - List EVERY distinct food as its own item, including each protein you can see individually: fish, meat, chicken, kpomo/ponmo (cow skin), egg, snail, as well as the swallow, the soup or stew, and the rice. For example a plate of eba with edikang ikong soup, fish and kpomo should list eba, edikang ikong, fish and kpomo as separate items.
+- Be specific with tubers and fried sides. Fried potato, potato chips or fries must be labelled as potato, not boiled yam. Boiled/fried yam should be yam. Eba, fufu, amala, semo and pounded yam are swallow.
 - For every item, set point.x and point.y to where that food sits in the photo, as fractions from 0 to 1 (x: 0 = left edge, 1 = right edge; y: 0 = top, 1 = bottom). Point to the centre of that food on the plate so a marker can be drawn on it.
 - Nutrition is for the WHOLE plate shown; use realistic numbers (kcal, grams).
 - advice: one short, warm, friendly sentence with a practical tip, tailored to the user profile below when one is given. Suggest an affordable local food to add if protein, iron or fibre looks low.
-- Keep all text short and plain. Reply in English.`;
+- Keep all text short and plain. Use layman language, not textbook or hospital language.
+- When a location or preferred language is given, make every user-facing text sound natural for that country or area. Use familiar local food names and simple everyday wording.
+- Reply in the preferred language when one is given; otherwise reply in simple English.`;
 
 function buildPrompt(profileContext: string) {
   if (!profileContext) return BASE_PROMPT;
   return (
     BASE_PROMPT +
-    `\n\nUSER PROFILE. Base the single advice sentence strictly on this person's goals, eating habits, health concerns and life stage. Only mention pregnancy, a baby, breastfeeding or antenatal care if it clearly says the user is pregnant or nursing; otherwise speak to them as an everyday adult.\n${profileContext}`
+    `\n\nUSER PROFILE. Base every user-facing text on this person's language, location, goals, eating habits, health concerns and life stage. Match the country or location in the profile. Use words a lay person there will understand. Only mention pregnancy, a baby, breastfeeding or antenatal care if it clearly says the user is pregnant or nursing; otherwise speak to them as an everyday adult.\n${profileContext}`
   );
 }
 
@@ -106,17 +104,6 @@ function prettify(key: string) {
     .trim();
 }
 
-function inferType(key: string) {
-  const k = key.toLowerCase();
-  if (/(soup|wat|ewedu|gbegiri|ndole|\beru\b|ogbono|okro|egusi|pepper|stew|shiro|ofeowerri)/.test(k)) return "soup";
-  if (/(rice|jollof|waakye|pilau|pilau|nyama)/.test(k)) return "rice";
-  if (/(plantain|dodo|boli|bole|matoke)/.test(k)) return "plantain";
-  if (/(beans|ewa|moin|akara|githeri)/.test(k)) return "beans";
-  if (/(yam|amala|asaro|fufu|eba|ugali|mukimo|semo|pounded|genfo)/.test(k)) return "swallow";
-  if (/(suya|tibs|kitfo|siga|nyamachoma|kukuchoma|chicken|beef|fish|egg|doro|meat|kikil)/.test(k)) return "protein";
-  return "unknown";
-}
-
 function num(value: unknown, fallback: number) {
   const n = typeof value === "string" ? Number(value) : value;
   return typeof n === "number" && Number.isFinite(n) ? n : fallback;
@@ -148,7 +135,29 @@ function readPoint(raw: unknown): { x: number; y: number } | null {
 
 function normalizeType(value: unknown) {
   const t = typeof value === "string" ? value.toLowerCase().trim() : "";
-  return FOOD_TYPES.includes(t) ? t : "unknown";
+  const normalized = t.replace(/[^a-z0-9\s_-]/g, "").replace(/\s+/g, "_");
+  return normalized || "unknown";
+}
+
+function readCorrectionOptions(value: unknown) {
+  const raw = Array.isArray(value) ? value : [];
+  const options: { label: string; type?: string }[] = [];
+  const seen = new Set<string>();
+
+  for (const item of raw) {
+    const label =
+      typeof item === "string" ? str(item, "") : str((item as any)?.label, "");
+    if (!label) continue;
+    const key = label.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    const type =
+      typeof item === "string" ? undefined : normalizeType((item as any)?.type);
+    options.push({ label, ...(type && type !== "unknown" ? { type } : {}) });
+    if (options.length >= 8) break;
+  }
+
+  return options;
 }
 
 function normalizeTone(value: unknown) {
@@ -367,7 +376,7 @@ Deno.serve(async (request) => {
     if (items.length === 0) {
       items.push({
         label: mealName,
-        type: bestPt && mealName === bestPt.name ? inferType(bestPt.key) : "unknown",
+        type: bestPt && mealName === bestPt.name ? normalizeType(bestPt.key) : "unknown",
         confidence,
         point: null,
       });
@@ -391,6 +400,8 @@ Deno.serve(async (request) => {
     const n = (parsed.nutrition ?? {}) as Record<string, unknown>;
     const f = (parsed.freshness ?? {}) as Record<string, unknown>;
     const backendAdvice = str(bestPt?.advice, "");
+    const localAdvice = str(parsed.advice, "");
+    const correctionOptions = readCorrectionOptions(parsed.correctionOptions);
 
     const result = {
       advice_source: bestPt?.adviceSource,
@@ -403,6 +414,7 @@ Deno.serve(async (request) => {
           : "normal",
         localPortionLabel: str(parsed.localPortionLabel, "1 normal portion"),
         detectedItems,
+        correctionOptions,
         nutrition: {
           calories: Math.round(num(n.calories, 0)),
           carbs: Math.round(num(n.carbs, 0)),
@@ -425,7 +437,7 @@ Deno.serve(async (request) => {
           disclaimer:
             "Freshness is a visual guess. When in doubt, do not eat it.",
         },
-        advice: backendAdvice || str(parsed.advice, "Looks like a balanced plate. Keep it up!"),
+        advice: localAdvice || backendAdvice || "Looks like a balanced plate. Keep it up!",
       },
       user_status: userStatus,
     };
