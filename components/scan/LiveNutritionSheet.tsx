@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import {
+  ActivityIndicator,
   Image,
   PanResponder,
   Pressable,
@@ -62,6 +63,8 @@ type Props = {
   onFoodCorrection: (option: FoodCorrectionOption) => void;
   onSave: () => void;
   onClear: () => void;
+  isSaving?: boolean;
+  saveError?: string;
   savedMealTime?: string;
 };
 const LOW_ITEM_CONFIDENCE = 60;
@@ -94,10 +97,10 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
   const drink = summary.detectedItems.find((item) => item.type === "drink");
   if (swallow && soup) {
     return {
-      title: "African swallow and soup meal",
+      title: "Swallow and soup meal",
       description: `${swallow.label} is a starchy swallow served with ${soup.label}${
         protein ? ` and ${protein.label}` : ""
-      }. This kind of soft staple with soup or sauce is common in several African food cultures.`,
+      }. The estimate is based on the foods visible in this scan.`,
       pattern: `Swallow + soup${protein ? " + protein" : ""}`,
     };
   }
@@ -142,9 +145,9 @@ function getFoodOriginCopy(summary: DetectedMealSummary) {
     };
   }
   return {
-    title: "Mixed African meal",
+    title: "Mixed meal",
     description:
-      "NutriPadi matched the visible foods against African meal patterns and food groups before estimating nutrition.",
+      "NutriPadi matched the visible foods against meal patterns and food groups before estimating nutrition.",
     pattern: "Mixed plate",
   };
 }
@@ -156,6 +159,8 @@ export default function LiveNutritionSheet({
   onFoodCorrection,
   onSave,
   onClear,
+  isSaving = false,
+  saveError,
   savedMealTime,
 }: Props) {
   const { height } = useWindowDimensions();
@@ -363,9 +368,15 @@ export default function LiveNutritionSheet({
                 </View>
               </>
             ) : (
-              <Text style={styles.lowConfSub}>
-                No close match came back from the detector. Try another scan in good light.
-              </Text>
+              <View>
+                <Text style={styles.lowConfSub}>
+                  No close match came back from the detector. Try another scan in good light.
+                </Text>
+                <Pressable onPress={onClear} style={styles.retryInlineButton}>
+                  <RotateCcw color={G.warnText} size={15} />
+                  <Text style={styles.retryInlineText}>Scan again</Text>
+                </Pressable>
+              </View>
             )}
           </View>
         )}
@@ -392,7 +403,7 @@ export default function LiveNutritionSheet({
             </View>
           </>
         )}
-        <Text style={styles.sectionLabel}>Food origin</Text>
+        <Text style={styles.sectionLabel}>Match details</Text>
         <View style={styles.originCard}>
           <View style={styles.originIntro}>
             <View style={styles.originIcon}>
@@ -522,9 +533,15 @@ export default function LiveNutritionSheet({
                     ))}
                   </View>
                 ) : (
-                  <Text style={styles.lowConfSub}>
-                    No close match came back from the detector. Try another scan in good light.
-                  </Text>
+                  <View>
+                    <Text style={styles.lowConfSub}>
+                      No close match came back from the detector. Try another scan in good light.
+                    </Text>
+                    <Pressable onPress={onClear} style={styles.retryInlineButton}>
+                      <RotateCcw color={G.warnText} size={15} />
+                      <Text style={styles.retryInlineText}>Scan again</Text>
+                    </Pressable>
+                  </View>
                 )}
               </View>
             ) : (
@@ -549,9 +566,18 @@ export default function LiveNutritionSheet({
         )}
       </ScrollView>
       <View style={styles.actions}>
-        <Pressable onPress={onSave} style={styles.saveButton}>
-          <Save color={COLORS.white} size={18} />
-          <Text style={styles.saveButtonText}>Save meal</Text>
+        {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
+        <Pressable
+          disabled={isSaving}
+          onPress={onSave}
+          style={[styles.saveButton, isSaving && styles.saveButtonDisabled]}
+        >
+          {isSaving ? (
+            <ActivityIndicator color={COLORS.white} size="small" />
+          ) : (
+            <Save color={COLORS.white} size={18} />
+          )}
+          <Text style={styles.saveButtonText}>{isSaving ? "Saving..." : "Save meal"}</Text>
         </Pressable>
         {snap !== "full" && (
           <Pressable
@@ -1045,6 +1071,24 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     marginBottom: 12,
   },
+  retryInlineButton: {
+    alignSelf: "flex-start",
+    minHeight: 38,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: G.warnBorder,
+    backgroundColor: "rgba(255,255,255,0.42)",
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 7,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  retryInlineText: {
+    color: G.warnText,
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+  },
   chipGrid: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -1117,10 +1161,20 @@ const styles = StyleSheet.create({
     shadowRadius: 18,
     shadowOffset: { width: 0, height: 6 },
   },
+  saveButtonDisabled: {
+    opacity: 0.72,
+  },
   saveButtonText: {
     color: COLORS.white,
     fontSize: 15,
     fontFamily: FONTS.bold,
+  },
+  saveErrorText: {
+    color: "#D14343",
+    fontSize: 12,
+    fontFamily: FONTS.bold,
+    lineHeight: 17,
+    textAlign: "center",
   },
   editButton: {
     minHeight: 46,

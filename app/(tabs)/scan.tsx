@@ -90,6 +90,9 @@ export default function ScanTab() {
   const [summary, setSummary]       = useState<DetectedMealSummary | null>(null);
   const [sheetSnap, setSheetSnap]   = useState<SheetSnap>("hidden");
   const [savedTime, setSavedTime]   = useState<string | undefined>();
+  const [isSaving, setIsSaving]     = useState(false);
+  const [saveError, setSaveError]   = useState<string | undefined>();
+  const [scanMisses, setScanMisses] = useState(0);
   const liveScanInFlightRef = useRef(false);
   const lastLiveScanAtRef = useRef(0);
   const isSaved = scanState === "saved";
@@ -101,6 +104,7 @@ export default function ScanTab() {
     setDetections([]);
     setSummary(null);
     setSheetSnap("hidden");
+    setScanMisses((count) => (options?.keepScanning ? count + 1 : count));
     setScanState((prev) => {
       if (prev === "saved") return prev;
       return options?.keepScanning ? "scanning" : "no_food";
@@ -119,22 +123,15 @@ export default function ScanTab() {
       return false;
     }
     setIsPaused(true);
+    setScanMisses(0);
+    setSaveError(undefined);
     setScanState((prev) => {
       if (prev === "saved") return prev;
       return result.summary!.confidence >= 80 ? "good_match" : "low_confidence";
     });
     setDetections(result.summary.detectedItems);
-    setSummary((prev) => {
-      if (!prev) {
-        setSheetSnap("half");
-        return result.summary;
-      }
-      return {
-        ...prev,
-        detectedItems: result.summary!.detectedItems,
-        mealName: result.summary!.mealName,
-      };
-    });
+    setSummary(result.summary);
+    setSheetSnap("half");
     return true;
   }, [reportNoFood]);
   const handleCameraReady = useCallback(async () => {
@@ -146,7 +143,7 @@ export default function ScanTab() {
     } catch {
     }
   }, []);
-  const scanCameraFrame = useCallback(async () => {
+  const scanCameraFrame = useCallback(async (force = false) => {
     if (
       !permission?.granted ||
       !cameraReady ||
@@ -160,7 +157,7 @@ export default function ScanTab() {
     }
 
     const now = Date.now();
-    if (now - lastLiveScanAtRef.current < MIN_LIVE_SCAN_GAP_MS) return;
+    if (!force && now - lastLiveScanAtRef.current < MIN_LIVE_SCAN_GAP_MS) return;
 
     liveScanInFlightRef.current = true;
     lastLiveScanAtRef.current = now;
@@ -209,8 +206,8 @@ export default function ScanTab() {
   }, [capturedUri, isPaused, isSaved, permission?.granted]);
   useEffect(() => {
     if (!permission?.granted || !cameraReady || isPaused || capturedUri || isSaved) return;
-    scanCameraFrame();
-    const timer = setInterval(scanCameraFrame, LIVE_SCAN_INTERVAL_MS);
+    scanCameraFrame(false);
+    const timer = setInterval(() => scanCameraFrame(false), LIVE_SCAN_INTERVAL_MS);
     return () => clearInterval(timer);
   }, [
     cameraReady,
@@ -231,6 +228,8 @@ export default function ScanTab() {
       setCapturedUri(uri);
       setIsPaused(true);
       setIsDetecting(true);
+      setSaveError(undefined);
+      setScanMisses(0);
       setScanState("detecting");
       try {
         const detection = await withTimeout(
@@ -245,12 +244,18 @@ export default function ScanTab() {
       }
     }
   };
+  const handleScanNow = () => {
+    if (isDetecting || isCapturing || !cameraActive || isPaused || isSaved) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    scanCameraFrame(true);
+  };
   const flipCamera = () => {
     if (capturedUri) return;
     setFacing((f) => (f === "back" ? "front" : "back"));
   };
   const handleFoodCorrection = (option: FoodCorrectionOption) => {
     if (!summary) return;
+    setSaveError(undefined);
     const targetIndex = summary.detectedItems.findIndex((item) => item.confidence < 70);
     const correctionIndex = targetIndex >= 0 ? targetIndex : 0;
     const updatedItems: DetectedFoodItem[] = summary.detectedItems.map((item, index) =>
@@ -266,28 +271,37 @@ export default function ScanTab() {
     setScanState("good_match");
   };
   const handleSave = async () => {
-    if (!summary) return;
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    const uploadedImage =
-      capturedUri && !capturedUri.includes("preview")
-        ? await uploadImage({ folder: "meals", uri: capturedUri })
-        : null;
-    const saved = await saveMeal({
-      mealName:       summary.mealName,
-      calories:       summary.nutrition.calories,
-      carbs:          summary.nutrition.carbs,
-      protein:        summary.nutrition.protein,
-      fat:            summary.nutrition.fat,
-      fibre:          summary.nutrition.fibre,
-      freshnessScore: summary.freshness.score,
-      freshnessLabel: summary.freshness.label,
-      portionLabel:   summary.localPortionLabel,
-      imageUri:       uploadedImage?.secureUrl ?? uploadedImage?.url,
-      aiObservation:  summary.advice,
-    });
-    setSavedTime(saved.timeLogged);
-    setScanState("saved");
-    setSheetSnap("collapsed");
+    if (!summary || isSaving) return;
+    setIsSaving(true);
+    setSaveError(undefined);
+    try {
+      const uploadedImage =
+        capturedUri && !capturedUri.includes("preview")
+          ? await uploadImage({ folder: "meals", uri: capturedUri })
+          : null;
+      const saved = await saveMeal({
+        mealName:       summary.mealName,
+        calories:       summary.nutrition.calories,
+        carbs:          summary.nutrition.carbs,
+        protein:        summary.nutrition.protein,
+        fat:            summary.nutrition.fat,
+        fibre:          summary.nutrition.fibre,
+        freshnessScore: summary.freshness.score,
+        freshnessLabel: summary.freshness.label,
+        portionLabel:   summary.localPortionLabel,
+        imageUri:       uploadedImage?.secureUrl ?? uploadedImage?.url,
+        aiObservation:  summary.advice,
+      });
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      setSavedTime(saved.timeLogged);
+      setScanState("saved");
+      setSheetSnap("collapsed");
+    } catch {
+      setSaveError("Could not save this meal. Check your connection and try again.");
+      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
+    } finally {
+      setIsSaving(false);
+    }
   };
   const resetScan = () => {
     setCapturedUri(null);
@@ -297,6 +311,9 @@ export default function ScanTab() {
     setSheetSnap("hidden");
     setIsPaused(false);
     setIsDetecting(false);
+    setIsSaving(false);
+    setSaveError(undefined);
+    setScanMisses(0);
     setSavedTime(undefined);
   };
   if (!permission?.granted) {
@@ -317,6 +334,7 @@ export default function ScanTab() {
   const showCaptureDock = (sheetSnap === "hidden" || sheetSnap === "collapsed") && scanState !== "saved";
   const hasCapture      = !!(summary || capturedUri);
   const scanActive      = cameraActive && !isPaused && !isSaved;
+  const waitingLong     = scanMisses >= 2 && scanState === "scanning";
   return (
     <View style={styles.container}>
       {!cameraActive ? (
@@ -385,6 +403,12 @@ export default function ScanTab() {
           </Pressable>
         </View>
       )}
+      {waitingLong && (
+        <View style={[styles.scanHelpCard, { bottom: insets.bottom + 134 }]}>
+          <Text style={styles.scanHelpTitle}>Still looking</Text>
+          <Text style={styles.scanHelpText}>Move closer, fill the frame, or tap the center button.</Text>
+        </View>
+      )}
       {showCaptureDock && (
         <Animated.View
           entering={FadeInUp.delay(220).duration(400)}
@@ -398,13 +422,18 @@ export default function ScanTab() {
               ? <RotateCcw color="rgba(255,255,255,0.92)" size={22} />
               : <ImagePlus  color="rgba(255,255,255,0.92)" size={22} />}
           </Pressable>
-          <View style={[styles.liveScanRing, (isDetecting || isCapturing) && styles.liveScanRingActive]}>
+          <Pressable
+            accessibilityLabel="Scan now"
+            disabled={isDetecting || isCapturing || !cameraActive || isPaused}
+            onPress={handleScanNow}
+            style={[styles.liveScanRing, (isDetecting || isCapturing) && styles.liveScanRingActive]}
+          >
             {isDetecting || isCapturing ? (
               <ActivityIndicator color="#00D26A" size="large" />
             ) : (
               <ScanLine color="rgba(255,255,255,0.94)" size={34} />
             )}
-          </View>
+          </Pressable>
           <Pressable
             onPress={flipCamera}
             disabled={!!capturedUri}
@@ -425,6 +454,8 @@ export default function ScanTab() {
         onFoodCorrection={handleFoodCorrection}
         onSave={handleSave}
         onClear={resetScan}
+        isSaving={isSaving}
+        saveError={saveError}
         savedMealTime={savedTime}
       />
     </View>
@@ -543,6 +574,32 @@ const styles = StyleSheet.create({
     shadowRadius:    8,
     shadowOffset:    { width: 0, height: 3 },
     elevation:       4,
+  },
+  scanHelpCard: {
+    position:        "absolute",
+    left:            24,
+    right:           24,
+    zIndex:          24,
+    alignItems:      "center",
+    backgroundColor: "rgba(0,0,0,0.68)",
+    borderRadius:    16,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderWidth:     1,
+    borderColor:     "rgba(255,255,255,0.12)",
+  },
+  scanHelpTitle: {
+    color:      "#FFFFFF",
+    fontSize:   13,
+    fontFamily: FONTS.bold,
+    marginBottom: 3,
+  },
+  scanHelpText: {
+    color:      "rgba(255,255,255,0.70)",
+    fontSize:   12,
+    fontFamily: FONTS.medium,
+    textAlign:  "center",
+    lineHeight: 17,
   },
   captureDock: {
     position:       "absolute",

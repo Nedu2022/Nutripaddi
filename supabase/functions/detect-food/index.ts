@@ -32,7 +32,7 @@ function normalizeAdviceSource(value: unknown) {
   return source === "mamabot" || source === "rules" ? source : undefined;
 }
 
-const BASE_PROMPT = `You are NutriPadi's food vision model for meals from every African country.
+const BASE_PROMPT = `You are NutriPadi's food vision model for meals from anywhere in the world, with especially strong country-aware coverage for African foods.
 Look at the photo and return ONLY a JSON object (no markdown) with this exact shape:
 
 {
@@ -50,9 +50,10 @@ Look at the photo and return ONLY a JSON object (no markdown) with this exact sh
 
 Rules:
 - If the image is not food or you cannot tell, set "imageQuality":"poor".
-- Cover all African countries, not only Nigeria. Think of North, West, Central, East, and Southern African foods.
+- Detect any visible food plainly. If it is pizza, burger, pasta, sandwich, noodles, salad, fries, sushi, shawarma, biryani, or any non-African meal, name it correctly and do not force it into an African label.
+- For African foods, cover all countries, not only Nigeria. Think of North, West, Central, East, and Southern African foods.
 - Use the exact local or country name when you can see it clearly, such as injera, doro wat, shiro, tibs, ugali, sukuma wiki, nyama choma, matoke, waakye, banku, kenkey, thieboudienne, attieke, ndole, eru, couscous, tagine, shakshuka, ful medames, sadza, nshima, pap, chakalaka, jollof, egusi, ewedu, amala, eba, fufu, and similar local foods.
-- Do not force a Nigerian name on a food from another country. If two countries have similar-looking foods, choose a broader name and lower the confidence.
+- Do not force a Nigerian name on a food from another country or a non-African food. If foods have similar-looking variants, choose a broader name and lower the confidence.
 - "type" is only a broad food group for UI grouping, not the food catalogue. Use simple lowercase group words like soup, protein, rice, beans, cassava, maize, grain, bread, pasta, vegetable, fruit, dairy, snack, drink, or another broad group if those do not fit.
 - "correctionOptions" must be generated from this image and likely local variants. Include 3 to 6 close possible matches when confidence is below 85 or the food has common lookalikes; otherwise return an empty array. Do not use a fixed generic list.
 - The "items" array is the per-food breakdown, NOT the overall meal name. Do not put the combined dish name (e.g. "Eba and Edikang Ikong Soup") in items; put each separate food instead.
@@ -288,7 +289,7 @@ Deno.serve(async (request) => {
           ],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 700,
+            maxOutputTokens: 900,
             responseMimeType: "application/json",
           },
         }),
