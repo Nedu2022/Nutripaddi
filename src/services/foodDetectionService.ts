@@ -11,7 +11,7 @@ export async function detectFoodFromImage(
   assertSupabaseConfigured();
 
   const [{ base64, mimeType }, scanContext] = await Promise.all([
-    prepareImageForUpload(imageUri, 1280),
+    prepareImageForUpload(imageUri, 1600),
     getProfileScanContext().catch(() => ({
       profileContext: null,
       userStatus: "other" as const,

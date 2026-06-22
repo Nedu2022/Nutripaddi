@@ -13,12 +13,14 @@ import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import type { DetectedFoodItem } from "@/src/types/detection";
 
-type ScanBox = { left: number; top: number; size: number };
+type ScanBox = { left: number; top: number; width: number; height: number };
+type ViewBounds = { left: number; top: number; right: number; bottom: number };
 
 type DetectionArrowProps = {
   item: DetectedFoodItem;
   index: number;
   box: ScanBox;
+  bounds: ViewBounds;
 };
 
 const LABEL_WIDTH = 128;
@@ -30,7 +32,7 @@ function clamp(value: number, min: number, max: number) {
   return Math.min(Math.max(value, min), max);
 }
 
-export default function DetectionArrow({ item, index, box }: DetectionArrowProps) {
+export default function DetectionArrow({ item, index, box, bounds }: DetectionArrowProps) {
   const opacity = useSharedValue(0);
   const translateY = useSharedValue(10);
   const pulse = useSharedValue(1);
@@ -48,20 +50,23 @@ export default function DetectionArrow({ item, index, box }: DetectionArrowProps
     );
   }, [index, opacity, pulse, translateY]);
 
-  const inner = box.size - EDGE * 2;
-  const dotX = box.left + EDGE + clamp(item.x, 0, 1) * inner;
-  const dotY = box.top + EDGE + clamp(item.y, 0, 1) * inner;
+  const innerW = Math.max(1, box.width - EDGE * 2);
+  const innerH = Math.max(1, box.height - EDGE * 2);
+  const rawDotX = box.left + EDGE + clamp(item.x, 0, 1) * innerW;
+  const rawDotY = box.top + EDGE + clamp(item.y, 0, 1) * innerH;
+  const dotX = clamp(rawDotX, bounds.left + EDGE, bounds.right - EDGE);
+  const dotY = clamp(rawDotY, bounds.top + EDGE, bounds.bottom - EDGE);
 
-  const labelAbove = dotY > box.top + box.size / 2;
+  const labelAbove = dotY > bounds.top + (bounds.bottom - bounds.top) / 2;
   const labelX = clamp(
     dotX - LABEL_WIDTH / 2,
-    box.left + EDGE,
-    box.left + box.size - LABEL_WIDTH - EDGE
+    bounds.left + EDGE,
+    bounds.right - LABEL_WIDTH - EDGE
   );
   const labelY = clamp(
     (labelAbove ? dotY - LABEL_HEIGHT - 16 : dotY + 16) + (STACK_OFFSETS[index] ?? 0),
-    box.top + EDGE,
-    box.top + box.size - LABEL_HEIGHT - EDGE
+    bounds.top + EDGE,
+    bounds.bottom - LABEL_HEIGHT - EDGE
   );
 
   const lineStartX = labelX + LABEL_WIDTH / 2;

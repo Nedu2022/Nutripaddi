@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from "react";
-import { ActivityIndicator, Pressable, StyleSheet, Text, View } from "react-native";
+import { ActivityIndicator, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import {
@@ -19,6 +19,7 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 import CustomButton from "@/components/CustomButton";
 import CameraOverlay from "@/components/scan/CameraOverlay";
 import LiveNutritionSheet from "@/components/scan/LiveNutritionSheet";
+import WebCameraView, { type WebCameraHandle } from "@/components/scan/WebCameraView";
 import { FONTS } from "@/constants/fonts";
 import { useLanguage } from "@/hooks/useLanguage";
 import {
@@ -76,7 +77,8 @@ export default function ScanTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
   const [permission, requestPermission] = useCameraPermissions();
-  const cameraRef = useRef<CameraView | null>(null);
+  const nativeCameraRef = useRef<CameraView | null>(null);
+  const webCameraRef = useRef<WebCameraHandle | null>(null);
   const [flashOn, setFlashOn]         = useState(false);
   const [facing, setFacing]           = useState<"back" | "front">("back");
   const [cameraReady, setCameraReady] = useState(false);
@@ -84,6 +86,7 @@ export default function ScanTab() {
   const [isPaused, setIsPaused]       = useState(false);
   const [isCapturing, setIsCapturing] = useState(false);
   const [capturedUri, setCapturedUri] = useState<string | null>(null);
+  const [sourceImageSize, setSourceImageSize] = useState<{ width: number; height: number } | null>(null);
   const [isDetecting, setIsDetecting] = useState(false);
   const [scanState, setScanState]   = useState<ScanState>("idle");
   const [detections, setDetections] = useState<DetectedFoodItem[]>([]);
@@ -96,6 +99,10 @@ export default function ScanTab() {
   const liveScanInFlightRef = useRef(false);
   const lastLiveScanAtRef = useRef(0);
   const isSaved = scanState === "saved";
+  const getCamera = useCallback(
+    () => (Platform.OS === "web" ? webCameraRef.current : nativeCameraRef.current),
+    []
+  );
 
   useEffect(() => {
     if (!permission?.granted && permission?.canAskAgain) requestPermission();
@@ -103,6 +110,7 @@ export default function ScanTab() {
   const reportNoFood = useCallback((options?: { keepScanning?: boolean; silent?: boolean }) => {
     setDetections([]);
     setSummary(null);
+    setSourceImageSize(null);
     setSheetSnap("hidden");
     setScanMisses((count) => (options?.keepScanning ? count + 1 : count));
     setScanState((prev) => {
@@ -137,17 +145,17 @@ export default function ScanTab() {
   const handleCameraReady = useCallback(async () => {
     setCameraReady(true);
     try {
-      const sizes = await cameraRef.current?.getAvailablePictureSizesAsync();
+      const sizes = await getCamera()?.getAvailablePictureSizesAsync();
       const sharpSize = chooseSharpPictureSize(sizes ?? []);
       if (sharpSize) setPictureSize(sharpSize);
     } catch {
     }
-  }, []);
+  }, [getCamera]);
   const scanCameraFrame = useCallback(async (force = false) => {
     if (
       !permission?.granted ||
       !cameraReady ||
-      !cameraRef.current ||
+      !getCamera() ||
       liveScanInFlightRef.current ||
       isPaused ||
       capturedUri ||
@@ -166,9 +174,11 @@ export default function ScanTab() {
     setScanState("detecting");
 
     try {
-      const photo = await cameraRef.current.takePictureAsync({
+      const photo = await getCamera()?.takePictureAsync({
         exif: false,
+        imageType: "jpg",
         quality: 1,
+        scale: Platform.OS === "web" ? 1 : undefined,
         skipProcessing: false,
       });
       const uri = photo?.uri;
@@ -183,6 +193,9 @@ export default function ScanTab() {
       });
       if (accepted) {
         setCapturedUri(uri);
+        if (photo?.width && photo?.height) {
+          setSourceImageSize({ width: photo.width, height: photo.height });
+        }
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       }
     } catch {
@@ -199,6 +212,7 @@ export default function ScanTab() {
     isPaused,
     isSaved,
     permission?.granted,
+    getCamera,
   ]);
   useEffect(() => {
     if (!permission?.granted || isPaused || capturedUri || isSaved) return;
@@ -224,8 +238,14 @@ export default function ScanTab() {
       quality: 1,
     });
     if (!result.canceled) {
-      const uri = result.assets[0]?.uri ?? "gallery-preview";
+      const asset = result.assets[0];
+      const uri = asset?.uri ?? "gallery-preview";
       setCapturedUri(uri);
+      setSourceImageSize(
+        asset?.width && asset.height
+          ? { width: asset.width, height: asset.height }
+          : null
+      );
       setIsPaused(true);
       setIsDetecting(true);
       setSaveError(undefined);
@@ -251,6 +271,8 @@ export default function ScanTab() {
   };
   const flipCamera = () => {
     if (capturedUri) return;
+    setCameraReady(false);
+    setPictureSize(undefined);
     setFacing((f) => (f === "back" ? "front" : "back"));
   };
   const handleFoodCorrection = (option: FoodCorrectionOption) => {
@@ -304,7 +326,13 @@ export default function ScanTab() {
     }
   };
   const resetScan = () => {
+    const hadCapture = !!capturedUri;
     setCapturedUri(null);
+    setSourceImageSize(null);
+    if (hadCapture) {
+      setCameraReady(false);
+      setPictureSize(undefined);
+    }
     setDetections([]);
     setSummary(null);
     setScanState("idle");
@@ -344,22 +372,34 @@ export default function ScanTab() {
           style={StyleSheet.absoluteFillObject}
         />
       ) : (
-        <CameraView
-          ref={cameraRef}
-          active={scanActive}
-          animateShutter={false}
-          autofocus="off"
-          enableTorch={flashOn}
-          facing={facing}
-          mode="picture"
-          onCameraReady={handleCameraReady}
-          pictureSize={pictureSize}
-          responsiveOrientationWhenOrientationLocked
-          style={StyleSheet.absoluteFillObject}
-        />
+        Platform.OS === "web" ? (
+          <WebCameraView
+            ref={webCameraRef}
+            active={scanActive}
+            enableTorch={flashOn}
+            facing={facing}
+            onCameraReady={handleCameraReady}
+            style={StyleSheet.absoluteFillObject}
+          />
+        ) : (
+          <CameraView
+            ref={nativeCameraRef}
+            active={scanActive}
+            animateShutter={false}
+            autofocus="on"
+            enableTorch={flashOn}
+            facing={facing}
+            mode="picture"
+            onCameraReady={handleCameraReady}
+            pictureSize={pictureSize}
+            responsiveOrientationWhenOrientationLocked
+            style={StyleSheet.absoluteFillObject}
+          />
+        )
       )}
       <CameraOverlay
         detections={detections}
+        imageSize={sourceImageSize}
         isDetecting={isDetecting || isCapturing}
         isPaused={isPaused}
         scanState={scanState}

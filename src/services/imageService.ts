@@ -23,7 +23,7 @@ async function rawBase64(uri: string): Promise<PreparedImage> {
   return { base64: await blobToBase64(blob), mimeType: blob.type || "image/jpeg" };
 }
 
-const JPEG_QUALITY = 0.92;
+const JPEG_QUALITY = 0.96;
 
 function resizeWebToBase64(uri: string, maxWidth: number): Promise<string> {
   return new Promise((resolve) => {
@@ -39,6 +39,8 @@ function resizeWebToBase64(uri: string, maxWidth: number): Promise<string> {
         canvas.height = height;
         const ctx = canvas.getContext("2d");
         if (!ctx) return resolve("");
+        ctx.imageSmoothingEnabled = true;
+        ctx.imageSmoothingQuality = "high";
         ctx.drawImage(img, 0, 0, width, height);
         resolve(canvas.toDataURL("image/jpeg", JPEG_QUALITY).split(",")[1] ?? "");
       } catch {

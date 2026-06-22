@@ -14,6 +14,7 @@ import { FONTS } from "@/constants/fonts";
 import type { DetectedFoodItem, ScanState } from "@/src/types/detection";
 type CameraOverlayProps = {
   detections:  DetectedFoodItem[];
+  imageSize?: { width: number; height: number } | null;
   isPaused:    boolean;
   isDetecting: boolean;
   scanState:   ScanState;
@@ -42,6 +43,7 @@ const STATE_TEXT: Partial<Record<ScanState, string>> = {
 };
 export default function CameraOverlay({
   detections,
+  imageSize,
   isPaused,
   isDetecting,
   scanState,
@@ -72,13 +74,27 @@ export default function CameraOverlay({
       -1, false,
     );
   }, [pulse, scanLine]);
+
+  const topPad = insets.top + 88;
+  const botPad = insets.bottom + 158;
+  const usableWidth = Math.max(240, width - 44);
+  const usableHeight = Math.max(280, height - topPad - botPad);
+  const frameSize = Math.max(220, Math.min(
+    Math.max(width * 0.78, 300),
+    usableWidth,
+    usableHeight * 0.62,
+    420
+  ));
+  const scanLineInset = Math.max(24, Math.round(frameSize * 0.1));
+  const scanLineTravel = Math.max(0, frameSize - scanLineInset * 2);
+
   const frameStyle = useAnimatedStyle(() => ({
     transform: [{ scale: pulse.value }],
   }));
   const lineStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: scanLine.value * 260 - 130 }],
+    transform: [{ translateY: scanLine.value * scanLineTravel }],
     opacity:   isPaused ? 0 : 0.85,
-  }));
+  }), [isPaused, scanLineTravel]);
   const visibleDetections = detections
     .filter((item, i, arr) => arr.findIndex((c) => c.id === item.id) === i)
     .slice(0, 4);
@@ -91,27 +107,63 @@ export default function CameraOverlay({
   const guidanceText = isDetecting
     ? DETECTING_MSGS[detectMsgIdx]
     : STATE_TEXT[scanState] ?? TIPS[tipIdx];
-  const topPad = insets.top + 88;
-  const botPad = insets.bottom + 158;
-
-  const FRAME_SIZE = 280;
-  const boxCenterY = (topPad + (height - botPad)) / 2;
-  const box = {
-    left: width / 2 - FRAME_SIZE / 2,
-    top: boxCenterY - FRAME_SIZE / 2,
-    size: FRAME_SIZE,
+  const sourceAspect =
+    imageSize?.width && imageSize.height
+      ? imageSize.width / imageSize.height
+      : width / Math.max(1, height);
+  const screenAspect = width / Math.max(1, height);
+  const previewBox =
+    sourceAspect > screenAspect
+      ? {
+          height,
+          left: (width - height * sourceAspect) / 2,
+          top: 0,
+          width: height * sourceAspect,
+        }
+      : {
+          height: width / sourceAspect,
+          left: 0,
+          top: (height - width / sourceAspect) / 2,
+          width,
+        };
+  const markerBounds = {
+    bottom: Math.max(topPad + 120, height - botPad + 64),
+    left: 8,
+    right: width - 8,
+    top: topPad - 28,
   };
 
   return (
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {!hasResult && <View style={styles.vignette} />}
       <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
-        <Animated.View style={hasResult ? undefined : frameStyle}>
+        <Animated.View
+          style={[
+            styles.frameWrap,
+            { width: frameSize, height: frameSize },
+            hasResult ? undefined : frameStyle,
+          ]}
+        >
+          {!hasResult && (
+            <View style={[styles.scanClip, { borderRadius: Math.max(18, frameSize * 0.06) }]}>
+              <Animated.View
+                style={[
+                  styles.scanLine,
+                  {
+                    top: scanLineInset,
+                    left: scanLineInset,
+                    width: frameSize - scanLineInset * 2,
+                  },
+                  lineStyle,
+                ]}
+              />
+            </View>
+          )}
           <ScanFrame
             color={hasResult ? "rgba(255,255,255,0.45)" : frameColor}
             glowing={isDetecting && !isPaused && !hasResult}
+            size={frameSize}
           />
-          {!hasResult && <Animated.View style={[styles.scanLine, lineStyle]} />}
         </Animated.View>
         {!hasResult && (
           <Text
@@ -127,7 +179,8 @@ export default function CameraOverlay({
       {visibleDetections.map((item, index) => (
         <DetectionArrow
           key={`${item.id}-${item.confidence}`}
-          box={box}
+          bounds={markerBounds}
+          box={previewBox}
           index={index}
           item={item}
         />
@@ -146,10 +199,15 @@ const styles = StyleSheet.create({
     alignItems:     "center",
     justifyContent: "center",
   },
+  frameWrap: {
+    position: "relative",
+  },
+  scanClip: {
+    ...StyleSheet.absoluteFillObject,
+    overflow: "hidden",
+  },
   scanLine: {
     position:        "absolute",
-    alignSelf:       "center",
-    width:           240,
     height:          2,
     borderRadius:    999,
     backgroundColor: "#00D26A",

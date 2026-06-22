@@ -12,6 +12,7 @@ import {
 } from "react-native";
 import {
   CheckCircle2,
+  ChevronDown,
   ChevronUp,
   Leaf,
   MapPin,
@@ -196,6 +197,16 @@ export default function LiveNutritionSheet({
           translateY.value = clamp(startY.current + g.dy, FULL_Y, HIDDEN_Y);
         },
         onPanResponderRelease: (_, g) => {
+          const order: SheetSnap[] = ["full", "half", "collapsed"];
+          const currentIndex = Math.max(0, order.indexOf(snap));
+          if (g.dy > 72 || g.vy > 0.8) {
+            onSnapChange(order[Math.min(order.length - 1, currentIndex + 1)]);
+            return;
+          }
+          if (g.dy < -72 || g.vy < -0.8) {
+            onSnapChange(order[Math.max(0, currentIndex - 1)]);
+            return;
+          }
           if (Math.abs(g.dy) < 6) {
             onSnapChange(snap === "full" ? "half" : "full");
             return;
@@ -236,9 +247,9 @@ export default function LiveNutritionSheet({
       >
         <BlurView intensity={78} tint="light" style={StyleSheet.absoluteFill} />
         <View style={styles.tintOverlay} />
-        <View {...panResponder.panHandlers} style={styles.dragArea}>
-          <View style={styles.handle} />
-        </View>
+      <View {...panResponder.panHandlers} style={styles.dragArea}>
+        <View style={styles.handle} />
+      </View>
         <View style={styles.savedContainer}>
           <View style={styles.savedIconWrap}>
             <CheckCircle2 color={COLORS.white} size={28} />
@@ -280,7 +291,11 @@ export default function LiveNutritionSheet({
       <View style={styles.tintOverlay} />
       <View {...panResponder.panHandlers} style={styles.dragArea}>
         <View style={styles.handle} />
-        <ChevronUp color={G.textLight} size={15} />
+        {snap === "full" ? (
+          <ChevronDown color={G.textLight} size={18} />
+        ) : (
+          <ChevronUp color={G.textLight} size={18} />
+        )}
       </View>
       <ScrollView
         keyboardShouldPersistTaps="handled"
@@ -683,14 +698,16 @@ const styles = StyleSheet.create({
     backgroundColor: G.bg,
   },
   dragArea: {
-    height: 36,
+    minHeight: 58,
+    paddingTop: 10,
+    paddingBottom: 8,
     alignItems: "center",
     justifyContent: "center",
-    gap: 2,
+    gap: 3,
   },
   handle: {
-    width: 40,
-    height: 4,
+    width: 58,
+    height: 5,
     borderRadius: 999,
     backgroundColor: G.handle,
   },
