@@ -267,6 +267,7 @@ export default function DashboardTab() {
   const [todayMeals, setTodayMeals] = useState<SavedMeal[]>([]);
   const [weeklyCalories, setWeeklyCalories] = useState<WeeklyCalories[]>([]);
   const [loadError, setLoadError] = useState("");
+  const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -310,8 +311,14 @@ export default function DashboardTab() {
   const greeting  = hour < 12 ? "Good morning" : hour < 18 ? "Good afternoon" : "Good evening";
   const displayName = profile?.nickname || profile?.fullName || "there";
   const avatarInitial = displayName.trim()[0]?.toUpperCase() ?? "N";
+  const profilePhotoUri = profile?.photoUri?.trim();
+  const showProfilePhoto = !!profilePhotoUri && !avatarLoadFailed;
   const streak = getCurrentStreak(weeklyCalories);
   const insight = todayMeals[0]?.aiObservation ?? "Scan or log a meal to get a personalized NutriPadi insight.";
+
+  useEffect(() => {
+    setAvatarLoadFailed(false);
+  }, [profilePhotoUri]);
 
   const todayDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -342,7 +349,16 @@ export default function DashboardTab() {
             <Text style={styles.streakText}>{streak}-day streak</Text>
           </View>
           <View style={styles.avatar}>
-            <Text style={styles.avatarText}>{avatarInitial}</Text>
+            {showProfilePhoto ? (
+              <Image
+                onError={() => setAvatarLoadFailed(true)}
+                resizeMode="cover"
+                source={{ uri: profilePhotoUri }}
+                style={styles.avatarImage}
+              />
+            ) : (
+              <Text style={styles.avatarText}>{avatarInitial}</Text>
+            )}
           </View>
         </View>
       </Animated.View>
@@ -615,6 +631,11 @@ const styles = StyleSheet.create({
     borderColor:     D.accent,
     alignItems:      "center",
     justifyContent:  "center",
+    overflow:        "hidden",
+  },
+  avatarImage: {
+    width:  "100%",
+    height: "100%",
   },
   avatarText: {
     color:      D.accent,
