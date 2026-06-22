@@ -42,6 +42,38 @@ const D = {
   light:    "#B0B8C4",
   border:   "#F0F0F0",
 };
+
+function formatElapsedTime(ms: number) {
+  const seconds = Math.max(0, Math.floor(ms / 1000));
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? "" : "s"} ago`;
+
+  const minutes = Math.floor(seconds / 60);
+  if (minutes < 60) return `${minutes} minute${minutes === 1 ? "" : "s"} ago`;
+
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hour${hours === 1 ? "" : "s"} ago`;
+
+  return null;
+}
+
+function formatCoachTime(message: ChatMessage, now: number) {
+  const rawTime = message.createdAt ?? Date.parse(message.timestamp);
+  const time = Number.isFinite(rawTime) ? rawTime : now;
+  const elapsed = formatElapsedTime(now - time);
+  if (elapsed) return elapsed;
+
+  const date = new Date(time);
+  const sameYear = date.getFullYear() === new Date(now).getFullYear();
+
+  return new Intl.DateTimeFormat(undefined, {
+    month: "short",
+    day: "numeric",
+    year: sameYear ? undefined : "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(date);
+}
+
 export default function AICoachTab() {
   const { t } = useLanguage();
   const insets = useSafeAreaInsets();
@@ -54,6 +86,7 @@ export default function AICoachTab() {
   const [streamingId, setStreamingId] = useState<string | null>(null);
   const [errorText, setErrorText] = useState<string | null>(null);
   const [failedMessage, setFailedMessage] = useState<string | null>(null);
+  const [clockNow, setClockNow] = useState(Date.now());
   const flatListRef = useRef<FlatList>(null);
   const isSendingRef = useRef(false);
   const historyLoadedRef = useRef(false);
@@ -97,11 +130,16 @@ export default function AICoachTab() {
     void saveCoachHistory(messages);
   }, [messages]);
 
+  useEffect(() => {
+    const timer = setInterval(() => setClockNow(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, []);
+
   const createMessage = (text: string, isUser: boolean): ChatMessage => ({
       id:        `msg-${Date.now()}-${isUser ? "u" : "ai"}`,
       text,
       isUser,
-      timestamp: "Just now",
+      timestamp: new Date().toISOString(),
       createdAt: Date.now(),
   });
   const runCoach = async (msg: string, history: ChatMessage[]) => {
@@ -184,7 +222,7 @@ export default function AICoachTab() {
           </Text>
         )}
         <Text style={[styles.timestamp, item.isUser && styles.timestampUser]}>
-          {item.timestamp}
+          {formatCoachTime(item, clockNow)}
         </Text>
       </View>
     </Animated.View>

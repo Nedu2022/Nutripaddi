@@ -5,7 +5,7 @@ import { router } from "expo-router";
 import {
   Settings, ChevronRight, Award, Heart, Shield,
   Activity, Scale, Ruler, Calendar, LogOut, Globe, Database,
-  MessageSquareText, BarChart3, SlidersHorizontal, Utensils,
+  SlidersHorizontal, Utensils,
   Target, Flame, Baby,
 } from "lucide-react-native";
 import Animated, { FadeInDown } from "react-native-reanimated";
@@ -270,22 +270,10 @@ export default function ProfileTab() {
         </View>
       </Animated.View>
 
-      {/* ── RESEARCH TOOLS ────────────────────────────────────────── */}
+      {/* ── CONTRIBUTION ──────────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.delay(150).duration(320)} style={styles.section}>
-        <Text style={styles.sectionTitle}>Research Tools</Text>
+        <Text style={styles.sectionTitle}>Contribution</Text>
         <View style={styles.sectionCard}>
-          <MenuRow
-            icon={<MessageSquareText color={D.amber} size={16} />}
-            iconBg={D.amberDim}
-            label="Study Feedback"
-            onPress={() => router.push(ROUTES.studyFeedback)}
-          />
-          <MenuRow
-            icon={<BarChart3 color={D.indigo} size={16} />}
-            iconBg={D.indigoDim}
-            label="Research Summary"
-            onPress={() => router.push(ROUTES.researchSummary)}
-          />
           <MenuRow
             icon={<Database color={D.accent} size={16} />}
             iconBg={D.accentDim}

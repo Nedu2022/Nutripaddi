@@ -3,7 +3,7 @@ import { Pressable, StyleSheet, Switch, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
   Bell, Globe, Shield, HelpCircle, Info, ChevronRight, Trash2, LogOut,
-  Clock, MessageSquareText, SlidersHorizontal, WifiOff,
+  Clock, SlidersHorizontal, WifiOff,
 } from "lucide-react-native";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
@@ -104,7 +104,6 @@ export default function SettingsScreen() {
         <View style={styles.sectionCard}>
           <SettingRow icon={<HelpCircle color={COLORS.textMuted} size={20} />} label={t.helpCenter} />
           <SettingRow icon={<Shield color={COLORS.textMuted} size={20} />} label={t.privacyPolicy} />
-          <SettingRow icon={<MessageSquareText color={COLORS.textMuted} size={20} />} label="Study feedback" onPress={() => router.push(ROUTES.studyFeedback)} />
           <SettingRow icon={<Info color={COLORS.textMuted} size={20} />} label={t.aboutNutriPadi} />
         </View>
       </View>

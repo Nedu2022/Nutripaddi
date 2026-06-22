@@ -2,8 +2,6 @@ import { useEffect, useState } from "react";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
 import { router } from "expo-router";
 import {
-  BookOpen,
-  CheckCircle2,
   ChevronRight,
   ClipboardList,
   Coffee,
@@ -54,8 +52,6 @@ const D = {
   indigoDim:   "rgba(99,102,241,0.10)",
   amber:       "#F59E0B",
   amberDim:    "rgba(245,158,11,0.10)",
-  purple:      "#C77DFF",
-  purpleDim:   "rgba(199,125,255,0.14)",
 };
 
 const MACRO_TARGETS = { carbs: 275, protein: 90, fat: 73 };
@@ -81,8 +77,6 @@ const MEAL_META = {
 const QUICK_ACTIONS = [
   { Icon: MessageCircle, label: "Ask Coach",  route: ROUTES.aiCoach,          color: D.indigo, bg: D.indigoDim },
   { Icon: ClipboardList, label: "Meal Log",   route: ROUTES.mealLog,          color: D.accent, bg: D.accentDim },
-  { Icon: CheckCircle2,  label: "Feedback",   route: ROUTES.studyFeedback,    color: D.amber,  bg: D.amberDim  },
-  { Icon: BookOpen,      label: "Lessons",    route: ROUTES.nutritionLessons, color: D.purple, bg: D.purpleDim },
 ] as const;
 
 function getCurrentStreak(days: WeeklyCalories[]) {
