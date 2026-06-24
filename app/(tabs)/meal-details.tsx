@@ -27,23 +27,23 @@ import {
 import { getLucideIcon } from "@/utils/icons";
 
 const D = {
-  bg:        "#FAF8F4",
-  card:      "#FFFFFF",
-  text:      "#1C1C1E",
-  muted:     "#5C5751",
-  light:     "#9C9690",
-  divider:   "#EDE8DF",
+  bg:         "#F8FAFC",
+  card:       "#FFFFFF",
+  text:       "#0F172A",
+  muted:      "#64748B",
+  light:      "#94A3B8",
+  divider:    "#E2E8F0",
   // Green — protein / health
-  accent:    "#1B5E35",
-  accentDim: "#ECF5EF",
-  // Terracotta — carbs / energy
-  terra:     "#B85D2B",
-  terraDim:  "rgba(184,93,43,0.09)",
-  // Stone — fat / neutral
-  stone:     "#7C6E62",
-  stoneDim:  "rgba(124,110,98,0.09)",
-  // Dark calorie hero card — intentionally dark for contrast
-  dark:      "#1A1A1A",
+  accent:     "#16A34A",
+  accentDim:  "#F0FDF4",
+  // Orange — carbs / energy
+  orange:     "#F97316",
+  orangeDim:  "rgba(249,115,22,0.09)",
+  // Purple — fat / balance
+  purple:     "#8B5CF6",
+  purpleDim:  "rgba(139,92,246,0.09)",
+  // Dark calorie hero card
+  dark:       "#1A1A1A",
 };
 
 const SHADOW = {
@@ -99,7 +99,7 @@ export default function MealDetailsScreen() {
   }
 
   const Icon           = getLucideIcon(meal.iconName);
-  const freshnessColor = (meal.freshnessScore ?? 0) >= 72 ? D.accent : D.terra;
+  const freshnessColor = (meal.freshnessScore ?? 0) >= 72 ? D.accent : D.orange;
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -115,7 +115,7 @@ export default function MealDetailsScreen() {
           />
         ) : (
           <View style={styles.iconWrap}>
-            <Icon color={D.terra} size={32} strokeWidth={1.7} />
+            <Icon color={D.orange} size={32} strokeWidth={1.7} />
           </View>
         )}
         <Text style={styles.mealName}>{meal.foodName}</Text>
@@ -169,9 +169,9 @@ export default function MealDetailsScreen() {
         <Text style={styles.sectionLabel}>Macro breakdown</Text>
         <View style={styles.macroGrid}>
           <MacroCard
-            bgColor={D.terraDim}
-            color={D.terra}
-            icon={<Flame color={D.terra} size={20} />}
+            bgColor={D.orangeDim}
+            color={D.orange}
+            icon={<Flame color={D.orange} size={20} />}
             label="Carbs"
             unit="g"
             value={meal.carbs}
@@ -185,9 +185,9 @@ export default function MealDetailsScreen() {
             value={meal.protein}
           />
           <MacroCard
-            bgColor={D.stoneDim}
-            color={D.stone}
-            icon={<Wheat color={D.stone} size={20} />}
+            bgColor={D.purpleDim}
+            color={D.purple}
+            icon={<Wheat color={D.purple} size={20} />}
             label="Fat"
             unit="g"
             value={meal.fat}
@@ -210,9 +210,9 @@ export default function MealDetailsScreen() {
           )}
 
           {meal.source && (
-            <View style={[styles.infoRow, { backgroundColor: D.stoneDim }]}>
+            <View style={[styles.infoRow, { backgroundColor: D.purpleDim }]}>
               <View style={[styles.infoIconCircle, { backgroundColor: "rgba(255,255,255,0.6)" }]}>
-                <ShieldCheck color={D.stone} size={17} />
+                <ShieldCheck color={D.purple} size={17} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sourceText}>{meal.source}</Text>
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
     width:           72,
     height:          72,
     borderRadius:    22,
-    backgroundColor: D.terraDim,
+    backgroundColor: D.orangeDim,
     alignItems:      "center",
     justifyContent:  "center",
     marginBottom:    14,
@@ -295,10 +295,10 @@ const styles = StyleSheet.create({
     width:           52,
     height:          52,
     borderRadius:    17,
-    backgroundColor: D.terra,
+    backgroundColor: D.orange,
     alignItems:      "center",
     justifyContent:  "center",
-    shadowColor:     D.terra,
+    shadowColor:     D.orange,
     shadowOpacity:   0.35,
     shadowRadius:    10,
     shadowOffset:    { width: 0, height: 4 },

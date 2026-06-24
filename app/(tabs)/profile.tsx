@@ -25,35 +25,34 @@ import { readDashboardCache } from "@/src/services/dashboardCache";
 import { describeMaternalStage } from "@/src/services/maternalNutrition";
 import { getProfile, type ProfileData } from "@/src/services/profileService";
 
-// ── Same 4-tone palette used across every screen ──────────────────────────────
+// ── Vibrant nutrition palette ─────────────────────────────────────────────────
 const D = {
-  bg:          "#FAF8F4",
-  card:        "#FFFFFF",
-  cardBorder:  "rgba(28,28,30,0.07)",
-  border:      "#EDE8DF",
-  text:        "#1C1C1E",
-  muted:       "#5C5751",
-  light:       "#9C9690",
+  bg:           "#F8FAFC",
+  card:         "#FFFFFF",
+  cardBorder:   "rgba(15,23,42,0.07)",
+  border:       "#E2E8F0",
+  text:         "#0F172A",
+  muted:        "#64748B",
+  light:        "#94A3B8",
 
-  green:       "#1B5E35",
-  greenDim:    "#ECF5EF",
-  greenBorder: "rgba(27,94,53,0.14)",
+  green:        "#16A34A",
+  greenDim:     "#F0FDF4",
+  greenBorder:  "rgba(22,163,74,0.18)",
 
-  terra:       "#B85D2B",
-  terraDim:    "#FAF0E8",
-  terraBorder: "rgba(184,93,43,0.14)",
+  orange:       "#F97316",
+  orangeDim:    "#FFF7ED",
+  orangeBorder: "rgba(249,115,22,0.18)",
 
-  stone:       "#7C6E62",
-  stoneDim:    "#F3EDE8",
-  stoneBorder: "rgba(124,110,98,0.14)",
+  purple:       "#8B5CF6",
+  purpleDim:    "#F5F3FF",
+  purpleBorder: "rgba(139,92,246,0.18)",
 
-  dusk:        "#2E4A6A",
-  duskDim:     "rgba(46,74,106,0.08)",
-  duskBorder:  "rgba(46,74,106,0.14)",
+  sky:          "#0284C7",
+  skyDim:       "#E0F2FE",
+  skyBorder:    "rgba(2,132,199,0.18)",
 
-  // Warm danger — sits within the earth-tone palette
-  danger:      "#B83C1A",
-  dangerDim:   "rgba(184,60,26,0.09)",
+  danger:       "#DC2626",
+  dangerDim:    "rgba(220,38,38,0.08)",
 };
 
 type IconCircleProps = { icon: React.ReactNode; bg: string };
@@ -211,18 +210,18 @@ export default function ProfileTab() {
           <Text style={[styles.statNum, { color: D.green }]}>{mealCount}</Text>
           <Text style={styles.statLabel}>{t.mealsLogged}</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: D.terraDim }]}>
+        <View style={[styles.statCard, { backgroundColor: D.orangeDim }]}>
           <View style={[styles.statIcon, { backgroundColor: D.card }]}>
-            <Flame color={D.terra} size={16} />
+            <Flame color={D.orange} size={16} />
           </View>
-          <Text style={[styles.statNum, { color: D.terra }]}>{daysStreak}</Text>
+          <Text style={[styles.statNum, { color: D.orange }]}>{daysStreak}</Text>
           <Text style={styles.statLabel}>{t.daysStreak}</Text>
         </View>
-        <View style={[styles.statCard, { backgroundColor: D.stoneDim }]}>
+        <View style={[styles.statCard, { backgroundColor: D.purpleDim }]}>
           <View style={[styles.statIcon, { backgroundColor: D.card }]}>
-            <Award color={D.stone} size={16} />
+            <Award color={D.purple} size={16} />
           </View>
-          <Text style={[styles.statNum, { color: D.stone }]}>{caloriesAvg}</Text>
+          <Text style={[styles.statNum, { color: D.purple }]}>{caloriesAvg}</Text>
           <Text style={styles.statLabel}>Avg kcal</Text>
         </View>
       </Animated.View>
@@ -239,8 +238,8 @@ export default function ProfileTab() {
         <View style={styles.sectionCard}>
           {profile?.lifeStage && profile.lifeStage !== "general" ? (
             <MenuRow
-              icon={<Baby color={D.terra} size={16} />}
-              iconBg={D.terraDim}
+              icon={<Baby color={D.orange} size={16} />}
+              iconBg={D.orangeDim}
               label={t.lifeStageLabel}
               value={describeMaternalStage(profile.lifeStage, profile.trimester, profile.babyAgeMonths) ?? "Not set"}
             />
@@ -252,20 +251,20 @@ export default function ProfileTab() {
             value={profile?.age ? `${profile.age} yrs` : "Not set"}
           />
           <MenuRow
-            icon={<Scale color={D.stone} size={16} />}
-            iconBg={D.stoneDim}
+            icon={<Scale color={D.purple} size={16} />}
+            iconBg={D.purpleDim}
             label={t.weight}
             value={profile?.weight ? `${profile.weight} kg` : "Not set"}
           />
           <MenuRow
-            icon={<Ruler color={D.stone} size={16} />}
-            iconBg={D.stoneDim}
+            icon={<Ruler color={D.purple} size={16} />}
+            iconBg={D.purpleDim}
             label={t.height}
             value={profile?.height ? `${profile.height} cm` : "Not set"}
           />
           <MenuRow
-            icon={<Heart color={D.terra} size={16} />}
-            iconBg={D.terraDim}
+            icon={<Heart color={D.orange} size={16} />}
+            iconBg={D.orangeDim}
             label={t.nutritionGoal}
             value={profile?.nutritionGoal ?? "Not set"}
           />
@@ -276,20 +275,20 @@ export default function ProfileTab() {
             value={profile?.eatingLifestyle ?? "Not set"}
           />
           <MenuRow
-            icon={<Shield color={D.dusk} size={16} />}
-            iconBg={D.duskDim}
+            icon={<Shield color={D.sky} size={16} />}
+            iconBg={D.skyDim}
             label={t.healthAwareness}
             value={profile?.healthAwareness ?? "Not set"}
           />
           <MenuRow
-            icon={<Globe color={D.stone} size={16} />}
-            iconBg={D.stoneDim}
+            icon={<Globe color={D.purple} size={16} />}
+            iconBg={D.purpleDim}
             label={t.language}
             value={profile?.language ? langDisplay[profile.language] ?? profile.language : langDisplay[language]}
           />
           <MenuRow
-            icon={<SlidersHorizontal color={D.dusk} size={16} />}
-            iconBg={D.duskDim}
+            icon={<SlidersHorizontal color={D.sky} size={16} />}
+            iconBg={D.skyDim}
             label={t.aiAdviceTone}
             value={profile?.aiTone ?? "Not set"}
             last
@@ -316,8 +315,8 @@ export default function ProfileTab() {
         <Text style={styles.sectionTitle}>{t.general}</Text>
         <View style={styles.sectionCard}>
           <MenuRow
-            icon={<Settings color={D.stone} size={16} />}
-            iconBg={D.stoneDim}
+            icon={<Settings color={D.purple} size={16} />}
+            iconBg={D.purpleDim}
             label={t.settings}
             onPress={() => router.push(ROUTES.settings)}
           />
@@ -369,7 +368,7 @@ const styles = StyleSheet.create({
   email:    { color: D.muted, fontSize: 14, fontFamily: FONTS.medium, marginTop: 4 },
   errorCard: {
     backgroundColor: D.dangerDim,
-    borderColor:     D.terraBorder,
+    borderColor:     D.orangeBorder,
     borderRadius:    14,
     borderWidth:     1,
     marginBottom:    14,

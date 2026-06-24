@@ -54,50 +54,48 @@ type FoodIcon = ComponentType<{ color?: string; size?: number; strokeWidth?: num
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 //
-// Four intentional tones, each with a clear role:
-//   green   → brand, health, nutrition (primary)
-//   terra   → West African earth warmth, energy, carbs (accent)
-//   stone   → calm neutrality, fat/balance, secondary text
-//   dusk    → depth, evening meals, rest
-//
-// Backgrounds and borders are warm off-white — not cold grey.
+// Vibrant nutrition-app palette — each color maps to a universal macro role:
+//   green  → brand, health, protein (industry standard)
+//   orange → carbs, energy, appetite (universal nutrition convention)
+//   purple → fat, balance, richness (used by leading nutrition apps)
+//   sky    → evening meals, hydration, depth
 //
 const P = {
   // Backgrounds
-  bg:           "#FAF8F4",
+  bg:           "#F8FAFC",
   card:         "#FFFFFF",
-  cardBorder:   "rgba(28,28,30,0.07)",
-  divider:      "#EDE8DF",
+  cardBorder:   "rgba(15,23,42,0.07)",
+  divider:      "#E2E8F0",
 
   // Text
-  text:         "#1C1C1E",
-  textMid:      "#5C5751",
-  textLight:    "#9C9690",
+  text:         "#0F172A",
+  textMid:      "#64748B",
+  textLight:    "#94A3B8",
 
-  // Green — brand / health / nature
-  green:        "#1B5E35",
-  greenMid:     "#237242",
-  greenDim:     "#ECF5EF",
-  greenBorder:  "rgba(27,94,53,0.14)",
+  // Green — brand, health, protein
+  green:        "#16A34A",
+  greenMid:     "#22C55E",
+  greenDim:     "#F0FDF4",
+  greenBorder:  "rgba(22,163,74,0.18)",
 
-  // Terracotta — West African earth, warmth, energy
-  terra:        "#B85D2B",
-  terraDim:     "#FAF0E8",
-  terraBorder:  "rgba(184,93,43,0.14)",
+  // Orange — carbs, energy, appetite
+  orange:       "#F97316",
+  orangeDim:    "#FFF7ED",
+  orangeBorder: "rgba(249,115,22,0.18)",
 
-  // Stone — neutral, fat macro, secondary actions
-  stone:        "#7C6E62",
-  stoneDim:     "#F3EDE8",
-  stoneBorder:  "rgba(124,110,98,0.14)",
+  // Purple — fat, balance, richness
+  purple:       "#8B5CF6",
+  purpleDim:    "#F5F3FF",
+  purpleBorder: "rgba(139,92,246,0.18)",
 
-  // Dusk — depth, dinner, rest
-  dusk:         "#2E4A6A",
-  duskDim:      "rgba(46,74,106,0.08)",
-  duskBorder:   "rgba(46,74,106,0.14)",
+  // Sky — evening meals, hydration, depth
+  sky:          "#0284C7",
+  skyDim:       "#E0F2FE",
+  skyBorder:    "rgba(2,132,199,0.18)",
 
-  // Hero card (softest green tint — NOT white)
-  heroBg:       "#ECF5EF",
-  heroBorder:   "rgba(27,94,53,0.12)",
+  // Hero card
+  heroBg:       "#F0FDF4",
+  heroBorder:   "rgba(22,163,74,0.14)",
 };
 
 // ── Static config ──────────────────────────────────────────────────────────────
@@ -106,12 +104,11 @@ const TODAY_INDEX   = 6;
 
 const MEAL_TYPE_ORDER = ["Breakfast", "Lunch", "Dinner", "Snack"] as const;
 
-// Terra for morning energy, green for midday, dusk for evening, stone for snack
 const MEAL_META = {
-  Breakfast: { Icon: Coffee,   color: P.terra, bg: P.terraDim },
-  Lunch:     { Icon: Utensils, color: P.green, bg: P.greenDim },
-  Dinner:    { Icon: Moon,     color: P.dusk,  bg: P.duskDim  },
-  Snack:     { Icon: Zap,      color: P.stone, bg: P.stoneDim },
+  Breakfast: { Icon: Coffee,   color: P.orange, bg: P.orangeDim },
+  Lunch:     { Icon: Utensils, color: P.green,  bg: P.greenDim  },
+  Dinner:    { Icon: Moon,     color: P.sky,    bg: P.skyDim    },
+  Snack:     { Icon: Zap,      color: P.purple, bg: P.purpleDim },
 } as const;
 
 const EMPTY_TOTALS: DailyTotals = { calories: 0, carbs: 0, fat: 0, protein: 0, target: 0 };
@@ -210,12 +207,11 @@ function detectCountryCode(): string | null {
   }
 }
 
-// ── Quick actions — green + terra + stone, no random hues ─────────────────────
 const QUICK_ACTIONS = [
-  { id: "scan",    Icon: ScanLine,      label: "Scan Food", color: "#FFFFFF",  bg: P.green,    route: ROUTES.scan,             primary: true  },
-  { id: "log",     Icon: ClipboardList, label: "Meal Log",  color: P.green,    bg: P.greenDim, route: ROUTES.mealLog,          primary: false },
-  { id: "coach",   Icon: MessageCircle, label: "AI Coach",  color: P.stone,    bg: P.stoneDim, route: ROUTES.aiCoach,          primary: false },
-  { id: "history", Icon: TrendingUp,    label: "History",   color: P.terra,    bg: P.terraDim, route: ROUTES.nutritionHistory, primary: false },
+  { id: "scan",    Icon: ScanLine,      label: "Scan Food", color: "#FFFFFF",   bg: P.green,     route: ROUTES.scan,             primary: true  },
+  { id: "log",     Icon: ClipboardList, label: "Meal Log",  color: P.green,     bg: P.greenDim,  route: ROUTES.mealLog,          primary: false },
+  { id: "coach",   Icon: MessageCircle, label: "AI Coach",  color: P.purple,    bg: P.purpleDim, route: ROUTES.aiCoach,          primary: false },
+  { id: "history", Icon: TrendingUp,    label: "History",   color: P.orange,    bg: P.orangeDim, route: ROUTES.nutritionHistory, primary: false },
 ] as const;
 
 // ── Helpers ────────────────────────────────────────────────────────────────────
@@ -272,7 +268,7 @@ function CalorieRing({ calories, target }: { calories: number; target: number })
     <View style={ringS.wrap}>
       <Svg width={RING_SIZE} height={RING_SIZE} style={{ transform: [{ rotate: "-90deg" }] }}>
         <Circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS}
-          stroke="#DDD9D2" strokeWidth={RING_STROKE} fill="none" />
+          stroke="#E2E8F0" strokeWidth={RING_STROKE} fill="none" />
         <Circle cx={RING_SIZE / 2} cy={RING_SIZE / 2} r={RING_RADIUS}
           stroke={P.green} strokeWidth={RING_STROKE} fill="none"
           strokeDasharray={`${filled} ${RING_CIRCUM - filled}`}
@@ -357,7 +353,7 @@ export default function DashboardTab() {
               <>
                 <View style={s.metaDot} />
                 <View style={s.streakChip}>
-                  <Flame color={P.terra} size={11} />
+                  <Flame color={P.orange} size={11} />
                   <Text style={s.streakText}>{streak}-day streak</Text>
                 </View>
               </>
@@ -437,8 +433,8 @@ export default function DashboardTab() {
                   {calorieGoal.toLocaleString()} goal
                 </Text>
               </View>
-              <View style={[s.calorieMetaPill, { backgroundColor: P.stoneDim }]}>
-                <Text style={[s.calorieMetaPillText, { color: P.stone }]}>
+              <View style={[s.calorieMetaPill, { backgroundColor: P.purpleDim }]}>
+                <Text style={[s.calorieMetaPillText, { color: P.purple }]}>
                   {calorieRemaining.toLocaleString()} left
                 </Text>
               </View>
@@ -453,9 +449,9 @@ export default function DashboardTab() {
         {/* Macro cards: terra = carbs/energy, green = protein/health, stone = fat/neutral */}
         <View style={s.macroGrid}>
           {([
-            { label: "Carbs",   value: dailyTotals.carbs,   target: MACRO_TARGETS.carbs,   color: P.terra, bg: P.terraDim },
-            { label: "Protein", value: dailyTotals.protein, target: MACRO_TARGETS.protein, color: P.green, bg: P.greenDim },
-            { label: "Fat",     value: dailyTotals.fat,     target: MACRO_TARGETS.fat,     color: P.stone, bg: P.stoneDim },
+            { label: "Carbs",   value: dailyTotals.carbs,   target: MACRO_TARGETS.carbs,   color: P.orange, bg: P.orangeDim },
+            { label: "Protein", value: dailyTotals.protein, target: MACRO_TARGETS.protein, color: P.green,  bg: P.greenDim  },
+            { label: "Fat",     value: dailyTotals.fat,     target: MACRO_TARGETS.fat,     color: P.purple, bg: P.purpleDim },
           ] as const).map(({ label, value, target, color, bg }) => {
             const pct = Math.min(Math.round((value / target) * 100), 100);
             return (
@@ -502,14 +498,12 @@ export default function DashboardTab() {
               contentContainerStyle={s.carouselContent}
             >
               {regionalMeals.map((meal, index) => {
-                // Alternating two tones — green on even, terra on odd.
-                // Creates visual rhythm without a rainbow.
                 const isAlt  = index % 2 === 1;
-                const ic     = isAlt ? P.terra : P.green;
-                const icDim  = isAlt ? P.terraDim : P.greenDim;
+                const ic     = isAlt ? P.orange : P.green;
+                const icDim  = isAlt ? P.orangeDim : P.greenDim;
                 const icCirc = isAlt
-                  ? "rgba(184,93,43,0.22)"
-                  : "rgba(27,94,53,0.16)";
+                  ? "rgba(249,115,22,0.18)"
+                  : "rgba(22,163,74,0.16)";
 
                 return (
                   <Pressable key={meal.id} onPress={() => router.push(ROUTES.scan)} style={s.foodCard}>
@@ -664,9 +658,9 @@ const s = StyleSheet.create({
   metaDot:     { width: 3, height: 3, borderRadius: 999, backgroundColor: P.textLight },
   streakChip: {
     flexDirection: "row", alignItems: "center", gap: 4,
-    backgroundColor: P.terraDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
+    backgroundColor: P.orangeDim, borderRadius: 999, paddingHorizontal: 8, paddingVertical: 3,
   },
-  streakText: { color: P.terra, fontSize: 11, fontFamily: FONTS.bold },
+  streakText: { color: P.orange, fontSize: 11, fontFamily: FONTS.bold },
   avatarBtn: {
     width: 42, height: 42, borderRadius: 14,
     backgroundColor: P.greenDim, borderWidth: 2, borderColor: P.greenBorder,
@@ -862,12 +856,12 @@ const s = StyleSheet.create({
   barCol:        { flex: 1, alignItems: "center", gap: 6 },
   barVal:        { color: P.green, fontSize: 9, fontFamily: FONTS.bold },
   barTrack: {
-    width: 28, height: 70, borderRadius: 8, backgroundColor: "#EDE8DF",
+    width: 28, height: 70, borderRadius: 8, backgroundColor: "#E2E8F0",
     justifyContent: "flex-end", overflow: "hidden",
   },
   barTrackActive: { backgroundColor: P.greenDim },
-  barFill:        { width: "100%", borderRadius: 8, backgroundColor: "#DDD9D2" },
-  barFillDone:    { backgroundColor: "rgba(27,94,53,0.28)" },
+  barFill:        { width: "100%", borderRadius: 8, backgroundColor: "#CBD5E1" },
+  barFillDone:    { backgroundColor: "rgba(22,163,74,0.28)" },
   barFillActive:  { backgroundColor: P.green },
   barDay:         { color: P.textLight, fontSize: 11, fontFamily: FONTS.medium },
   barDayActive:   { color: P.green,     fontSize: 11, fontFamily: FONTS.bold   },

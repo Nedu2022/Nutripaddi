@@ -60,38 +60,38 @@ import {
 } from "@/src/services/mealHistoryService";
 import { getProfile } from "@/src/services/profileService";
 
-// ── Design tokens — same 4-tone palette as the home screen ────────────────────
+// ── Design tokens — vibrant nutrition palette ─────────────────────────────────
 const D = {
-  bg:        "#FAF8F4",
-  card:      "#FFFFFF",
-  border:    "#EDE8DF",
-  divider:   "#EDE8DF",
-  text:      "#1C1C1E",
-  muted:     "#5C5751",
-  light:     "#9C9690",
-  accent:    "#1B5E35",   // green
-  accentDim: "#ECF5EF",
-  terra:     "#B85D2B",   // terracotta
-  terraDim:  "#FAF0E8",
-  stone:     "#7C6E62",   // stone
-  stoneDim:  "#F3EDE8",
-  dusk:      "#2E4A6A",   // dusk
-  duskDim:   "rgba(46,74,106,0.08)",
+  bg:         "#F8FAFC",
+  card:       "#FFFFFF",
+  border:     "#E2E8F0",
+  divider:    "#E2E8F0",
+  text:       "#0F172A",
+  muted:      "#64748B",
+  light:      "#94A3B8",
+  accent:     "#16A34A",   // green — brand / protein
+  accentDim:  "#F0FDF4",
+  orange:     "#F97316",   // carbs / energy / breakfast
+  orangeDim:  "#FFF7ED",
+  purple:     "#8B5CF6",   // fat / snack
+  purpleDim:  "#F5F3FF",
+  sky:        "#0284C7",   // dinner / evening / depth
+  skyDim:     "#E0F2FE",
 };
 
 // ── Constants ──────────────────────────────────────────────────────────────────
 // Same tone assignments as home screen: terra=morning, green=midday, dusk=evening, stone=snack
 const MEAL_CATEGORIES = [
-  { key: "Breakfast" as const, Icon: Coffee,   dot: D.terra },
-  { key: "Lunch"     as const, Icon: Utensils, dot: D.accent },
-  { key: "Dinner"    as const, Icon: Moon,     dot: D.dusk  },
-  { key: "Snack"     as const, Icon: Zap,      dot: D.stone },
+  { key: "Breakfast" as const, Icon: Coffee,   dot: D.orange  },
+  { key: "Lunch"     as const, Icon: Utensils, dot: D.accent  },
+  { key: "Dinner"    as const, Icon: Moon,     dot: D.sky     },
+  { key: "Snack"     as const, Icon: Zap,      dot: D.purple  },
 ];
 
 const MACROS = [
-  { label: "Carbs",   key: "carbs"   as const, dot: D.terra  },
-  { label: "Protein", key: "protein" as const, dot: D.accent },
-  { label: "Fat",     key: "fat"     as const, dot: D.stone  },
+  { label: "Carbs",   key: "carbs"   as const, dot: D.orange  },
+  { label: "Protein", key: "protein" as const, dot: D.accent  },
+  { label: "Fat",     key: "fat"     as const, dot: D.purple  },
 ];
 
 const EMPTY_TOTALS: DailyTotals = { calories: 0, carbs: 0, fat: 0, protein: 0, target: 0 };
@@ -224,7 +224,7 @@ export default function MealLogTab() {
       {/* OFFLINE NOTICE — only when no cached data */}
       {isOffline && meals.length === 0 && (
         <Animated.View entering={FadeInDown.delay(40).duration(280)} style={s.offlineCard}>
-          <WifiOff color={D.terra} size={20} />
+          <WifiOff color={D.orange} size={20} />
           <View style={s.offlineTextWrap}>
             <Text style={s.offlineTitle}>You're offline</Text>
             <Text style={s.offlineSub}>
@@ -448,10 +448,10 @@ const s = StyleSheet.create({
     marginBottom:    14,
   },
   offlineTextWrap: { flex: 1 },
-  offlineTitle: { color: D.terra, fontSize: 13, fontFamily: FONTS.bold, marginBottom: 3 },
+  offlineTitle: { color: D.orange, fontSize: 13, fontFamily: FONTS.bold, marginBottom: 3 },
   offlineSub:   { color: D.muted, fontSize: 12, fontFamily: FONTS.regular, lineHeight: 18 },
   retryBtn: {
-    backgroundColor: D.terra,
+    backgroundColor: D.orange,
     borderRadius:      10,
     paddingHorizontal: 12,
     paddingVertical:   7,
