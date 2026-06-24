@@ -663,7 +663,7 @@ const s = StyleSheet.create({
   streakText: { color: P.orange, fontSize: 11, fontFamily: FONTS.bold },
   avatarBtn: {
     width: 42, height: 42, borderRadius: 14,
-    backgroundColor: P.greenDim, borderWidth: 2, borderColor: P.greenBorder,
+    backgroundColor: P.greenDim,
     alignItems: "center", justifyContent: "center", overflow: "hidden",
   },
   avatarImg:     { width: "100%", height: "100%" },
@@ -678,13 +678,12 @@ const s = StyleSheet.create({
   // Hero / Scan CTA card
   heroCard: {
     backgroundColor: P.heroBg, borderRadius: 24, padding: 20, marginBottom: 16,
-    borderWidth: 1, borderColor: P.heroBorder,
   },
   heroTopRow: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 14 },
   heroChip: {
     flexDirection: "row", alignItems: "center", gap: 5,
     backgroundColor: P.greenDim, borderRadius: 999,
-    paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: P.greenBorder,
+    paddingHorizontal: 10, paddingVertical: 5,
   },
   heroChipText: { color: P.green, fontSize: 11, fontFamily: FONTS.bold },
   heroGoalPct:  { color: P.textMid, fontSize: 12, fontFamily: FONTS.medium },
@@ -695,7 +694,6 @@ const s = StyleSheet.create({
   heroRingBtn:  { alignItems: "center", gap: 6 },
   heroRingOuter: {
     width: 80, height: 80, borderRadius: 40,
-    borderWidth: 1.5, borderColor: P.greenBorder,
     backgroundColor: P.greenDim, alignItems: "center", justifyContent: "center",
   },
   heroRingInner: {
@@ -713,15 +711,13 @@ const s = StyleSheet.create({
   heroBtnGhost: {
     flex: 1, flexDirection: "row", alignItems: "center", justifyContent: "center",
     gap: 7, backgroundColor: P.card, borderRadius: 14, paddingVertical: 13,
-    borderWidth: 1, borderColor: P.greenBorder,
   },
   heroBtnGhostText: { color: P.green, fontSize: 13, fontFamily: FONTS.bold },
 
   // Nutrition card
   nutritionCard: {
     backgroundColor: P.card, borderRadius: 22, padding: 18, marginBottom: 16,
-    borderWidth: 1, borderColor: P.cardBorder,
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 12, shadowOffset: { width: 0, height: 3 }, elevation: 2,
+    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 14, shadowOffset: { width: 0, height: 3 }, elevation: 2,
   },
   nutritionHeader: { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 16 },
   cardTitle:  { color: P.text,  fontSize: 16, fontFamily: FONTS.extraBold },
@@ -775,8 +771,7 @@ const s = StyleSheet.create({
   carouselContent: { paddingHorizontal: 18, gap: 12, paddingBottom: 4 },
   foodCard: {
     width: 132, backgroundColor: P.card, borderRadius: 18, overflow: "hidden",
-    borderWidth: 1, borderColor: P.cardBorder,
-    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    shadowColor: "#000", shadowOpacity: 0.06, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   foodCardHeader: { height: 72, alignItems: "center", justifyContent: "center" },
   foodIconCircle: { width: 44, height: 44, borderRadius: 22, alignItems: "center", justifyContent: "center" },
@@ -789,7 +784,7 @@ const s = StyleSheet.create({
   // NutriPadi tip
   tipCard: {
     flexDirection: "row", gap: 12, backgroundColor: P.greenDim, borderRadius: 20,
-    padding: 16, marginBottom: 16, borderWidth: 1, borderColor: P.greenBorder,
+    padding: 16, marginBottom: 16,
   },
   tipLogoWrap: {
     width: 40, height: 40, borderRadius: 13, backgroundColor: P.card,
@@ -810,9 +805,9 @@ const s = StyleSheet.create({
   },
   countText: { color: P.green, fontSize: 11, fontFamily: FONTS.bold },
   mealsCard: {
-    backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder,
+    backgroundColor: P.card, borderRadius: 20,
     overflow: "hidden", marginBottom: 16,
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   mealDivider: { height: 1, backgroundColor: P.divider, marginHorizontal: 14 },
   mealRow: { flexDirection: "row", alignItems: "center", gap: 12, paddingHorizontal: 14, paddingVertical: 13 },
@@ -835,11 +830,11 @@ const s = StyleSheet.create({
   actionsRow: { flexDirection: "row", gap: 10, marginBottom: 20 },
   actionCard: {
     flex: 1, backgroundColor: P.card, borderRadius: 18, paddingVertical: 14,
-    alignItems: "center", gap: 8, borderWidth: 1, borderColor: P.cardBorder,
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    alignItems: "center", gap: 8,
+    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 8, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   actionCardPrimary: {
-    backgroundColor: P.green, borderColor: P.green,
+    backgroundColor: P.green,
     shadowColor: P.green, shadowOpacity: 0.28, shadowRadius: 12, shadowOffset: { width: 0, height: 4 }, elevation: 6,
   },
   actionIconWrap:     { width: 42, height: 42, borderRadius: 13, alignItems: "center", justifyContent: "center" },
@@ -848,10 +843,10 @@ const s = StyleSheet.create({
 
   // Weekly chart
   weekCard: {
-    backgroundColor: P.card, borderRadius: 20, borderWidth: 1, borderColor: P.cardBorder,
+    backgroundColor: P.card, borderRadius: 20,
     flexDirection: "row", alignItems: "flex-end", justifyContent: "space-between",
     paddingHorizontal: 14, paddingVertical: 16, marginBottom: 14,
-    shadowColor: "#000", shadowOpacity: 0.04, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 2,
+    shadowColor: "#000", shadowOpacity: 0.05, shadowRadius: 10, shadowOffset: { width: 0, height: 2 }, elevation: 2,
   },
   barCol:        { flex: 1, alignItems: "center", gap: 6 },
   barVal:        { color: P.green, fontSize: 9, fontFamily: FONTS.bold },
