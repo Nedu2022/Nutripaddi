@@ -1,4 +1,4 @@
-import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
+import { assertSupabaseConfigured, getSessionUser, supabase } from "@/src/lib/supabase";
 import type { LifeStage, PregnancyTrimester } from "@/types";
 
 export type ProfileData = {
@@ -81,8 +81,8 @@ function mapProfile(row?: ProfileRow | null): ProfileData {
 export async function saveProfile(data: Partial<ProfileData>) {
   assertSupabaseConfigured();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
+  const user = await getSessionUser();
+  if (!user) {
     throw new Error("You need to be signed in to save your profile.");
   }
 
@@ -93,18 +93,18 @@ export async function saveProfile(data: Partial<ProfileData>) {
     baby_age_months: data.babyAgeMonths,
     daily_calorie_target: data.dailyCalorieTarget,
     eating_lifestyle: data.eatingLifestyle,
-    email: userData.user.email,
+    email: user.email,
     full_name:
       data.fullName ??
-      (typeof userData.user.user_metadata?.fullName === "string"
-        ? userData.user.user_metadata.fullName
-        : typeof userData.user.user_metadata?.name === "string"
-          ? userData.user.user_metadata.name
+      (typeof user.user_metadata?.fullName === "string"
+        ? user.user_metadata.fullName
+        : typeof user.user_metadata?.name === "string"
+          ? user.user_metadata.name
           : undefined),
     gender: data.gender,
     health_awareness: data.healthAwareness,
     height: data.height,
-    id: userData.user.id,
+    id: user.id,
     language: data.language,
     life_stage: data.lifeStage,
     location: data.location,
@@ -125,13 +125,13 @@ export async function saveProfile(data: Partial<ProfileData>) {
 export async function getProfile(): Promise<ProfileData> {
   assertSupabaseConfigured();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return emptyProfile();
+  const user = await getSessionUser();
+  if (!user) return emptyProfile();
 
   const { data, error } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", userData.user.id)
+    .eq("id", user.id)
     .maybeSingle<ProfileRow>();
 
   if (error) throw new Error(error.message);
@@ -139,13 +139,13 @@ export async function getProfile(): Promise<ProfileData> {
   const profile = mapProfile(data);
   return {
     ...profile,
-    email: profile.email ?? userData.user.email ?? undefined,
+    email: profile.email ?? user.email ?? undefined,
     fullName:
       profile.fullName ??
-      (typeof userData.user.user_metadata?.fullName === "string"
-        ? userData.user.user_metadata.fullName
-        : typeof userData.user.user_metadata?.name === "string"
-          ? userData.user.user_metadata.name
+      (typeof user.user_metadata?.fullName === "string"
+        ? user.user_metadata.fullName
+        : typeof user.user_metadata?.name === "string"
+          ? user.user_metadata.name
           : undefined),
   };
 }
@@ -153,13 +153,13 @@ export async function getProfile(): Promise<ProfileData> {
 export async function clearProfile() {
   assertSupabaseConfigured();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) return;
+  const user = await getSessionUser();
+  if (!user) return;
 
   const { error } = await supabase
     .from("profiles")
     .delete()
-    .eq("id", userData.user.id);
+    .eq("id", user.id);
 
   if (error) throw new Error(error.message);
 }

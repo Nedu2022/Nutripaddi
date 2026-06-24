@@ -169,7 +169,7 @@ const WebCameraView = forwardRef<WebCameraHandle, Props>(function WebCameraView(
         ref: videoRef,
         style: {
           height: "100%",
-          objectFit: "cover",
+          objectFit: "contain",
           pointerEvents: "none",
           position: "absolute",
           transform: facing === "front" ? "scaleX(-1)" : undefined,

@@ -233,6 +233,13 @@ export default function LiveNutritionSheet({
   const sheetStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: translateY.value }],
   }));
+  const actionsStyle = useAnimatedStyle(() => {
+    const offset = Math.min(Math.max(0, translateY.value - FULL_Y), height - FULL_Y);
+    return {
+      transform: [{ translateY: -offset }],
+    };
+  });
+
   if (!summary && scanState !== "saved") return null;
   const isLowConfidence = (summary?.confidence ?? 100) < 80;
   const { nutrition } = summary ?? {};
@@ -272,6 +279,12 @@ export default function LiveNutritionSheet({
   if (!summary) return null;
   const sheetH = height - FULL_Y;
   const origin = getFoodOriginCopy(summary);
+  const foodOrigin = summary.origin;
+  const originTitle =
+    foodOrigin?.country
+      ? `${foodOrigin.country}${foodOrigin.region ? ` · ${foodOrigin.region}` : ""}`
+      : origin.title;
+  const originDescription = foodOrigin?.culture?.trim() || origin.description;
   const freshnessColor = getFreshnessColor(summary.freshness.tone);
   const correctionOptions = (summary.correctionOptions ?? [])
     .filter((option) => option.label.trim())
@@ -301,7 +314,7 @@ export default function LiveNutritionSheet({
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
         style={{ flex: 1 }}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={[styles.scrollContent, { paddingBottom: 120 }]}
       >
         <View style={styles.headerRow}>
           <View style={styles.headerIcon}>
@@ -418,21 +431,25 @@ export default function LiveNutritionSheet({
             </View>
           </>
         )}
-        <Text style={styles.sectionLabel}>Match details</Text>
+        <Text style={styles.sectionLabel}>Origin & culture</Text>
         <View style={styles.originCard}>
           <View style={styles.originIntro}>
             <View style={styles.originIcon}>
               <MapPin color={G.accent} size={16} />
             </View>
             <View style={{ flex: 1 }}>
-              <Text style={styles.originTitle}>{origin.title}</Text>
-              <Text style={styles.originDescription}>{origin.description}</Text>
+              <Text style={styles.originTitle}>{originTitle}</Text>
+              <Text style={styles.originDescription}>{originDescription}</Text>
             </View>
           </View>
           <View style={styles.originMetaRow}>
             <View style={styles.originMetaCell}>
-              <Text style={styles.originMetaLabel}>Meal pattern</Text>
-              <Text style={styles.originMetaValue}>{origin.pattern}</Text>
+              <Text style={styles.originMetaLabel}>
+                {foodOrigin?.region ? "Region" : "Meal pattern"}
+              </Text>
+              <Text style={styles.originMetaValue} numberOfLines={1}>
+                {foodOrigin?.region || origin.pattern}
+              </Text>
             </View>
             <View style={styles.originMetaDivider} />
             <View style={styles.originMetaCell}>
@@ -580,7 +597,7 @@ export default function LiveNutritionSheet({
           <Text style={styles.sourceLabel}>{nutrition.sourceLabel}</Text>
         )}
       </ScrollView>
-      <View style={styles.actions}>
+      <Animated.View style={[styles.actions, actionsStyle]}>
         {saveError ? <Text style={styles.saveErrorText}>{saveError}</Text> : null}
         <Pressable
           disabled={isSaving}
@@ -606,7 +623,7 @@ export default function LiveNutritionSheet({
             <Text style={styles.editButtonText}>Not correct? Edit</Text>
           </Pressable>
         )}
-      </View>
+      </Animated.View>
     </Animated.View>
   );
 }

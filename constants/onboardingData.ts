@@ -1,8 +1,10 @@
+import { ImageSourcePropType } from "react-native";
+
 export type OnboardingItem = {
   id: string;
   title: string;
   description: string;
-  image: null;
+  image: ImageSourcePropType | null;
 };
 
 export const onboardingData: OnboardingItem[] = [
@@ -11,14 +13,14 @@ export const onboardingData: OnboardingItem[] = [
     title: "Meet Your Nutritionist",
     description:
       "NutriPadi helps you understand African meals using smart food analysis.",
-    image: null,
+    image: require("@/assets/images/Online Doctor.gif"),
   },
   {
     id: "scan",
     title: "Scan your meal. Know your food.",
     description:
       "Point your camera at jollof, eba, egusi or any local dish. NutriPadi scans local meals without making you take a photo first.",
-    image: null,
+    image: require("@/assets/images/Eating healthy food.gif"),
   },
   {
     id: "nutrition",
@@ -32,6 +34,6 @@ export const onboardingData: OnboardingItem[] = [
     title: "Nutrition for two.",
     description:
       "Pregnant or nursing? Get gentle, affordable food guidance for the first 1,000 days, in your own language.",
-    image: null,
+    image: require("@/assets/images/Motherhood.gif"),
   },
 ];

@@ -112,19 +112,21 @@ export default function CameraOverlay({
       ? imageSize.width / imageSize.height
       : width / Math.max(1, height);
   const screenAspect = width / Math.max(1, height);
+  // The captured/uploaded image is shown with contentFit="contain" (whole image
+  // visible, letterboxed), so map markers onto that same contained rectangle.
   const previewBox =
     sourceAspect > screenAspect
       ? {
-          height,
-          left: (width - height * sourceAspect) / 2,
-          top: 0,
-          width: height * sourceAspect,
-        }
-      : {
           height: width / sourceAspect,
           left: 0,
           top: (height - width / sourceAspect) / 2,
           width,
+        }
+      : {
+          height,
+          left: (width - height * sourceAspect) / 2,
+          top: 0,
+          width: height * sourceAspect,
         };
   const markerBounds = {
     bottom: Math.max(topPad + 120, height - botPad + 64),

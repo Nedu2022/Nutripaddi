@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
+import { Image as ExpoImage } from "expo-image";
 import { Baby, ScanLine } from "lucide-react-native";
 import { BlurView } from "expo-blur";
 import Animated, {
@@ -156,7 +157,7 @@ export default function OnboardingSlide({
     <Animated.View style={[styles.container, animatedStyle]}>
       {image ? (
         <View style={[styles.imageWrapper, styles.image]}>
-          <Image fadeDuration={160} source={image} resizeMode="cover" style={{ width: "100%", height: "100%" }} />
+          <ExpoImage transition={160} source={image} contentFit="contain" style={{ width: "100%", height: "100%" }} />
           {index === 2 && (
             <View style={styles.mockupSheet}>
               <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />

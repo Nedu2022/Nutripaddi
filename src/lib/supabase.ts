@@ -37,3 +37,17 @@ export function assertSupabaseConfigured() {
     throw new Error("Set EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_KEY.");
   }
 }
+
+/**
+ * Returns the current user from the locally persisted session.
+ *
+ * Reads from AsyncStorage/localStorage only — unlike `supabase.auth.getUser()`,
+ * it does NOT make a network round-trip to the auth server, so it's safe to call
+ * on hot paths (dashboard load, saves). Row-level security still enforces access
+ * server-side, so the local user id is sufficient for scoping queries.
+ */
+export async function getSessionUser() {
+  const { data, error } = await supabase.auth.getSession();
+  if (error || !data.session) return null;
+  return data.session.user;
+}

@@ -45,6 +45,7 @@ Look at the photo and return ONLY a JSON object (no markdown) with this exact sh
   "correctionOptions": [ { "label": string, "type": string } ],
   "nutrition": { "calories": number, "carbs": number, "protein": number, "fat": number, "fibre": number },
   "freshness": { "score": number, "label": string, "tone": "good"|"caution"|"risk", "summary": string, "signals": [string], "storageTip": string },
+  "origin": { "country": string, "region": string, "culture": string },
   "advice": string
 }
 
@@ -54,13 +55,14 @@ Rules:
 - For African foods, cover all countries, not only Nigeria. Think of North, West, Central, East, and Southern African foods.
 - Use the exact local or country name when you can see it clearly, such as injera, doro wat, shiro, tibs, ugali, sukuma wiki, nyama choma, matoke, waakye, banku, kenkey, thieboudienne, attieke, ndole, eru, couscous, tagine, shakshuka, ful medames, sadza, nshima, pap, chakalaka, jollof, egusi, ewedu, amala, eba, fufu, and similar local foods.
 - Do not force a Nigerian name on a food from another country or a non-African food. If foods have similar-looking variants, choose a broader name and lower the confidence.
-- "type" is only a broad food group for UI grouping, not the food catalogue. Use simple lowercase group words like soup, protein, rice, beans, cassava, maize, grain, bread, pasta, vegetable, fruit, dairy, snack, drink, or another broad group if those do not fit.
+- "type" is only a broad food group for UI grouping, not the food catalogue. Use simple lowercase group words like swallow, soup, protein, egg, rice, beans, yam, potato, plantain, cassava, maize, grain, bread, pasta, vegetable, fruit, dairy, snack, drink, or another broad group if those do not fit. Use "swallow" for eba, fufu, amala, semovita and pounded yam; "yam" for boiled or fried yam; "plantain" for fried or boiled plantain; "potato" for potato, chips and fries.
 - "correctionOptions" must be generated from this image and likely local variants. Include 3 to 6 close possible matches when confidence is below 85 or the food has common lookalikes; otherwise return an empty array. Do not use a fixed generic list.
 - The "items" array is the per-food breakdown, NOT the overall meal name. Do not put the combined dish name (e.g. "Eba and Edikang Ikong Soup") in items; put each separate food instead.
 - List EVERY distinct food as its own item, including each protein you can see individually: fish, meat, chicken, kpomo/ponmo (cow skin), egg, snail, as well as the swallow, the soup or stew, and the rice. For example a plate of eba with edikang ikong soup, fish and kpomo should list eba, edikang ikong, fish and kpomo as separate items.
 - Be specific with tubers and fried sides. Fried potato, potato chips or fries must be labelled as potato, not boiled yam. Boiled/fried yam should be yam. Eba, fufu, amala, semo and pounded yam are swallow.
 - For every item, set point.x and point.y to where that food sits in the photo, as fractions from 0 to 1 (x: 0 = left edge, 1 = right edge; y: 0 = top, 1 = bottom). Point to the centre of that food on the plate so a marker can be drawn on it.
 - Nutrition is for the WHOLE plate shown; use realistic numbers (kcal, grams).
+- "origin" tells where the main dish comes from. "country" is the main country or place of origin (use a region name or "Various" when it is eaten widely across places); "region" is the broader area such as West Africa, East Africa, North Africa, Central Africa, Southern Africa, Mediterranean, South Asia or East Asia; "culture" is ONE short, warm, factual sentence on the dish's background or how it is traditionally eaten. Fill these in for any food, African or not. Keep it accurate; if unsure, give the most likely region and keep the culture note general.
 - advice: one short, warm, friendly sentence with a practical tip, tailored to the user profile below when one is given. Suggest an affordable local food to add if protein, iron or fibre looks low.
 - Keep all text short and plain. Use layman language, not textbook or hospital language.
 - When a location or preferred language is given, make every user-facing text sound natural for that country or area. Use familiar local food names and simple everyday wording.
@@ -94,6 +96,22 @@ function namesAgree(a: string, b: string) {
   const tb = nameTokens(b);
   for (const w of ta) if (tb.has(w)) return true;
   return false;
+}
+
+// Cooking-method / descriptor words ignored when deciding if two items are the
+// same food, so "Boiled Yam" and "Fried Yam" collapse into one marker.
+const COOKING_WORDS = new Set([
+  "boiled", "fried", "grilled", "roasted", "steamed", "baked", "smoked",
+  "raw", "cooked", "scrambled", "ripe", "unripe", "white", "red", "hot", "cold",
+]);
+
+function foodKey(name: string) {
+  const tokens = name
+    .toLowerCase()
+    .replace(/[^a-z\s]/g, " ")
+    .split(/\s+/)
+    .filter((w) => w.length >= 3 && !STOP_WORDS.has(w) && !COOKING_WORDS.has(w));
+  return tokens.length ? tokens.sort().join(" ") : name.trim().toLowerCase();
 }
 
 function prettify(key: string) {
@@ -164,6 +182,15 @@ function readCorrectionOptions(value: unknown) {
 function normalizeTone(value: unknown) {
   const t = typeof value === "string" ? value.toLowerCase().trim() : "";
   return ["good", "caution", "risk"].includes(t) ? t : "good";
+}
+
+function readOrigin(value: unknown) {
+  const o = (value ?? {}) as Record<string, unknown>;
+  const country = str(o.country, "");
+  const region = str(o.region, "");
+  const culture = str(o.culture, "");
+  if (!country && !region && !culture) return undefined;
+  return { country, region, culture };
 }
 
 async function toBase64(file: File) {
@@ -263,7 +290,7 @@ Deno.serve(async (request) => {
     const model =
       Deno.env.get("GEMINI_VISION_MODEL") ||
       Deno.env.get("GEMINI_MODEL") ||
-      "gemini-3.1-flash-lite";
+      "gemini-3.5-flash";
 
     const { file, base64, profileContext, userStatus } = await readUpload(request);
     if (!file) {
@@ -289,7 +316,7 @@ Deno.serve(async (request) => {
           ],
           generationConfig: {
             temperature: 0.2,
-            maxOutputTokens: 900,
+            maxOutputTokens: 1100,
             responseMimeType: "application/json",
           },
         }),
@@ -358,22 +385,30 @@ Deno.serve(async (request) => {
       confidence = Math.round(geminiConfidence);
     }
 
+    // Merge items that are the same food (ignoring cooking method) so the same
+    // dish is not tagged twice. Keep the most confident label/type per food.
     const rawItems = Array.isArray(parsed.items) ? parsed.items : [];
-    const items: any[] = [];
-    const seen = new Set<string>();
+    const byKey = new Map<string, any>();
     for (const item of rawItems) {
       const label = str((item as any)?.label, "");
       if (!label) continue;
-      const dedupe = label.toLowerCase();
-      if (seen.has(dedupe)) continue;
-      seen.add(dedupe);
-      items.push({
+      const candidate = {
         label,
         type: normalizeType((item as any)?.type),
         confidence: pct((item as any)?.confidence, 70),
         point: readPoint(item),
-      });
+      };
+      const key = foodKey(label);
+      const existing = byKey.get(key);
+      if (!existing) {
+        byKey.set(key, candidate);
+      } else if (candidate.confidence > existing.confidence) {
+        byKey.set(key, { ...candidate, point: candidate.point ?? existing.point });
+      } else if (!existing.point && candidate.point) {
+        existing.point = candidate.point;
+      }
     }
+    const items: any[] = Array.from(byKey.values());
     if (items.length === 0) {
       items.push({
         label: mealName,
@@ -403,6 +438,7 @@ Deno.serve(async (request) => {
     const backendAdvice = str(bestPt?.advice, "");
     const localAdvice = str(parsed.advice, "");
     const correctionOptions = readCorrectionOptions(parsed.correctionOptions);
+    const origin = readOrigin(parsed.origin);
 
     const result = {
       advice_source: bestPt?.adviceSource,
@@ -416,6 +452,7 @@ Deno.serve(async (request) => {
         localPortionLabel: str(parsed.localPortionLabel, "1 normal portion"),
         detectedItems,
         correctionOptions,
+        origin,
         nutrition: {
           calories: Math.round(num(n.calories, 0)),
           carbs: Math.round(num(n.carbs, 0)),

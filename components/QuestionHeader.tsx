@@ -1,5 +1,7 @@
 import { useEffect } from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, Text, View } from "react-native";
+import { router } from "expo-router";
+import { ChevronLeft } from "lucide-react-native";
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
@@ -16,6 +18,7 @@ type QuestionHeaderProps = {
   eyebrow: string;
   title: string;
   subtitle: string;
+  showBack?: boolean;
 };
 
 export default function QuestionHeader({
@@ -24,6 +27,7 @@ export default function QuestionHeader({
   eyebrow,
   title,
   subtitle,
+  showBack = true,
 }: QuestionHeaderProps) {
   const entrance = useSharedValue(0);
   const progress = useSharedValue(0);
@@ -47,9 +51,17 @@ export default function QuestionHeader({
 
   return (
     <Animated.View style={[styles.container, entranceStyle]}>
-      {/* Sleek top progress bar */}
-      <View style={styles.progressTrack}>
-        <Animated.View style={[styles.progressFill, progressStyle]} />
+      <View style={styles.headerRow}>
+        {showBack && router.canGoBack() && (
+          <Pressable onPress={() => router.back()} style={styles.backButton} hitSlop={10}>
+            <ChevronLeft color={COLORS.text} size={20} strokeWidth={2.5} />
+          </Pressable>
+        )}
+        <View style={styles.progressContainer}>
+          <View style={styles.progressTrack}>
+            <Animated.View style={[styles.progressFill, progressStyle]} />
+          </View>
+        </View>
       </View>
 
       <Text style={styles.title}>{title}</Text>
@@ -63,12 +75,30 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     marginTop: 8,
   },
+  headerRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 24,
+    gap: 14,
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: COLORS.card,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+  },
+  progressContainer: {
+    flex: 1,
+  },
   progressTrack: {
     height: 4,
     borderRadius: 2,
     backgroundColor: COLORS.border,
     overflow: "hidden",
-    marginBottom: 24,
     width: "100%",
   },
   progressFill: {

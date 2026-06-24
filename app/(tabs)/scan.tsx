@@ -234,7 +234,7 @@ export default function ScanTab() {
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ["images"],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 1,
     });
     if (!result.canceled) {
@@ -367,7 +367,7 @@ export default function ScanTab() {
     <View style={styles.container}>
       {!cameraActive ? (
         <Image
-          contentFit="cover"
+          contentFit="contain"
           source={{ uri: capturedUri! }}
           style={StyleSheet.absoluteFillObject}
         />

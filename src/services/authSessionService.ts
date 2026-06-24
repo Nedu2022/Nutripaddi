@@ -1,4 +1,5 @@
 import { supabase } from "@/src/lib/supabase";
+import { clearDashboardCache } from "@/src/services/dashboardCache";
 
 export type AuthUser = {
   id?: string | number;
@@ -51,6 +52,7 @@ export async function getAccessToken() {
 }
 
 export async function clearAuthSession() {
+  await clearDashboardCache();
   await supabase.auth.signOut();
 }
 

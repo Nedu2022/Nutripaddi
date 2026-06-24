@@ -1,4 +1,4 @@
-import { assertSupabaseConfigured, supabase } from "@/src/lib/supabase";
+import { assertSupabaseConfigured, getSessionUser, supabase } from "@/src/lib/supabase";
 import type { LoggedMeal, MealType, PortionSize } from "@/types";
 
 export type SavedMeal = LoggedMeal & {
@@ -135,8 +135,8 @@ function mapMeal(row: MealRow): SavedMeal {
 export async function saveMeal(data: SaveMealInput): Promise<SavedMeal> {
   assertSupabaseConfigured();
 
-  const { data: userData, error: userError } = await supabase.auth.getUser();
-  if (userError || !userData.user) {
+  const user = await getSessionUser();
+  if (!user) {
     throw new Error("You need to be signed in to save a meal.");
   }
 
@@ -161,7 +161,7 @@ export async function saveMeal(data: SaveMealInput): Promise<SavedMeal> {
     portion_size: data.portionSize,
     protein: data.protein,
     source: data.source,
-    user_id: userData.user.id,
+    user_id: user.id,
   };
 
   const { data: saved, error } = await supabase

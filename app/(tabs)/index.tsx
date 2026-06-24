@@ -32,6 +32,11 @@ import {
   type WeeklyCalories,
 } from "@/src/services/mealHistoryService";
 import { getProfile, type ProfileData } from "@/src/services/profileService";
+import {
+  readDashboardCache,
+  writeDashboardCache,
+  type DashboardSnapshot,
+} from "@/src/services/dashboardCache";
 
 const LOGO_MARK = require("@/assets/images/logo-mark.png");
 
@@ -272,27 +277,39 @@ export default function DashboardTab() {
   useEffect(() => {
     let mounted = true;
 
+    const applySnapshot = ({ profile: profileData, weekMeals }: DashboardSnapshot) => {
+      const target = profileData.dailyCalorieTarget ?? 0;
+      const todayKey = new Date().toISOString().split("T")[0];
+      const meals = weekMeals.filter((meal) => meal.dateLogged === todayKey);
+
+      setProfile(profileData);
+      setTodayMeals(meals);
+      setDailyTotals(getDailyTotalsFromMeals(meals, target));
+      setWeeklyCalories(getWeeklyCaloriesFromMeals(weekMeals));
+    };
+
     const loadDashboard = async () => {
+      // 1. Paint instantly from the last cached snapshot (stale-while-revalidate).
+      const cached = await readDashboardCache();
+      if (mounted && cached) applySnapshot(cached);
+
+      // 2. Revalidate from the network, then update state + cache.
       try {
         const [profileData, weekMeals] = await Promise.all([
           getProfile(),
           getMealsForWeek(),
         ]);
-        const target = profileData.dailyCalorieTarget ?? 0;
-        const todayKey = new Date().toISOString().split("T")[0];
-        const meals = weekMeals.filter((meal) => meal.dateLogged === todayKey);
-        const totals = getDailyTotalsFromMeals(meals, target);
-        const weekly = getWeeklyCaloriesFromMeals(weekMeals);
 
         if (!mounted) return;
-        setProfile(profileData);
-        setTodayMeals(meals);
-        setDailyTotals(totals);
-        setWeeklyCalories(weekly);
+        applySnapshot({ profile: profileData, weekMeals });
         setLoadError("");
+        void writeDashboardCache({ profile: profileData, weekMeals });
       } catch (error) {
         if (!mounted) return;
-        setLoadError(error instanceof Error ? error.message : "Could not load dashboard data.");
+        // Keep showing cached data on failure; only surface an error if we have nothing.
+        if (!cached) {
+          setLoadError(error instanceof Error ? error.message : "Could not load dashboard data.");
+        }
       }
     };
 

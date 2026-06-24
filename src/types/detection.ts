@@ -18,6 +18,12 @@ export type DetectedFoodItem = {
   localPortionLabel?: string;
 };
 
+export type FoodOrigin = {
+  country: string;
+  region: string;
+  culture: string;
+};
+
 export type DetectedMealPortion = "small" | "normal" | "large";
 
 export type ScanState =
@@ -39,6 +45,7 @@ export type DetectedMealSummary = {
   localPortionLabel: string;
   detectedItems: DetectedFoodItem[];
   correctionOptions?: FoodCorrectionOption[];
+  origin?: FoodOrigin;
   nutrition: NutritionEstimate;
   freshness: FreshnessEstimate;
   advice: string;
