@@ -27,7 +27,7 @@ export const onboardingData: OnboardingItem[] = [
     title: "Get instant nutrition info.",
     description:
       "See calories, protein, iron and fibre for your plate right away. No typing, no calorie counting.",
-    image: null,
+    image: require("@/assets/images/Body anatomy.gif"),
   },
   {
     id: "maternal",

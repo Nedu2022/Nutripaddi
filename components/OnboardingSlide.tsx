@@ -2,8 +2,7 @@ import { useEffect } from "react";
 import type { ImageSourcePropType } from "react-native";
 import { Image, StyleSheet, Text, View } from "react-native";
 import { Image as ExpoImage } from "expo-image";
-import { Baby, ScanLine } from "lucide-react-native";
-import { BlurView } from "expo-blur";
+import { Baby } from "lucide-react-native";
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -158,41 +157,6 @@ export default function OnboardingSlide({
       {image ? (
         <View style={[styles.imageWrapper, styles.image]}>
           <ExpoImage transition={160} source={image} contentFit="contain" style={{ width: "100%", height: "100%" }} />
-          {index === 2 && (
-            <View style={styles.mockupSheet}>
-              <BlurView intensity={80} tint="light" style={StyleSheet.absoluteFill} />
-              <View style={styles.mockupOverlay} />
-              
-              <View style={styles.mockupDragHandle} />
-              
-              <View style={styles.mockupHeader}>
-                <View style={styles.mockupIconWrap}>
-                  <ScanLine color={COLORS.primary} size={16} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.mockupEyebrow}>We found your meal</Text>
-                  <Text style={styles.mockupMealName}>West African Plate</Text>
-                </View>
-              </View>
-
-              <View style={styles.mockupGrid}>
-                <View style={[styles.mockupCell, styles.mockupCellHighlight]}>
-                  <Text style={[styles.mockupValue, { color: COLORS.primaryDark }]}>
-                    ~645<Text style={styles.mockupUnit}>kcal</Text>
-                  </Text>
-                  <Text style={[styles.mockupLabel, { color: COLORS.primaryDark }]}>Energy</Text>
-                </View>
-                <View style={styles.mockupCell}>
-                  <Text style={styles.mockupValue}>~68<Text style={styles.mockupUnit}>g</Text></Text>
-                  <Text style={styles.mockupLabel}>Carbs</Text>
-                </View>
-                <View style={styles.mockupCell}>
-                  <Text style={styles.mockupValue}>~42<Text style={styles.mockupUnit}>g</Text></Text>
-                  <Text style={styles.mockupLabel}>Protein</Text>
-                </View>
-              </View>
-            </View>
-          )}
         </View>
       ) : (
         <View style={styles.artBoard}>{artwork}</View>
@@ -219,93 +183,6 @@ const styles = StyleSheet.create({
     borderRadius: 24,
     marginBottom: 34,
     backgroundColor: COLORS.softGreen,
-    borderColor: COLORS.primary,
-    borderWidth: 3,
-  },
-  mockupSheet: {
-    position: "absolute",
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: 160,
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    borderTopWidth: 2,
-    borderColor: COLORS.primary,
-    overflow: "hidden",
-    paddingHorizontal: 16,
-    paddingTop: 12,
-  },
-  mockupOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: "rgba(255, 255, 255, 0.65)",
-  },
-  mockupDragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "rgba(17, 24, 39, 0.2)",
-    alignSelf: "center",
-    marginBottom: 12,
-  },
-  mockupHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 14,
-  },
-  mockupIconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: 12,
-    backgroundColor: "rgba(0, 128, 0, 0.08)",
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  mockupEyebrow: {
-    color: COLORS.primary,
-    fontSize: 10,
-    fontFamily: FONTS.extraBold,
-    textTransform: "uppercase",
-  },
-  mockupMealName: {
-    color: "#000",
-    fontSize: 15,
-    fontFamily: FONTS.extraBold,
-  },
-  mockupGrid: {
-    flexDirection: "row",
-    gap: 6,
-  },
-  mockupCell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 10,
-    borderRadius: 12,
-    backgroundColor: "rgba(255, 255, 255, 0.52)",
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-  },
-  mockupCellHighlight: {
-    backgroundColor: "rgba(255, 255, 255, 0.8)",
-  },
-  mockupValue: {
-    color: "#000",
-    fontSize: 14,
-    fontFamily: FONTS.extraBold,
-  },
-  mockupUnit: {
-    fontSize: 10,
-    fontFamily: FONTS.semiBold,
-  },
-  mockupLabel: {
-    color: "#545454",
-    fontSize: 9,
-    fontFamily: FONTS.extraBold,
-    textTransform: "uppercase",
-    marginTop: 2,
   },
   artBoard: {
     width: "88%",

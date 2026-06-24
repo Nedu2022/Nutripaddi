@@ -367,7 +367,7 @@ export default function ScanTab() {
     <View style={styles.container}>
       {!cameraActive ? (
         <Image
-          contentFit="contain"
+          contentFit="cover"
           source={{ uri: capturedUri! }}
           style={StyleSheet.absoluteFillObject}
         />

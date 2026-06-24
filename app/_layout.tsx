@@ -14,6 +14,9 @@ import {
 import { COLORS } from "@/constants/colors";
 import { LanguageProvider } from "@/hooks/useLanguage";
 import { subscribeToAuthDeepLinks } from "@/src/services/authDeepLinkService";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+const queryClient = new QueryClient();
 
 void SplashScreen.preventAutoHideAsync();
 
@@ -39,14 +42,16 @@ export default function RootLayout() {
   }
 
   return (
-    <LanguageProvider>
-      <Stack
-        screenOptions={{
-          headerShown: false,
-          contentStyle: { backgroundColor: COLORS.background },
-        }}
-      />
-      <StatusBar style="dark" />
-    </LanguageProvider>
+    <QueryClientProvider client={queryClient}>
+      <LanguageProvider>
+        <Stack
+          screenOptions={{
+            headerShown: false,
+            contentStyle: { backgroundColor: COLORS.background },
+          }}
+        />
+        <StatusBar style="dark" />
+      </LanguageProvider>
+    </QueryClientProvider>
   );
 }

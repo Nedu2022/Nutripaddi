@@ -1,6 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Image, Pressable, StyleSheet, Text, View } from "react-native";
-import { router } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import {
   ChevronRight,
   ClipboardList,
@@ -267,58 +268,41 @@ const macroStyles = StyleSheet.create({
 // ── Main Screen ─────────────────────────────────────────────────────────────
 export default function DashboardTab() {
   const { t } = useLanguage();
-  const [profile, setProfile] = useState<ProfileData | null>(null);
-  const [dailyTotals, setDailyTotals] = useState<DailyTotals>(EMPTY_TOTALS);
-  const [todayMeals, setTodayMeals] = useState<SavedMeal[]>([]);
-  const [weeklyCalories, setWeeklyCalories] = useState<WeeklyCalories[]>([]);
-  const [loadError, setLoadError] = useState("");
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
+  const { data: dashboardData, error, refetch } = useQuery({
+    queryKey: ['dashboard'],
+    queryFn: async () => {
+      const cached = await readDashboardCache().catch(() => null);
+      
+      const fetchPromise = Promise.all([
+        getProfile(),
+        getMealsForWeek(),
+      ]).then(([profileData, weekMeals]) => {
+        void writeDashboardCache({ profile: profileData, weekMeals }).catch(() => {});
+        return { profileData, weekMeals };
+      });
 
-  useEffect(() => {
-    let mounted = true;
+      const { profileData, weekMeals } = await fetchPromise;
 
-    const applySnapshot = ({ profile: profileData, weekMeals }: DashboardSnapshot) => {
       const target = profileData.dailyCalorieTarget ?? 0;
       const todayKey = new Date().toISOString().split("T")[0];
       const meals = weekMeals.filter((meal) => meal.dateLogged === todayKey);
 
-      setProfile(profileData);
-      setTodayMeals(meals);
-      setDailyTotals(getDailyTotalsFromMeals(meals, target));
-      setWeeklyCalories(getWeeklyCaloriesFromMeals(weekMeals));
-    };
+      return {
+        profile: profileData,
+        todayMeals: meals,
+        dailyTotals: getDailyTotalsFromMeals(meals, target),
+        weeklyCalories: getWeeklyCaloriesFromMeals(weekMeals),
+      };
+    },
+    staleTime: 0,
+  });
 
-    const loadDashboard = async () => {
-      // 1. Paint instantly from the last cached snapshot (stale-while-revalidate).
-      const cached = await readDashboardCache();
-      if (mounted && cached) applySnapshot(cached);
-
-      // 2. Revalidate from the network, then update state + cache.
-      try {
-        const [profileData, weekMeals] = await Promise.all([
-          getProfile(),
-          getMealsForWeek(),
-        ]);
-
-        if (!mounted) return;
-        applySnapshot({ profile: profileData, weekMeals });
-        setLoadError("");
-        void writeDashboardCache({ profile: profileData, weekMeals });
-      } catch (error) {
-        if (!mounted) return;
-        // Keep showing cached data on failure; only surface an error if we have nothing.
-        if (!cached) {
-          setLoadError(error instanceof Error ? error.message : "Could not load dashboard data.");
-        }
-      }
-    };
-
-    void loadDashboard();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
+  const profile = dashboardData?.profile ?? null;
+  const dailyTotals = dashboardData?.dailyTotals ?? EMPTY_TOTALS;
+  const todayMeals = dashboardData?.todayMeals ?? [];
+  const weeklyCalories = dashboardData?.weeklyCalories ?? [];
+  const loadError = error ? (error instanceof Error ? error.message : "Could not load dashboard data.") : "";
 
   const caloriePercent = dailyTotals.target > 0
     ? Math.min(Math.round((dailyTotals.calories / dailyTotals.target) * 100), 100)
@@ -337,18 +321,24 @@ export default function DashboardTab() {
     setAvatarLoadFailed(false);
   }, [profilePhotoUri]);
 
+  useFocusEffect(
+    useCallback(() => {
+      void refetch();
+    }, [refetch])
+  );
+
   const todayDate = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month:   "short",
     day:     "numeric",
   });
 
-  const loggedMeals = MEAL_TYPE_ORDER.map((type) => ({
-    type,
-    meal: todayMeals.find((m) => m.mealType === type) ?? null,
-  }));
+  const mealsGroupedByType = MEAL_TYPE_ORDER.map((type) => {
+    const meals = todayMeals.filter((m) => m.mealType === type);
+    return { type, meals };
+  });
 
-  const loggedCount = loggedMeals.filter((m) => m.meal).length;
+  const loggedTypesCount = mealsGroupedByType.filter((g) => g.meals.length > 0).length;
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -444,53 +434,58 @@ export default function DashboardTab() {
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>{"Today's meals"}</Text>
           <View style={styles.countBadge}>
-            <Text style={styles.countText}>{loggedCount}/{loggedMeals.length}</Text>
+            <Text style={styles.countText}>{loggedTypesCount}/{MEAL_TYPE_ORDER.length}</Text>
           </View>
         </View>
 
         <View style={styles.glassCard}>
-          {loggedMeals.map(({ type, meal }, i) => {
+          {mealsGroupedByType.map(({ type, meals }, i) => {
             const { Icon, color, bg } = MEAL_META[type];
             return (
               <View key={type}>
                 {i > 0 && <View style={styles.divider} />}
-                {meal ? (
-                  <Pressable
-                    onPress={() => router.push({ pathname: "/(tabs)/meal-details", params: { id: meal.id } })}
-                    style={styles.mealRow}
-                  >
-                    <View style={[styles.mealIcon, { backgroundColor: bg }]}>
-                      {meal.imageUri ? (
-                        <Image
-                          source={{ uri: meal.imageUri }}
-                          style={styles.mealImage}
-                          resizeMode="cover"
-                        />
-                      ) : (
-                        <Icon color={color} size={16} />
-                      )}
-                    </View>
-                    <View style={styles.mealInfo}>
-                      <Text style={styles.mealName} numberOfLines={1}>
-                        {meal.foodName}
-                      </Text>
-                      <View style={styles.mealMeta}>
-                        <Text style={styles.mealType}>{type}</Text>
-                        <Text style={styles.mealDot}>·</Text>
-                        <Text style={styles.mealTime}>{meal.timeLogged}</Text>
-                        {typeof meal.freshnessScore === "number" && (
-                          <View style={[styles.freshPill, { backgroundColor: D.accentDim }]}>
-                            <Leaf color={D.accent} size={9} />
-                            <Text style={styles.freshText}>{meal.freshnessScore}%</Text>
+                {meals.length > 0 ? (
+                  meals.map((meal, mealIdx) => (
+                    <View key={meal.id}>
+                      {mealIdx > 0 && <View style={styles.divider} />}
+                      <Pressable
+                        onPress={() => router.push({ pathname: "/(tabs)/meal-details", params: { id: meal.id } })}
+                        style={styles.mealRow}
+                      >
+                        <View style={[styles.mealIcon, { backgroundColor: bg }]}>
+                          {meal.imageUri ? (
+                            <Image
+                              source={{ uri: meal.imageUri }}
+                              style={styles.mealImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <Icon color={color} size={16} />
+                          )}
+                        </View>
+                        <View style={styles.mealInfo}>
+                          <Text style={styles.mealName} numberOfLines={1}>
+                            {meal.foodName}
+                          </Text>
+                          <View style={styles.mealMeta}>
+                            <Text style={styles.mealType}>{type}</Text>
+                            <Text style={styles.mealDot}>·</Text>
+                            <Text style={styles.mealTime}>{meal.timeLogged}</Text>
+                            {typeof meal.freshnessScore === "number" && (
+                              <View style={[styles.freshPill, { backgroundColor: D.accentDim }]}>
+                                <Leaf color={D.accent} size={9} />
+                                <Text style={styles.freshText}>{meal.freshnessScore}%</Text>
+                              </View>
+                            )}
                           </View>
-                        )}
-                      </View>
+                        </View>
+                        <View style={styles.mealKcal}>
+                          <Text style={styles.mealKcalNum}>{meal.calories}</Text>
+                          <Text style={styles.mealKcalUnit}>kcal</Text>
+                        </View>
+                      </Pressable>
                     </View>
-                    <View style={styles.mealKcal}>
-                      <Text style={styles.mealKcalNum}>{meal.calories}</Text>
-                      <Text style={styles.mealKcalUnit}>kcal</Text>
-                    </View>
-                  </Pressable>
+                  ))
                 ) : (
                   <Pressable
                     onPress={() => router.push(ROUTES.scan)}
@@ -540,7 +535,7 @@ export default function DashboardTab() {
             const isToday = i === TODAY_INDEX;
             const barH    = Math.max(8, (day.value / maxWeekly) * 72);
             return (
-              <View key={day.day} style={styles.barCol}>
+              <View key={day.date} style={styles.barCol}>
                 {isToday && (
                   <Text style={styles.barValToday}>{day.value}</Text>
                 )}

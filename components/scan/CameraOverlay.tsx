@@ -112,21 +112,21 @@ export default function CameraOverlay({
       ? imageSize.width / imageSize.height
       : width / Math.max(1, height);
   const screenAspect = width / Math.max(1, height);
-  // The captured/uploaded image is shown with contentFit="contain" (whole image
-  // visible, letterboxed), so map markers onto that same contained rectangle.
+  // The captured/uploaded image is shown with contentFit="cover" (fills the screen),
+  // so map markers onto that same covered rectangle.
   const previewBox =
     sourceAspect > screenAspect
       ? {
-          height: width / sourceAspect,
-          left: 0,
-          top: (height - width / sourceAspect) / 2,
-          width,
-        }
-      : {
           height,
           left: (width - height * sourceAspect) / 2,
           top: 0,
           width: height * sourceAspect,
+        }
+      : {
+          height: width / sourceAspect,
+          left: 0,
+          top: (height - width / sourceAspect) / 2,
+          width,
         };
   const markerBounds = {
     bottom: Math.max(topPad + 120, height - botPad + 64),
@@ -139,35 +139,37 @@ export default function CameraOverlay({
     <View pointerEvents="none" style={StyleSheet.absoluteFill}>
       {!hasResult && <View style={styles.vignette} />}
       <View style={[styles.frameZone, { paddingTop: topPad, paddingBottom: botPad }]}>
-        <Animated.View
-          style={[
-            styles.frameWrap,
-            { width: frameSize, height: frameSize },
-            hasResult ? undefined : frameStyle,
-          ]}
-        >
-          {!hasResult && (
-            <View style={[styles.scanClip, { borderRadius: Math.max(18, frameSize * 0.06) }]}>
-              <Animated.View
-                style={[
-                  styles.scanLine,
-                  {
-                    top: scanLineInset,
-                    left: scanLineInset,
-                    width: frameSize - scanLineInset * 2,
-                  },
-                  lineStyle,
-                ]}
-              />
-            </View>
-          )}
-          <ScanFrame
-            color={hasResult ? "rgba(255,255,255,0.45)" : frameColor}
-            glowing={isDetecting && !isPaused && !hasResult}
-            size={frameSize}
-          />
-        </Animated.View>
-        {!hasResult && (
+        {!hasResult && !isPaused && (
+          <Animated.View
+            style={[
+              styles.frameWrap,
+              { width: frameSize, height: frameSize },
+              hasResult ? undefined : frameStyle,
+            ]}
+          >
+            {!hasResult && (
+              <View style={[styles.scanClip, { borderRadius: Math.max(18, frameSize * 0.06) }]}>
+                <Animated.View
+                  style={[
+                    styles.scanLine,
+                    {
+                      top: scanLineInset,
+                      left: scanLineInset,
+                      width: frameSize - scanLineInset * 2,
+                    },
+                    lineStyle,
+                  ]}
+                />
+              </View>
+            )}
+            <ScanFrame
+              color={hasResult ? "rgba(255,255,255,0.45)" : frameColor}
+              glowing={isDetecting && !isPaused && !hasResult}
+              size={frameSize}
+            />
+          </Animated.View>
+        )}
+        {!hasResult && !isPaused && (
           <Text
             style={[
               styles.guidanceText,

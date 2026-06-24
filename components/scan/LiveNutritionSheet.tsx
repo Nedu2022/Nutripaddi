@@ -242,7 +242,7 @@ export default function LiveNutritionSheet({
 
   if (!summary && scanState !== "saved") return null;
   const isLowConfidence = (summary?.confidence ?? 100) < 80;
-  const { nutrition } = summary ?? {};
+  const nutrition = summary?.nutrition;
   if (scanState === "saved") {
     return (
       <Animated.View
@@ -521,19 +521,6 @@ export default function LiveNutritionSheet({
           )}
         </View>
         <View style={styles.divider} />
-        <Text style={styles.sectionLabel}>Estimated nutrition</Text>
-        {nutrition && (
-          <View style={styles.nutritionGrid}>
-            <NutriCell label="Energy" value={`${nutrition.calories}`} unit="kcal" highlight />
-            <NutriCell label="Carbs"   value={`${nutrition.carbs}`}    unit="g" />
-            <NutriCell label="Protein" value={`${nutrition.protein}`}  unit="g" />
-            <NutriCell label="Fat"     value={`${nutrition.fat}`}      unit="g" />
-          </View>
-        )}
-        {nutrition && (
-          <Text style={styles.disclaimer}>{nutrition.disclaimer}</Text>
-        )}
-        <View style={styles.divider} />
         <View style={styles.adviceCard}>
           <View style={styles.adviceIconWrap}>
             <Image resizeMode="contain" source={LOGO_MARK} style={styles.adviceLogo} />
@@ -627,70 +614,6 @@ export default function LiveNutritionSheet({
     </Animated.View>
   );
 }
-function NutriCell({
-  label,
-  value,
-  unit,
-  highlight,
-}: {
-  label: string;
-  value: string;
-  unit: string;
-  highlight?: boolean;
-}) {
-  return (
-    <View style={[nutStyles.cell, highlight && nutStyles.cellHighlight]}>
-      <Text style={[nutStyles.value, highlight && nutStyles.valueHighlight]}>
-        ~{value}
-        <Text style={nutStyles.unit}>{unit}</Text>
-      </Text>
-      <Text style={[nutStyles.label, highlight && nutStyles.labelHighlight]}>
-        {label}
-      </Text>
-    </View>
-  );
-}
-const nutStyles = StyleSheet.create({
-  cell: {
-    flex: 1,
-    alignItems: "center",
-    paddingVertical: 13,
-    borderRadius: 14,
-    backgroundColor: G.cardBg,
-    borderWidth: 1,
-    borderColor: G.cardBorder,
-  },
-  cellHighlight: {
-    backgroundColor: "rgba(255, 255, 255, 0.72)",
-    borderColor: G.accentBorder,
-    shadowColor: G.accent,
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
-    shadowOffset: { width: 0, height: 4 },
-  },
-  value: {
-    color: G.text,
-    fontSize: 17,
-    fontFamily: FONTS.extraBold,
-  },
-  valueHighlight: {
-    color: G.accentDark,
-  },
-  unit: {
-    fontSize: 11,
-    fontFamily: FONTS.medium,
-  },
-  label: {
-    color: G.textLight,
-    fontSize: 11,
-    fontFamily: FONTS.semiBold,
-    marginTop: 3,
-    textTransform: "uppercase",
-  },
-  labelHighlight: {
-    color: G.accentDark,
-  },
-});
 const styles = StyleSheet.create({
   sheet: {
     position: "absolute",
@@ -1027,18 +950,6 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.medium,
     lineHeight: 16,
     marginTop: 8,
-  },
-  nutritionGrid: {
-    flexDirection: "row",
-    gap: 8,
-    marginBottom: 10,
-  },
-  disclaimer: {
-    color: G.textLight,
-    fontSize: 11,
-    fontFamily: FONTS.medium,
-    lineHeight: 16,
-    marginBottom: 4,
   },
   adviceCard: {
     flexDirection: "row",

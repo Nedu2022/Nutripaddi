@@ -290,7 +290,7 @@ Deno.serve(async (request) => {
     const model =
       Deno.env.get("GEMINI_VISION_MODEL") ||
       Deno.env.get("GEMINI_MODEL") ||
-      "gemini-3.5-flash";
+      "gemini-2.5-pro";
 
     const { file, base64, profileContext, userStatus } = await readUpload(request);
     if (!file) {
