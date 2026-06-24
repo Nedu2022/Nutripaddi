@@ -481,7 +481,7 @@ export default function LiveNutritionSheet({
               </Text>
             </View>
             <Text style={[styles.freshnessScore, { color: freshnessColor }]}>
-              {summary.freshness.score}
+              {Math.round(summary.freshness.score * 10)}
               <Text style={styles.freshnessScoreUnit}>/100</Text>
             </Text>
           </View>
@@ -490,7 +490,7 @@ export default function LiveNutritionSheet({
               style={[
                 styles.freshnessFill,
                 {
-                  width: `${summary.freshness.score}%`,
+                  width: `${summary.freshness.score * 10}%`,
                   backgroundColor: freshnessColor,
                 },
               ]}

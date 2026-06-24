@@ -105,7 +105,7 @@ export default function TabsLayout() {
           left:              IS_WEB ? "50%" : TAB_BAR_MIN_MARGIN,
           right:             IS_WEB ? undefined : TAB_BAR_MIN_MARGIN,
           width:             tabBarWidth,
-          transform:         tabBarTransform,
+          ...(tabBarTransform ? { transform: tabBarTransform } : {}),
           bottom:            TAB_BAR_BOTTOM,
           height:            TAB_BAR_HEIGHT,
           borderRadius:      TAB_BAR_HEIGHT / 2,

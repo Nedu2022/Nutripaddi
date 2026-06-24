@@ -1,27 +1,25 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import {
   Flame,
   Droplets,
   Wheat,
   Clock,
-  Heart,
   Leaf,
-  Pencil,
   ShieldCheck,
-  Trash2,
 } from "lucide-react-native";
+
+const LOGO_MARK = require("@/assets/images/logo-mark.png");
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
-import CustomButton from "@/components/CustomButton";
 import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import {
-  deleteMeal,
   getMealById,
   getSavedMeals,
   type SavedMeal,
@@ -29,19 +27,23 @@ import {
 import { getLucideIcon } from "@/utils/icons";
 
 const D = {
-  bg:        "#F5F6FA",
+  bg:        "#FAF8F4",
   card:      "#FFFFFF",
-  text:      "#0A0A0A",
-  muted:     "#6B7280",
-  light:     "#B0B8C4",
-  divider:   "#F2F2F2",
-  accent:    COLORS.primary,
-  accentDim: COLORS.softGreen,
-  orange:    "#FF6B35",
-  orangeDim: "rgba(255,107,53,0.09)",
-  amber:     "#F59E0B",
-  amberDim:  "rgba(245,158,11,0.09)",
-  dark:      "#0E0E12",
+  text:      "#1C1C1E",
+  muted:     "#5C5751",
+  light:     "#9C9690",
+  divider:   "#EDE8DF",
+  // Green — protein / health
+  accent:    "#1B5E35",
+  accentDim: "#ECF5EF",
+  // Terracotta — carbs / energy
+  terra:     "#B85D2B",
+  terraDim:  "rgba(184,93,43,0.09)",
+  // Stone — fat / neutral
+  stone:     "#7C6E62",
+  stoneDim:  "rgba(124,110,98,0.09)",
+  // Dark calorie hero card — intentionally dark for contrast
+  dark:      "#1A1A1A",
 };
 
 const SHADOW = {
@@ -83,25 +85,21 @@ export default function MealDetailsScreen() {
     };
   }, [mealId]);
 
-  const handleDelete = async () => {
-    if (!meal) return;
-    await deleteMeal(meal.id);
-    router.back();
-  };
-
   if (!meal) {
     return (
       <ScreenWrapper scroll bg={D.bg}>
         <AppHeader showBack title="Meal Details" />
-        <View style={styles.card}>
-          <Text style={styles.infoText}>{loadError || "Loading meal..."}</Text>
-        </View>
+        {loadError ? (
+          <View style={styles.card}>
+            <Text style={styles.infoText}>{loadError}</Text>
+          </View>
+        ) : null}
       </ScreenWrapper>
     );
   }
 
   const Icon           = getLucideIcon(meal.iconName);
-  const freshnessColor = (meal.freshnessScore ?? 0) >= 72 ? D.accent : D.amber;
+  const freshnessColor = (meal.freshnessScore ?? 0) >= 72 ? D.accent : D.terra;
 
   return (
     <ScreenWrapper scroll bg={D.bg}>
@@ -109,9 +107,17 @@ export default function MealDetailsScreen() {
 
       {/* ── MEAL HEADER ───────────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.duration(320)} style={styles.headerCard}>
-        <View style={styles.iconWrap}>
-          <Icon color={D.orange} size={32} strokeWidth={1.7} />
-        </View>
+        {meal.imageUri ? (
+          <Image
+            contentFit="cover"
+            source={{ uri: meal.imageUri }}
+            style={styles.mealImage}
+          />
+        ) : (
+          <View style={styles.iconWrap}>
+            <Icon color={D.terra} size={32} strokeWidth={1.7} />
+          </View>
+        )}
         <Text style={styles.mealName}>{meal.foodName}</Text>
         <View style={styles.metaRow}>
           <View style={[styles.metaBadge, { backgroundColor: D.accentDim }]}>
@@ -163,9 +169,9 @@ export default function MealDetailsScreen() {
         <Text style={styles.sectionLabel}>Macro breakdown</Text>
         <View style={styles.macroGrid}>
           <MacroCard
-            bgColor={D.orangeDim}
-            color={D.orange}
-            icon={<Flame color={D.orange} size={20} />}
+            bgColor={D.terraDim}
+            color={D.terra}
+            icon={<Flame color={D.terra} size={20} />}
             label="Carbs"
             unit="g"
             value={meal.carbs}
@@ -179,9 +185,9 @@ export default function MealDetailsScreen() {
             value={meal.protein}
           />
           <MacroCard
-            bgColor={D.amberDim}
-            color={D.amber}
-            icon={<Wheat color={D.amber} size={20} />}
+            bgColor={D.stoneDim}
+            color={D.stone}
+            icon={<Wheat color={D.stone} size={20} />}
             label="Fat"
             unit="g"
             value={meal.fat}
@@ -194,19 +200,19 @@ export default function MealDetailsScreen() {
           {meal.aiObservation && (
             <View style={[styles.infoRow, { backgroundColor: D.accentDim }]}>
               <View style={[styles.infoIconCircle, { backgroundColor: D.card }]}>
-                <Heart color={D.accent} size={17} />
+                <Image resizeMode="contain" source={LOGO_MARK} style={styles.noteLogo} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={[styles.infoTitle, { color: D.accent }]}>NutriPadi note</Text>
+                <Text style={[styles.infoTitle, { color: D.accent }]}>Your NutriPadi coach</Text>
                 <Text style={styles.infoText}>{meal.aiObservation}</Text>
               </View>
             </View>
           )}
 
           {meal.source && (
-            <View style={[styles.infoRow, { backgroundColor: D.amberDim }]}>
+            <View style={[styles.infoRow, { backgroundColor: D.stoneDim }]}>
               <View style={[styles.infoIconCircle, { backgroundColor: "rgba(255,255,255,0.6)" }]}>
-                <ShieldCheck color={D.amber} size={17} />
+                <ShieldCheck color={D.stone} size={17} />
               </View>
               <View style={{ flex: 1 }}>
                 <Text style={styles.sourceText}>{meal.source}</Text>
@@ -215,24 +221,6 @@ export default function MealDetailsScreen() {
           )}
         </Animated.View>
       )}
-
-      {/* ── ACTIONS ───────────────────────────────────────────────── */}
-      <View style={styles.actionRow}>
-        <CustomButton
-          icon={<Pencil color={D.text} size={17} />}
-          onPress={() => undefined}
-          title="Edit Meal"
-          variant="outline"
-          style={styles.halfBtn}
-        />
-        <CustomButton
-          icon={<Trash2 color="#FFFFFF" size={17} />}
-          onPress={handleDelete}
-          title="Delete"
-          variant="danger"
-          style={styles.halfBtn}
-        />
-      </View>
 
     </ScreenWrapper>
   );
@@ -248,11 +236,17 @@ const styles = StyleSheet.create({
     marginBottom:    14,
     ...SHADOW,
   },
+  mealImage: {
+    width:           "100%",
+    height:          180,
+    borderRadius:    18,
+    marginBottom:    16,
+  },
   iconWrap: {
     width:           72,
     height:          72,
     borderRadius:    22,
-    backgroundColor: D.orangeDim,
+    backgroundColor: D.terraDim,
     alignItems:      "center",
     justifyContent:  "center",
     marginBottom:    14,
@@ -301,10 +295,10 @@ const styles = StyleSheet.create({
     width:           52,
     height:          52,
     borderRadius:    17,
-    backgroundColor: D.orange,
+    backgroundColor: D.terra,
     alignItems:      "center",
     justifyContent:  "center",
-    shadowColor:     D.orange,
+    shadowColor:     D.terra,
     shadowOpacity:   0.35,
     shadowRadius:    10,
     shadowOffset:    { width: 0, height: 4 },
@@ -408,6 +402,10 @@ const styles = StyleSheet.create({
     fontFamily: FONTS.semiBold,
   },
 
+  noteLogo: {
+    width:  22,
+    height: 22,
+  },
   sourceText: {
     color:      D.muted,
     fontSize:   12,
@@ -415,14 +413,4 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
 
-  // Actions
-  actionRow: {
-    flexDirection: "row",
-    gap:           10,
-    marginTop:     4,
-  },
-  halfBtn: {
-    flex:  1,
-    width: undefined,
-  },
 });

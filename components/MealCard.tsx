@@ -1,61 +1,58 @@
+/**
+ * MealCard — individual meal row in the Meal Log FlatList
+ *
+ * Optimisations:
+ *  • React.memo — skips re-render when meal + onPress refs are stable.
+ *  • Fixed height (MEAL_CARD_HEIGHT) so FlatList.getItemLayout is accurate.
+ *  • MealImage handles shimmer, fade-in, retry, and expo-image disk cache.
+ */
+
+import { memo } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
-import { Image } from "expo-image";
 import { Leaf } from "lucide-react-native";
 
+import { MealImage } from "@/components/MealImage";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import type { LoggedMeal } from "@/types";
 
-type MealCardProps = {
-  meal: LoggedMeal;
+// Exported so meal-log.tsx can use in getItemLayout without duplicating numbers.
+export const MEAL_CARD_HEIGHT = 76;   // card box height (padding included)
+export const MEAL_CARD_MARGIN = 10;   // marginBottom
+export const MEAL_CARD_TOTAL  = MEAL_CARD_HEIGHT + MEAL_CARD_MARGIN;  // 86
+
+type Props = {
+  meal:     LoggedMeal & { imageUri?: string };
   onPress?: () => void;
 };
 
-const MEAL_COLORS: Record<string, { bg: string; text: string }> = {
-  Breakfast: { bg: "#FFF0E6", text: "#FF8C42" },
-  Lunch:     { bg: COLORS.softGreen, text: COLORS.primary },
-  Dinner:    { bg: "#EEEBFF", text: "#6366F1" },
-  Snack:     { bg: "#FEF3C7", text: "#F59E0B" },
-};
-
-function FoodThumbnail({ meal }: { meal: LoggedMeal }) {
-  if (meal.imageUri) {
-    return (
-      <Image
-        source={{ uri: meal.imageUri }}
-        style={styles.foodImage}
-        contentFit="cover"
-      />
-    );
-  }
-
-  const palette = MEAL_COLORS[meal.mealType] ?? MEAL_COLORS.Lunch;
-  const initial = meal.foodName.trim()[0]?.toUpperCase() ?? "?";
-
-  return (
-    <View style={[styles.initialBox, { backgroundColor: palette.bg }]}>
-      <Text style={[styles.initialText, { color: palette.text }]}>{initial}</Text>
-    </View>
-  );
-}
-
-export default function MealCard({ meal, onPress }: MealCardProps) {
+function MealCardInner({ meal, onPress }: Props) {
   const freshnessColor =
-    (meal.freshnessScore ?? 0) >= 72 ? COLORS.primary : COLORS.warning;
+    typeof meal.freshnessScore === "number" && meal.freshnessScore >= 72
+      ? COLORS.primary
+      : COLORS.warning;
 
   return (
     <Pressable
       onPress={onPress}
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      accessibilityRole="button"
+      accessibilityLabel={`${meal.foodName}, ${meal.calories} calories`}
     >
-      <FoodThumbnail meal={meal} />
+      <MealImage
+        uri={meal.imageUri}
+        fallbackName={meal.foodName}
+        mealType={meal.mealType}
+        size={48}
+        radius={13}
+      />
 
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{meal.foodName}</Text>
         <Text style={styles.time}>{meal.mealType} · {meal.timeLogged}</Text>
         {typeof meal.freshnessScore === "number" && (
           <View style={styles.freshnessBadge}>
-            <Leaf color={freshnessColor} size={11} />
+            <Leaf color={freshnessColor} size={10} />
             <Text style={[styles.freshnessText, { color: freshnessColor }]}>
               {meal.freshnessScore}%
             </Text>
@@ -64,75 +61,68 @@ export default function MealCard({ meal, onPress }: MealCardProps) {
       </View>
 
       <View style={styles.calBadge}>
-        <Text style={styles.calText}>{meal.calories}</Text>
+        <Text style={styles.calNum}>{meal.calories}</Text>
         <Text style={styles.calUnit}>kcal</Text>
       </View>
     </Pressable>
   );
 }
 
+export const MealCard = memo(MealCardInner);
+
+// Default export keeps backwards-compat for any existing import that does
+// `import MealCard from "@/components/MealCard"`.
+export default MealCard;
+
 const styles = StyleSheet.create({
   card: {
-    flexDirection:   "row",
-    alignItems:      "center",
-    backgroundColor: "#FFFFFF",
-    borderRadius:    16,
-    padding:         14,
-    marginBottom:    10,
-    gap:             12,
-    shadowColor:     "#000",
-    shadowOpacity:   0.05,
-    shadowRadius:    10,
-    shadowOffset:    { width: 0, height: 3 },
-    elevation:       2,
+    flexDirection:     "row",
+    alignItems:        "center",
+    height:            MEAL_CARD_HEIGHT,
+    backgroundColor:   "#FFFFFF",
+    borderRadius:      16,
+    paddingHorizontal: 14,
+    marginBottom:      MEAL_CARD_MARGIN,
+    gap:               12,
+    shadowColor:       "#000",
+    shadowOpacity:     0.05,
+    shadowRadius:      10,
+    shadowOffset:      { width: 0, height: 3 },
+    elevation:         2,
   },
   pressed: {
     opacity:   0.88,
     transform: [{ scale: 0.985 }],
   },
-  foodImage: {
-    width:        48,
-    height:       48,
-    borderRadius: 13,
-  },
-  initialBox: {
-    width:           48,
-    height:          48,
-    borderRadius:    13,
-    alignItems:      "center",
-    justifyContent:  "center",
-  },
-  initialText: {
-    fontSize:   20,
-    fontFamily: FONTS.extraBold,
-  },
   info: {
     flex: 1,
+    gap:  2,
   },
   name: {
     color:      "#0A0A0A",
     fontSize:   14,
     fontFamily: FONTS.bold,
+    lineHeight: 18,
   },
   time: {
     color:      "#6B7280",
     fontSize:   12,
     fontFamily: FONTS.medium,
-    marginTop:  3,
+    lineHeight: 16,
   },
   freshnessBadge: {
     alignSelf:         "flex-start",
     flexDirection:     "row",
     alignItems:        "center",
-    gap:               4,
+    gap:               3,
     backgroundColor:   "#F3F4F6",
     borderRadius:      999,
-    paddingHorizontal: 8,
-    paddingVertical:   4,
-    marginTop:         6,
+    paddingHorizontal: 7,
+    paddingVertical:   3,
+    marginTop:         2,
   },
   freshnessText: {
-    fontSize:   11,
+    fontSize:   10,
     fontFamily: FONTS.bold,
   },
   calBadge: {
@@ -141,8 +131,9 @@ const styles = StyleSheet.create({
     borderRadius:      12,
     paddingHorizontal: 12,
     paddingVertical:   8,
+    flexShrink:        0,
   },
-  calText: {
+  calNum: {
     color:      "#0A0A0A",
     fontSize:   15,
     fontFamily: FONTS.extraBold,
