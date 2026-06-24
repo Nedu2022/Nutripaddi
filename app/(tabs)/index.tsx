@@ -432,13 +432,15 @@ export default function DashboardTab() {
             <Text style={s.calorieNum}>{dailyTotals.calories.toLocaleString()}</Text>
             <Text style={s.calorieLabel}>kcal consumed</Text>
             <View style={s.calorieMeta}>
-              <View style={s.calorieMetaItem}>
-                <View style={[s.calorieMetaDot, { backgroundColor: P.greenDim, borderColor: P.green }]} />
-                <Text style={s.calorieMetaText}>{calorieGoal.toLocaleString()} goal</Text>
+              <View style={[s.calorieMetaPill, { backgroundColor: P.greenDim }]}>
+                <Text style={[s.calorieMetaPillText, { color: P.green }]}>
+                  {calorieGoal.toLocaleString()} goal
+                </Text>
               </View>
-              <View style={s.calorieMetaItem}>
-                <View style={[s.calorieMetaDot, { backgroundColor: "#EFEFEF", borderColor: P.textLight }]} />
-                <Text style={s.calorieMetaText}>{calorieRemaining.toLocaleString()} left</Text>
+              <View style={[s.calorieMetaPill, { backgroundColor: P.stoneDim }]}>
+                <Text style={[s.calorieMetaPillText, { color: P.stone }]}>
+                  {calorieRemaining.toLocaleString()} left
+                </Text>
               </View>
             </View>
           </View>
@@ -458,17 +460,23 @@ export default function DashboardTab() {
             const pct = Math.min(Math.round((value / target) * 100), 100);
             return (
               <View key={label} style={[s.macroCard, { backgroundColor: bg }]}>
-                <View style={[s.macroCardStrip, { backgroundColor: color }]} />
                 <View style={s.macroCardBody}>
-                  <Text style={[s.macroCardLabel, { color }]}>{label}</Text>
-                  <Text style={s.macroCardNum}>
-                    <Text style={{ color, fontFamily: FONTS.extraBold }}>{value}</Text>
+                  {/* Label + percentage pill on the same row */}
+                  <View style={s.macroCardTopRow}>
+                    <Text style={[s.macroCardLabel, { color }]}>{label}</Text>
+                    <View style={[s.macroPctBadge, { backgroundColor: color }]}>
+                      <Text style={s.macroPctText}>{pct}%</Text>
+                    </View>
+                  </View>
+                  {/* Consumed value + /target */}
+                  <View style={s.macroCardValRow}>
+                    <Text style={[s.macroCardVal, { color }]}>{value}</Text>
                     <Text style={s.macroCardTarget}>/{target}g</Text>
-                  </Text>
+                  </View>
+                  {/* Progress bar */}
                   <View style={s.macroBarTrack}>
                     <View style={[s.macroBarFill, { width: `${pct}%` as any, backgroundColor: color }]} />
                   </View>
-                  <Text style={[s.macroCardPct, { color }]}>{pct}%</Text>
                 </View>
               </View>
             );
@@ -728,29 +736,40 @@ const s = StyleSheet.create({
 
   calorieRow:      { flexDirection: "row", alignItems: "center", gap: 16, marginBottom: 14 },
   calorieInfo:     { flex: 1 },
-  calorieNum:      { color: P.text,    fontSize: 36, fontFamily: FONTS.extraBold, lineHeight: 40 },
+  calorieNum:      { color: P.text, fontSize: 36, fontFamily: FONTS.extraBold, lineHeight: 42 },
   calorieLabel:    { color: P.textMid, fontSize: 12, fontFamily: FONTS.medium, marginTop: 2 },
-  calorieMeta:     { flexDirection: "row", gap: 12, marginTop: 8 },
-  calorieMetaItem: { flexDirection: "row", alignItems: "center", gap: 5 },
-  calorieMetaDot:  { width: 10, height: 10, borderRadius: 999, borderWidth: 1.5 },
-  calorieMetaText: { color: P.textMid, fontSize: 11, fontFamily: FONTS.medium },
+  calorieMeta:     { flexDirection: "row", gap: 8, marginTop: 10, flexWrap: "wrap" },
+  calorieMetaPill: {
+    borderRadius: 999, paddingHorizontal: 10, paddingVertical: 4,
+  },
+  calorieMetaPillText: { fontSize: 11, fontFamily: FONTS.semiBold },
   calProgressTrack: {
-    height: 8, borderRadius: 999, backgroundColor: "#EDE8DF", overflow: "hidden", marginBottom: 16,
+    height: 6, borderRadius: 999, backgroundColor: P.divider, overflow: "hidden", marginBottom: 16,
   },
   calProgressFill: { height: "100%", borderRadius: 999, backgroundColor: P.green },
 
-  macroGrid:       { flexDirection: "row", gap: 8 },
-  macroCard:       { flex: 1, borderRadius: 16, overflow: "hidden" },
-  macroCardStrip:  { height: 3, width: "100%" },
-  macroCardBody:   { padding: 10, gap: 3 },
-  macroCardLabel:  { fontSize: 10, fontFamily: FONTS.bold, textTransform: "uppercase", letterSpacing: 0.5 },
-  macroCardNum:    { fontSize: 14 },
+  macroGrid:  { flexDirection: "row", gap: 8 },
+  macroCard:  { flex: 1, borderRadius: 18 },
+  macroCardBody: { padding: 12, gap: 6 },
+  macroCardTopRow: {
+    flexDirection: "row", alignItems: "center", justifyContent: "space-between",
+  },
+  macroCardLabel: {
+    fontSize: 10, fontFamily: FONTS.bold, textTransform: "uppercase", letterSpacing: 0.6,
+  },
+  macroPctBadge: {
+    borderRadius: 999, paddingHorizontal: 6, paddingVertical: 2,
+  },
+  macroPctText: {
+    color: "#FFFFFF", fontSize: 9, fontFamily: FONTS.extraBold,
+  },
+  macroCardValRow: { flexDirection: "row", alignItems: "baseline", gap: 1 },
+  macroCardVal:    { fontSize: 20, fontFamily: FONTS.extraBold, lineHeight: 24 },
   macroCardTarget: { color: P.textLight, fontFamily: FONTS.medium, fontSize: 11 },
   macroBarTrack: {
-    height: 4, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.08)", overflow: "hidden", marginTop: 4,
+    height: 5, borderRadius: 999, backgroundColor: "rgba(0,0,0,0.1)", overflow: "hidden",
   },
   macroBarFill: { height: "100%", borderRadius: 999 },
-  macroCardPct: { fontSize: 10, fontFamily: FONTS.bold, marginTop: 2 },
 
   // Section headers
   sectionRow:    { flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginBottom: 12 },
