@@ -289,7 +289,7 @@ const ringS = StyleSheet.create({
 
 // ── Main Screen ────────────────────────────────────────────────────────────────
 export default function DashboardTab() {
-  const { t } = useLanguage();
+  useLanguage();
   const [avatarLoadFailed, setAvatarLoadFailed] = useState(false);
   const [cachedSnapshot, setCachedSnapshot]     = useState<ReturnType<typeof buildDashboardData> | undefined>();
   const countryCode = useMemo(() => detectCountryCode(), []);
@@ -415,7 +415,7 @@ export default function DashboardTab() {
       {/* ── 3. TODAY'S NUTRITION ───────────────────────────────────────────── */}
       <Animated.View entering={FadeInDown.delay(120).duration(340)} style={s.nutritionCard}>
         <View style={s.nutritionHeader}>
-          <Text style={s.cardTitle}>Today's nutrition</Text>
+          <Text style={s.cardTitle}>{"Today's nutrition"}</Text>
           <Pressable onPress={() => router.push(ROUTES.nutritionHistory)} style={s.seeAllRow}>
             <Text style={s.seeAllText}>Full report</Text>
             <ChevronRight color={P.green} size={13} />

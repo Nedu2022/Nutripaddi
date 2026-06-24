@@ -127,7 +127,7 @@ export default function OfflineBanner() {
 
     // Stayed online (initial mount or no change needed)
     setVisible(false);
-  }, [status]);   // eslint-disable-line react-hooks/exhaustive-deps — insets.top is stable
+  }, [status]);
 
   // ── Drive animation ──────────────────────────────────────────────────────
   useEffect(() => {

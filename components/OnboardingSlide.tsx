@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import type { ImageSourcePropType } from "react-native";
-import { Image, StyleSheet, Text, View } from "react-native";
+import { StyleSheet, Text, View } from "react-native";
 import { Image as ExpoImage } from "expo-image";
 import { Baby } from "lucide-react-native";
 import Animated, {

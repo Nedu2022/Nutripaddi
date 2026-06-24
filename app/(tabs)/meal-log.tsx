@@ -47,7 +47,6 @@ import Animated, { FadeInDown } from "react-native-reanimated";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { MealCard, MEAL_CARD_TOTAL } from "@/components/MealCard";
-import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import { ROUTES } from "@/constants/routes";
 import { useLanguage } from "@/hooks/useLanguage";
@@ -55,7 +54,6 @@ import { useIsOffline } from "@/src/hooks/useNetworkStatus";
 import {
   getDailyTotalsFromMeals,
   getTodayMeals,
-  type DailyTotals,
   type SavedMeal,
 } from "@/src/services/mealHistoryService";
 import { getProfile } from "@/src/services/profileService";
@@ -93,8 +91,6 @@ const MACROS = [
   { label: "Protein", key: "protein" as const, dot: D.accent  },
   { label: "Fat",     key: "fat"     as const, dot: D.purple  },
 ];
-
-const EMPTY_TOTALS: DailyTotals = { calories: 0, carbs: 0, fat: 0, protein: 0, target: 0 };
 
 // FlatList layout constants — must match MealCard and SectionHeader styles exactly
 const SECTION_HEIGHT   = 36;
@@ -141,7 +137,7 @@ export default function MealLogTab() {
     useCallback(() => { void refetch(); }, [refetch])
   );
 
-  const meals       = data?.meals  ?? [];
+  const meals       = useMemo(() => data?.meals  ?? [], [data]);
   const target      = data?.target ?? 0;
   const dailyTotals = useMemo(() => getDailyTotalsFromMeals(meals, target), [meals, target]);
 
@@ -203,8 +199,6 @@ export default function MealLogTab() {
   // ── Derived display values ─────────────────────────────────────────────────
   const progressPct  = dailyTotals.target > 0 ? Math.min(dailyTotals.calories / dailyTotals.target, 1) : 0;
   const remaining    = Math.max(dailyTotals.target - dailyTotals.calories, 0);
-  const getMealCount = (type: string) => meals.filter((m) => m.mealType === type).length;
-  const getTypeCals  = (type: string) => meals.filter((m) => m.mealType === type).reduce((x, m) => x + m.calories, 0);
   const todayDate    = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   // ── List header ────────────────────────────────────────────────────────────
@@ -226,7 +220,7 @@ export default function MealLogTab() {
         <Animated.View entering={FadeInDown.delay(40).duration(280)} style={s.offlineCard}>
           <WifiOff color={D.orange} size={20} />
           <View style={s.offlineTextWrap}>
-            <Text style={s.offlineTitle}>You're offline</Text>
+            <Text style={s.offlineTitle}>{"You're offline"}</Text>
             <Text style={s.offlineSub}>
               No cached meals available. Connect to load your log.
             </Text>
@@ -290,8 +284,8 @@ export default function MealLogTab() {
       {/* CATEGORY GRID */}
       <Animated.View entering={FadeInDown.delay(150).duration(320)} style={s.catGrid}>
         {MEAL_CATEGORIES.map((cat) => {
-          const count  = getMealCount(cat.key);
-          const cals   = getTypeCals(cat.key);
+          const count  = meals.filter((m) => m.mealType === cat.key).length;
+          const cals   = meals.filter((m) => m.mealType === cat.key).reduce((x, m) => x + m.calories, 0);
           const active = count > 0;
           return (
             <View key={cat.key} style={s.catCard}>
@@ -309,12 +303,11 @@ export default function MealLogTab() {
 
       {flatItems.length > 0 && (
         <Animated.View entering={FadeInDown.delay(190).duration(320)}>
-          <Text style={s.mealsSectionLabel}>Today's meals</Text>
+          <Text style={s.mealsSectionLabel}>{"Today's meals"}</Text>
         </Animated.View>
       )}
     </View>
-  ), [dailyTotals, meals.length, progressPct, remaining, flatItems.length, isOffline, error, todayDate, refetch]);
-  // eslint-disable-line react-hooks/exhaustive-deps
+  ), [dailyTotals, meals, progressPct, remaining, flatItems.length, isOffline, error, todayDate, refetch]);
 
   // ── List footer ────────────────────────────────────────────────────────────
   const ListFooter = (

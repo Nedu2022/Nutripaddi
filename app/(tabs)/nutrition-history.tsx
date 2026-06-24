@@ -12,7 +12,7 @@ import Animated, { FadeInUp } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
-import MealCard from "@/components/MealCard";
+import { MealCard } from "@/components/MealCard";
 import MacroCard from "@/components/MacroCard";
 import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";

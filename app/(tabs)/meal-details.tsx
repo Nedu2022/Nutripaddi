@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { Image } from "expo-image";
-import { router, useLocalSearchParams } from "expo-router";
+import { useLocalSearchParams } from "expo-router";
 import {
   Flame,
   Droplets,
@@ -10,14 +10,11 @@ import {
   Leaf,
   ShieldCheck,
 } from "lucide-react-native";
-
-const LOGO_MARK = require("@/assets/images/logo-mark.png");
 import Animated, { FadeInDown } from "react-native-reanimated";
 
 import ScreenWrapper from "@/components/ScreenWrapper";
 import AppHeader from "@/components/AppHeader";
 import MacroCard from "@/components/MacroCard";
-import { COLORS } from "@/constants/colors";
 import { FONTS } from "@/constants/fonts";
 import {
   getMealById,
@@ -25,6 +22,8 @@ import {
   type SavedMeal,
 } from "@/src/services/mealHistoryService";
 import { getLucideIcon } from "@/utils/icons";
+
+const LOGO_MARK = require("@/assets/images/logo-mark.png");
 
 const D = {
   bg:         "#F8FAFC",
