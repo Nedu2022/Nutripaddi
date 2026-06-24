@@ -1,46 +1,46 @@
 export const COLORS = {
-  // Primary palette
-  primary: "#008000",
-  secondary: "#000000", // Stark black
-  freshOrange: "#FF5F15",
+  // Primary palette — matches vibrant nutrition palette used across all screens
+  primary:     "#16A34A",   // vibrant green (was #008000)
+  secondary:   "#0F172A",
+  freshOrange: "#F97316",   // vibrant orange (was #FF5F15)
 
   // Backgrounds
-  background: "#FFFFFF",
-  card: "#FFFFFF",
-  softGreen: "#D6EED6",
-  softOrange: "#F6F6F6",
+  background:  "#F8FAFC",
+  card:        "#FFFFFF",
+  softGreen:   "#F0FDF4",   // greenDim
+  softOrange:  "#FFF7ED",   // orangeDim
 
   // Text
-  text: "#000000",
-  textMuted: "#545454",
-  textLight: "#A6A6A6",
+  text:        "#0F172A",
+  textMuted:   "#64748B",
+  textLight:   "#94A3B8",
 
   // Semantic
-  success: "#008000",
-  warning: "#FF5F15",
-  error: "#E23636",
+  success:     "#16A34A",
+  warning:     "#F97316",
+  error:       "#DC2626",
 
   // UI
-  border: "#EEEEEE",
-  inputBg: "#F6F6F6",
-  overlay: "rgba(0, 0, 0, 0.6)",
+  border:      "#E2E8F0",
+  inputBg:     "#F8FAFC",
+  overlay:     "rgba(0, 0, 0, 0.6)",
 
   // Extended
-  white: "#FFFFFF",
-  primaryDark: "#006400",
-  secondaryDark: "#000000",
-  softYellow: "#FFF0E8",
-  softRed: "#FCECEC",
-  softCream: "#FFFFFF",
-  charcoal: "#000000",
-  softGray: "#F6F6F6",
+  white:        "#FFFFFF",
+  primaryDark:  "#15803D",
+  secondaryDark:"#0F172A",
+  softYellow:   "#FFF7ED",
+  softRed:      "#FEF2F2",
+  softCream:    "#FFFFFF",
+  charcoal:     "#1E293B",
+  softGray:     "#F1F5F9",
 
   // Backward-compatible aliases
-  primaryGreen: "#008000",
-  primaryOrange: "#FF5F15",
-  darkText: "#000000",
-  mutedText: "#545454",
-  darkGreen: "#006400",
+  primaryGreen:  "#16A34A",
+  primaryOrange: "#F97316",
+  darkText:      "#0F172A",
+  mutedText:     "#64748B",
+  darkGreen:     "#15803D",
 } as const;
 
 export type ColorName = keyof typeof COLORS;
