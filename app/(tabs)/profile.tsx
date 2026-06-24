@@ -72,6 +72,13 @@ type MenuRowProps = {
 };
 
 function MenuRow({ icon, iconBg, label, value, onPress, danger, last }: MenuRowProps) {
+  // Compress "Item 1, Item 2, Item 3" → "Item 1  +2" so the value never wraps
+  let displayValue = value;
+  if (value?.includes(",")) {
+    const parts = value.split(",").map((v) => v.trim()).filter(Boolean);
+    displayValue = parts.length > 1 ? `${parts[0]}  +${parts.length - 1}` : parts[0];
+  }
+
   return (
     <Pressable
       onPress={onPress}
@@ -85,8 +92,8 @@ function MenuRow({ icon, iconBg, label, value, onPress, danger, last }: MenuRowP
         <IconCircle icon={icon} bg={iconBg} />
         <Text style={[styles.menuLabel, danger && { color: D.danger }]}>{label}</Text>
       </View>
-      {value ? (
-        <Text style={styles.menuValue}>{value}</Text>
+      {displayValue ? (
+        <Text style={styles.menuValue} numberOfLines={1}>{displayValue}</Text>
       ) : (
         <ChevronRight color={D.light} size={18} />
       )}

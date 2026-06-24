@@ -308,7 +308,7 @@ export default function ScanTab() {
         protein:        summary.nutrition.protein,
         fat:            summary.nutrition.fat,
         fibre:          summary.nutrition.fibre,
-        freshnessScore: summary.freshness.score,
+        freshnessScore: Math.round(summary.freshness.score * 10),
         freshnessLabel: summary.freshness.label,
         portionLabel:   summary.localPortionLabel,
         imageUri:       uploadedImage?.secureUrl ?? uploadedImage?.url,

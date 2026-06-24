@@ -25,15 +25,15 @@ import { Wifi, WifiOff } from "lucide-react-native";
 import { useNetworkContext, type NetworkStatus } from "@/src/context/NetworkProvider";
 import { FONTS } from "@/constants/fonts";
 
-// ── Design tokens (match app brand) ───────────────────────────────────────────
+// ── Design tokens (match 4-tone earth palette) ────────────────────────────────
 const T = {
-  offlineBg:       "#141414",
+  offlineBg:       "#1C1C1E",        // near-black — neutral authority
   offlineText:     "#FFFFFF",
-  offlineIcon:     "#FF6B35",        // app orange — signals caution
-  weakBg:          "#FF6B35",
+  offlineIcon:     "#B85D2B",        // terra — caution/warning
+  weakBg:          "#B85D2B",        // terra — degraded state
   weakText:        "#FFFFFF",
   weakIcon:        "#FFFFFF",
-  reconnectBg:     "#008000",        // app green — positive confirmation
+  reconnectBg:     "#1B5E35",        // forest green — positive confirmation
   reconnectText:   "#FFFFFF",
   reconnectIcon:   "#FFFFFF",
 };
